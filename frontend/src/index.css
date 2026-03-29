@@ -32,68 +32,142 @@ body {
   font-size: 14px;
 }
 
-/* ─── App Shell ─────────────────────────────────────────────────────────── */
-.sat-app { display: flex; flex-direction: column; min-height: 100vh; }
+/* ─── App Shell (Dashboard Sidebar Layout) ────────────────────────────────── */
+.sat-dashboard-app {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
 
-.sat-header-main {
-  background: var(--blue);
-  padding: 1rem 2rem;
+.sat-sidebar {
+  width: 280px;
+  background: white;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.sat-sidebar-brand {
+  padding: 1.5rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--blue);
   color: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
-.sat-header-main .header-title { font-size: 1.1rem; font-weight: 600; }
-.sat-header-main .header-sub   { font-size: 0.8rem; opacity: 0.75; }
-.sat-header-logo { font-size: 2rem; }
+.sat-sidebar-brand .sat-header-logo { font-size: 2.25rem; }
+.sat-sidebar-brand .header-title { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 2px; }
+.sat-sidebar-brand .header-sub { font-size: 0.75rem; opacity: 0.8; font-weight: 500; }
 
-.sat-content { flex: 1; padding: 1.5rem clamp(1rem, 5%, 3rem); max-width: 1200px; margin: 0 auto; width: 100%; }
+.sat-sidebar-controls {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
 
-/* ─── Tab Navigation ────────────────────────────────────────────────────── */
+.sat-sidebar-nav {
+  padding: 1.5rem 1.5rem 2.5rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.nav-group-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+}
+
+/* ─── Main Content Base ─────────────────────────────────────────────────── */
+.sat-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.sat-content-header {
+  padding: 2rem 3rem;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.sat-content-title { display: flex; align-items: center; }
+.sat-content-title h2 { margin: 0; font-size: 1.75rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; }
+
+.sat-content-body {
+  padding: 2.5rem 3rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sat-sync-badge {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #eff6ff; color: #3b82f6;
+  padding: 0.4rem 0.8rem; border-radius: 20px;
+  font-size: 0.8rem; font-weight: 600;
+}
+
+.spinner-micro {
+  width: 14px; height: 14px;
+  border: 2px solid #bfdbfe; border-top: 2px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ─── Tab Navigation (Vertical Sidebar Mode) ───────────────────────────── */
 .tab-nav {
   display: flex;
-  background: var(--white);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
+  flex-direction: column;
+  gap: 0.25rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .tab-btn {
-  flex: 1;
-  background: none;
+  flex: none;
+  justify-content: flex-start;
   border: none;
-  border-right: 1px solid var(--border);
-  padding: 0.9rem 0.75rem;
-  color: var(--gray);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: transparent;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-family: inherit;
+  gap: 0.75rem;
   cursor: pointer;
-  transition: background .15s, color .15s;
+  transition: all 0.2s;
+  font-family: inherit;
 }
-.tab-btn:last-child { border-right: none; }
-.tab-btn:hover { background: var(--gray-light); color: var(--blue); }
-.tab-btn.active {
-  background: var(--blue);
-  color: white;
-  font-weight: 600;
-}
-.tab-icon { font-size: 1.1rem; }
+.tab-btn:hover { background: #f1f5f9; color: #0f172a; }
+.tab-btn.active { background: #eff6ff; color: #2563eb; font-weight: 700; }
+.tab-icon { font-size: 1.15rem; }
 .tab-badge {
-  background: #e0e9f5;
-  color: var(--blue);
-  border-radius: 20px;
-  padding: 1px 7px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  margin-left: auto;
+  background: #e2e8f0; color: #475569;
+  border-radius: 20px; padding: 2px 8px;
+  font-size: 0.7rem; font-weight: 700;
 }
-.tab-btn.active .tab-badge { background: rgba(255,255,255,.25); color: white; }
+.tab-btn.active .tab-badge { background: #bfdbfe; color: #1d4ed8; }
 
 /* ─── Section Card ──────────────────────────────────────────────────────── */
 .sec-card {

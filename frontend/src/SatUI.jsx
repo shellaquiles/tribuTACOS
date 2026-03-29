@@ -22,12 +22,17 @@ const SectionCard = ({ icon, title, badge, children, accent }) => (
 );
 
 const KpiRow = ({ items }) => (
-  <div className="kpi-row">
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
     {items.map((k, i) => (
-      <div key={i} className={`kpi ${k.accent || ''}`}>
-        <div className="kpi-label">{k.label}</div>
-        <div className="kpi-value">{fmt(k.value)}</div>
-        {k.help && <div className="kpi-help">{k.help}</div>}
+      <div key={i} style={{
+        background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
+        borderRadius: '16px', padding: '1.5rem', border: '1px solid #e2e8f0',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', position: 'relative', overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', background: k.accent === 'kpi-danger' ? '#ef4444' : (k.accent === 'kpi-accent' ? '#f59e0b' : '#3b82f6') }} />
+        <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>{k.label}</div>
+        <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>{fmt(k.value)}</div>
+        {k.help && <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{k.help}</div>}
       </div>
     ))}
   </div>
@@ -53,22 +58,61 @@ const CalcStep = ({ label, value, op, highlight }) => (
   </div>
 );
 
-const ConceptCard = ({ title, value, accent, metaItems }) => (
-  <div className={`concept-card ${accent ? `accent-${accent}` : ''}`}>
-    <div className="concept-card-title">{title}</div>
-    <div className="concept-card-value">{fmt(value)}</div>
-    {metaItems && metaItems.length > 0 && (
-      <div className="concept-card-meta">
-        {metaItems.map((m, i) => (
-          <div key={i} className="concept-card-meta-item">
-            <span>{m.label}</span>
-            <strong>{m.value}</strong>
-          </div>
-        ))}
+const ConceptCard = ({ title, value, accent, metaItems }) => {
+  const titleParts = title.split(' - ');
+  const claveNumber = titleParts[0].replace('Clave: ', '');
+  const cleanTitle = titleParts[1] ? titleParts.slice(1).join(' - ') : title;
+  
+  const isGreen = accent === 'green';
+  const colorBase = isGreen ? '#10b981' : '#ef4444';
+  const bgSoft = isGreen ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)';
+  const shadowHover = isGreen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+
+  return (
+    <div 
+       style={{ 
+         background: bgSoft, borderRadius: '16px', padding: '1.25rem', border: `1px solid ${isGreen ? '#a7f3d0' : '#fca5a5'}`,
+         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
+       }}
+       onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 20px -8px ${shadowHover}`; e.currentTarget.style.transition = 'all 0.3s ease'; }}
+       onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02)'; }}
+    >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: colorBase }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: colorBase, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              SAT: {claveNumber}
+            </span>
+            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', lineHeight: '1.2' }}>
+              {cleanTitle.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+            </span>
+         </div>
       </div>
-    )}
-  </div>
-);
+      <div style={{ fontSize: '1.75rem', fontWeight: 900, color: colorBase, marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>
+        {fmt(value)}
+      </div>
+
+      {metaItems && metaItems.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px dashed #cbd5e1', paddingTop: '1rem', marginTop: 'auto' }}>
+          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ display: 'block', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase', fontSize: '0.65rem' }}>Conceptos reportados</span>
+            <span style={{ color: '#475569', lineHeight: '1.4' }}>{metaItems[0].value}</span>
+          </div>
+          {metaItems.length > 1 && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(255,255,255,0.7)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.04)' }}>
+               {metaItems.slice(1).map((m, i) => (
+                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>{m.label}</span>
+                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>{m.value}</span>
+                 </div>
+               ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Tab Navigation ─────────────────────────────────────────────────────────
 
@@ -178,29 +222,31 @@ export const SueldosSection = ({ data, year }) => {
     <SectionCard icon="👥" title="Sueldos, salarios y asimilados">
       
       {data.detalle && data.detalle.length > 0 && (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
            <button 
              onClick={() => setSelectedEmployer('Global')}
              style={{ 
-               padding: '0.5rem 1rem', borderRadius: '20px', border: '1px solid #cbd5e1', cursor: 'pointer',
-               backgroundColor: selectedEmployer === 'Global' ? '#0ea5e9' : 'white',
+               padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
+               background: selectedEmployer === 'Global' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#f1f5f9',
                color: selectedEmployer === 'Global' ? 'white' : '#475569',
-               fontWeight: selectedEmployer === 'Global' ? '600' : '400',
-               transition: 'all 0.2s', fontSize: '0.9rem'
+               fontWeight: selectedEmployer === 'Global' ? '700' : '500',
+               boxShadow: selectedEmployer === 'Global' ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none',
+               transition: 'all 0.3s ease', fontSize: '0.9rem'
              }}
            >
-             🌐 Global
+             🌐 Portafolio Global
            </button>
            {data.detalle.map((emp, i) => (
              <button 
                key={i}
                onClick={() => setSelectedEmployer(emp.nombre)}
                style={{ 
-                 padding: '0.5rem 1rem', borderRadius: '20px', border: '1px solid #cbd5e1', cursor: 'pointer',
-                 backgroundColor: selectedEmployer === emp.nombre ? '#0ea5e9' : 'white',
+                 padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
+                 background: selectedEmployer === emp.nombre ? 'linear-gradient(135deg, #10b981, #059669)' : '#f1f5f9',
                  color: selectedEmployer === emp.nombre ? 'white' : '#475569',
-                 fontWeight: selectedEmployer === emp.nombre ? '600' : '400',
-                 transition: 'all 0.2s', fontSize: '0.9rem'
+                 fontWeight: selectedEmployer === emp.nombre ? '700' : '500',
+                 boxShadow: selectedEmployer === emp.nombre ? '0 4px 10px rgba(16, 185, 129, 0.4)' : 'none',
+                 transition: 'all 0.3s ease', fontSize: '0.9rem'
                }}
              >
                🏢 {emp.nombre.length > 25 ? emp.nombre.substring(0, 25) + '...' : emp.nombre}
@@ -209,34 +255,33 @@ export const SueldosSection = ({ data, year }) => {
         </div>
       )}
 
-      <div className="waterfall-summary">
-         <div className="waterfall-item">
-            <span>Ingreso Bruto</span>
-            <strong>{fmt(totalBruto)}</strong>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem', alignItems: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,1) 100%)', backdropFilter: 'blur(12px)', borderRadius: '24px', padding: '2.5rem 2rem', border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)', marginBottom: '3rem' }}>
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Masa Bruta Anual</span>
+            <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalBruto)}</span>
             {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
-              <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px' }}>
-                {tiempo.totalDias} días = {tiempo.meses} meses<br/>
-                <span style={{ color: 'var(--gray)', fontSize: '0.9rem' }}>Mensual: {fmt(totalBruto / tiempo.meses)}</span>
+              <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 700, marginTop: '16px', background: '#f1f5f9', padding: '6px 16px', borderRadius: '16px' }}>
+                Promedio: {fmt(totalBruto / tiempo.meses)} <span style={{opacity:0.6, marginLeft: '4px'}}>({tiempo.meses}m)</span>
               </div>
             )}
          </div>
-         <div className="waterfall-op">−</div>
-         <div className="waterfall-item">
-            <span style={{color: 'var(--red)'}}>Retenciones y Descuentos</span>
-            <strong style={{color: 'var(--red)'}}>{fmt(totalDeducciones)}</strong>
+         <div style={{ height: '48px', width: '48px', borderRadius: '24px', background: 'linear-gradient(135deg, #fef2f2, #fee2e2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', fontSize: '1.75rem', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(239,68,68,0.1)' }}>−</div>
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Retenciones Fiscales</span>
+            <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #7f1d1d, #ef4444)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalDeducciones)}</span>
             {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
-              <div style={{ color: '#f87171', fontSize: '0.9rem', fontWeight: '500', marginTop: '8px', opacity: 0.9 }}>
-                Mensual: {fmt(totalDeducciones / tiempo.meses)}
+              <div style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: 700, marginTop: '16px', background: '#fef2f2', padding: '6px 16px', borderRadius: '16px' }}>
+                Impacto Mensual: {fmt(totalDeducciones / tiempo.meses)}
               </div>
             )}
          </div>
-         <div className="waterfall-op">=</div>
-         <div className="waterfall-item">
-            <span style={{color: 'var(--green)'}}>Neto Recibido</span>
-            <strong style={{color: 'var(--green)'}}>{fmt(neto)}</strong>
+         <div style={{ height: '48px', width: '48px', borderRadius: '24px', background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '1.75rem', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(16,185,129,0.1)' }}>=</div>
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Liquidez Neta Libre</span>
+            <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #064e3b, #10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(neto)}</span>
             {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
-              <div style={{ color: '#34d399', fontSize: '0.9rem', fontWeight: '500', marginTop: '8px', opacity: 0.9 }}>
-                Mensual: {fmt(neto / tiempo.meses)}
+              <div style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 700, marginTop: '16px', background: '#ecfdf5', padding: '6px 16px', borderRadius: '16px' }}>
+                Libre Mensual: {fmt(neto / tiempo.meses)}
               </div>
             )}
          </div>

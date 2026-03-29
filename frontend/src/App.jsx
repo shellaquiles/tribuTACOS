@@ -35,7 +35,7 @@ const App = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('ingresos');
+  const [activeTab, setActiveTab] = useState('sueldos');
   const [year, setYear] = useState('2024'); // Default to 2024 as requested
 
   useEffect(() => {
@@ -62,84 +62,123 @@ const App = () => {
   const { sections, summary } = data;
 
   const tabs = [
-    { id: 'ingresos',     label: 'Ingresos',              icon: '💰' },
-    { id: 'analitica',    label: 'Analítica Visual',      icon: '📊' },
-    { id: 'nomina',       label: 'Nómina Detallada',      icon: '🧾' },
+    // 0-2: Nómina
+    { id: 'sueldos',      label: 'Info Global',           icon: '👥' },
+    { id: 'analitica',    label: 'Gráficas',              icon: '📊' },
+    { id: 'nomina',       label: 'Detalle de Recibos',    icon: '🧾' },
+
+    // 3-4: AEyP y Otros
+    { id: 'honorarios',   label: 'Honorarios (AEyP)',     icon: '💼' },
+    { id: 'otros',        label: 'Otros Ingresos',        icon: '💵' },
+
+    // 5-7: Egresos
     { id: 'gastos',       label: 'Egresos (Negocio)',     icon: '📈' },
-    { id: 'deduciones',   label: 'Ded. personales',       icon: '🏥' },
+    { id: 'intereses',    label: 'Intereses y Notas',     icon: '🏦' },
+    { id: 'deduciones',   label: 'Ded. Personales',       icon: '🏥' },
+
+    // 8: Cálculo
     { id: 'determinacion',label: 'Determinación ISR',     icon: '🧮' },
   ];
 
   return (
-    <div className="sat-app">
-      <header className="sat-header-main" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div className="header-title">
-            Declaración Anual — Simulador ISR Personas Físicas
-            <select 
-              value={year} 
-              onChange={e => setYear(e.target.value)}
-              style={{ marginLeft: '1rem', fontSize: '1rem', padding: '0.2rem' }}
-            >
-              <option value="2022">2022</option>
-              <option value="2023">2023</option>
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-            </select>
-          </div>
-          <div className="header-sub">RFC: GAQA810905BCA · Adan Garcia Quiroz · Ejercicio {year}</div>
-        </div>
-        <div className="sat-header-logo">🇲🇽</div>
-      </header>
-
-      <main className="sat-content">
-        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {activeTab === 'ingresos' && (
+    <div className="sat-dashboard-app">
+      <aside className="sat-sidebar">
+        <div className="sat-sidebar-brand">
+          <div className="sat-header-logo">🇲🇽</div>
           <div>
-            <ErrorBoundary><SueldosSection data={sections.sueldos} year={year} /></ErrorBoundary>
-            <ErrorBoundary><HonorariosSection data={sections.honorarios} year={year} /></ErrorBoundary>
-            <ErrorBoundary><OtrosIngresosSection data={sections.otros_ingresos} /></ErrorBoundary>
-            <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
+            <div className="header-title">Declara Pro</div>
+            <div className="header-sub" style={{ fontSize: '0.65rem', marginTop: '2px', opacity: 0.9 }}>GAQA810905BCA</div>
           </div>
-        )}
+        </div>
+        
+        <div className="sat-sidebar-controls">
+           <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Ejercicio Fiscal</label>
+           <select 
+             value={year} 
+             onChange={(e) => setYear(e.target.value)} 
+             style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a', background: '#ffffff', cursor: 'pointer', fontSize: '0.95rem' }}
+           >
+             <option value="2022">2022</option>
+             <option value="2023">2023</option>
+             <option value="2024">2024</option>
+             <option value="2025">2025</option>
+             <option value="2026">2026</option>
+           </select>
+        </div>
 
-        {activeTab === 'analitica' && (
-          <ErrorBoundary>
-            <AnaliticaSection data={sections.sueldos} year={year} />
-          </ErrorBoundary>
-        )}
+        <nav className="sat-sidebar-nav">
+           <div className="nav-group-title">Sueldos y Nómina</div>
+           <TabNavigation tabs={tabs.slice(0, 3)} activeTab={activeTab} onTabChange={setActiveTab} />
+           
+           <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>AEyP y Otros Ingresos</div>
+           <TabNavigation tabs={tabs.slice(3, 5)} activeTab={activeTab} onTabChange={setActiveTab} />
+           
+           <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Egresos y Deducciones</div>
+           <TabNavigation tabs={tabs.slice(5, 8)} activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {activeTab === 'nomina' && (
-          <ErrorBoundary>
-            <NominaDetalleSection data={sections.sueldos} year={year} />
-          </ErrorBoundary>
-        )}
+           <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Cálculo Anual</div>
+           <TabNavigation tabs={tabs.slice(8, 9)} activeTab={activeTab} onTabChange={setActiveTab} />
+        </nav>
+      </aside>
 
-        {activeTab === 'deduciones' && (
-          <ErrorBoundary>
-            <DeduccionesPersonalesSection data={sections.deducciones_personales} year={year} />
-          </ErrorBoundary>
-        )}
+      <main className="sat-main-content">
+        <header className="sat-content-header">
+           <div className="sat-content-title">
+             <span style={{ fontSize: '2rem', marginRight: '0.75rem' }}>{tabs.find(t => t.id === activeTab)?.icon}</span>
+             <h2>{tabs.find(t => t.id === activeTab)?.label}</h2>
+           </div>
+           {loading && <div className="sat-sync-badge"><div className="spinner-micro"></div>Sincronizando...</div>}
+           {!loading && <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Cálculo Anual ISR: {year}</div>}
+        </header>
 
-        {activeTab === 'gastos' && (
-          <ErrorBoundary>
-            <GastosReport data={sections.reporte_gastos} year={year} />
-          </ErrorBoundary>
-        )}
+        <div className="sat-content-body">
+          {activeTab === 'sueldos' && (
+            <ErrorBoundary><SueldosSection data={sections.sueldos} year={year} /></ErrorBoundary>
+          )}
+          
+          {activeTab === 'honorarios' && (
+            <ErrorBoundary><HonorariosSection data={sections.honorarios} year={year} /></ErrorBoundary>
+          )}
+          
+          {activeTab === 'intereses' && (
+            <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
+          )}
+          
+          {activeTab === 'otros' && (
+            <ErrorBoundary><OtrosIngresosSection data={sections.otros_ingresos} /></ErrorBoundary>
+          )}
 
-        {activeTab === 'determinacion' && (
-          <ErrorBoundary>
-            <DeterminacionSection sections={sections} summary={summary} year={year} />
-          </ErrorBoundary>
-        )}
+          {activeTab === 'analitica' && (
+            <ErrorBoundary>
+              <AnaliticaSection data={sections.sueldos} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {activeTab === 'nomina' && (
+            <ErrorBoundary>
+              <NominaDetalleSection data={sections.sueldos} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {activeTab === 'deduciones' && (
+            <ErrorBoundary>
+              <DeduccionesPersonalesSection data={sections.deducciones_personales} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {activeTab === 'gastos' && (
+            <ErrorBoundary>
+              <GastosReport data={sections.reporte_gastos} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {activeTab === 'determinacion' && (
+            <ErrorBoundary>
+              <DeterminacionSection sections={sections} summary={summary} year={year} />
+            </ErrorBoundary>
+          )}
+        </div>
       </main>
-
-      <footer className="sat-footer">
-        <button className="btn-sat secondary">⚙️ Configurar</button>
-        <button className="btn-sat primary">📄 Exportar</button>
-      </footer>
     </div>
   );
 };
