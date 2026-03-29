@@ -205,13 +205,23 @@ def get_summary(year: str = "2025"):
     det_ex = {'aguinaldo': 0, 'ptu': 0, 'prima_vacacional': 0, 'prima_dominical': 0, 'otros': 0, 'desglose_otros': []}
     by_emp = {}
     for i in nomina_items:
-        key = i['emisor_nombre'] or i['emisor_rfc']
+        key = i.get('emisor_rfc')
+        if not key:
+            key = i.get('emisor_nombre', 'Desconocido')
+            
         if key not in by_emp:
             by_emp[key] = {
+                'nombre_display': i.get('emisor_nombre') or key,
                 'gravado': 0, 'exento': 0, 'isr': 0,
                 'detalle_exento': {'aguinaldo': 0, 'ptu': 0, 'prima_vacacional': 0, 'prima_dominical': 0, 'otros': 0, 'desglose_otros': []},
                 'recibos': []
             }
+        else:
+            # Update the display name if the new one is shorter (e.g. 4.0 drops "S.A.")
+            current_name = by_emp[key]['nombre_display']
+            new_name = i.get('emisor_nombre')
+            if new_name and len(new_name) < len(current_name):
+                by_emp[key]['nombre_display'] = new_name
         
         # Add income only if NOT ignored
         if i.get('uuid') not in IGNORED_UUIDS:
@@ -347,7 +357,7 @@ def get_summary(year: str = "2025"):
         "sections": {
             "sueldos": {
                 "total_ingresos": tg+te, "gravado": tg, "exento": te, "isr_retenido": isr_n,
-                "detalle_exento": det_ex, "detalle": [{**v, "nombre": k} for k, v in by_emp.items()],
+                "detalle_exento": det_ex, "detalle": [{**v, "nombre": v.get('nombre_display', k)} for k, v in by_emp.items()],
                 "resumen_conceptos": lista_sueldos_conceptos
             },
             "honorarios": {

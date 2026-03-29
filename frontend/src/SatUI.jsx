@@ -93,7 +93,7 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }) => (
 export const SueldosSection = ({ data, year }) => {
   const [selectedEmployer, setSelectedEmployer] = useState('Global');
 
-  const { totalBruto, totalDeducciones, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries } = useMemo(() => {
+  const { totalBruto, totalDeducciones, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries, tiempo } = useMemo(() => {
     if (!data) return {};
     
     let targetRecibos = [];
@@ -165,7 +165,11 @@ export const SueldosSection = ({ data, year }) => {
     const tBruto = calcPercs.reduce((acc, p) => acc + p.total, 0);
     const tDed = calcDeds.reduce((acc, d) => acc + d.total, 0);
 
-    return { percepcionesPorTipo: calcPercs, deduccionesPorTipo: calcDeds, kpiData: tmpKpi, totalBruto: tBruto, totalDeducciones: tDed, neto: tBruto - tDed, latestSalaries: sal };
+    const targetRecibosConSueldo = targetRecibos.filter(r => r.percepciones && r.percepciones.some(p => p.tipo === '001'));
+    const totalDias = targetRecibosConSueldo.reduce((acc, r) => acc + (parseFloat(r.dias_pagados) || 0), 0);
+    const meses = (totalDias / 30).toFixed(1);
+
+    return { percepcionesPorTipo: calcPercs, deduccionesPorTipo: calcDeds, kpiData: tmpKpi, totalBruto: tBruto, totalDeducciones: tDed, neto: tBruto - tDed, latestSalaries: sal, tiempo: { totalDias, meses } };
   }, [data, selectedEmployer]);
 
   if (!data || !percepcionesPorTipo) return null;
@@ -209,6 +213,11 @@ export const SueldosSection = ({ data, year }) => {
          <div className="waterfall-item">
             <span>Ingreso Bruto</span>
             <strong>{fmt(totalBruto)}</strong>
+            {tiempo && tiempo.totalDias > 0 && (
+              <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px' }}>
+                {tiempo.totalDias} días = {tiempo.meses} meses
+              </div>
+            )}
          </div>
          <div className="waterfall-op">−</div>
          <div className="waterfall-item">
