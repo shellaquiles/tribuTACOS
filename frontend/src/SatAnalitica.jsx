@@ -165,15 +165,28 @@ export const AnaliticaSection = ({ data, year }) => {
       <div className="kpi-row">
          <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #3b82f6, #8b5cf6)', '--kpi-text-gradient': 'linear-gradient(135deg, #1e3a8a, #3b82f6)' }}>
             <div className="kpi-title">Masa Salarial Bruta Anual</div>
-            <div className="kpi-value">{fmt(summary.bruto)}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <div className="kpi-value">{fmt(summary.bruto)}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#3b82f6', opacity: 0.9 }}>(100.0%)</div>
+            </div>
          </div>
          <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #ef4444, #f97316)', '--kpi-text-gradient': 'linear-gradient(135deg, #7f1d1d, #ef4444)' }}>
             <div className="kpi-title">Deducciones Impactadas</div>
-            <div className="kpi-value">{fmt(summary.retenidas)}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <div className="kpi-value">{fmt(summary.retenidas)}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ef4444', opacity: 0.9 }}>
+                 ({summary.bruto ? ((summary.retenidas / summary.bruto) * 100).toFixed(1) : 0}%)
+              </div>
+            </div>
          </div>
          <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #10b981, #059669)', '--kpi-text-gradient': 'linear-gradient(135deg, #064e3b, #10b981)' }}>
             <div className="kpi-title">Promedio Mensual Neto</div>
-            <div className="kpi-value">{fmt(summary.promNeto)}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <div className="kpi-value">{fmt(summary.promNeto)}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#10b981', opacity: 0.9 }}>
+                 ({summary.bruto ? ((summary.neto / summary.bruto) * 100).toFixed(1) : 0}%)
+              </div>
+            </div>
          </div>
       </div>
       
