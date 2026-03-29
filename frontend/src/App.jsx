@@ -11,6 +11,7 @@ import {
   GastosReport,
   TabNavigation
 } from './SatUI';
+import { AnaliticaSection } from './SatAnalitica';
 import './index.css';
 
 class ErrorBoundary extends Component {
@@ -62,6 +63,7 @@ const App = () => {
 
   const tabs = [
     { id: 'ingresos',     label: 'Ingresos',              icon: '💰' },
+    { id: 'analitica',    label: 'Analítica Visual',      icon: '📊' },
     { id: 'nomina',       label: 'Nómina Detallada',      icon: '🧾' },
     { id: 'gastos',       label: 'Egresos (Negocio)',     icon: '📈' },
     { id: 'deduciones',   label: 'Ded. personales',       icon: '🏥' },
@@ -101,6 +103,12 @@ const App = () => {
             <ErrorBoundary><OtrosIngresosSection data={sections.otros_ingresos} /></ErrorBoundary>
             <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
           </div>
+        )}
+
+        {activeTab === 'analitica' && (
+          <ErrorBoundary>
+            <AnaliticaSection data={sections.sueldos} year={year} />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'nomina' && (

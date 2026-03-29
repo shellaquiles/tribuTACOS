@@ -213,9 +213,10 @@ export const SueldosSection = ({ data, year }) => {
          <div className="waterfall-item">
             <span>Ingreso Bruto</span>
             <strong>{fmt(totalBruto)}</strong>
-            {tiempo && tiempo.totalDias > 0 && (
+            {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
               <div style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px' }}>
-                {tiempo.totalDias} días = {tiempo.meses} meses
+                {tiempo.totalDias} días = {tiempo.meses} meses<br/>
+                <span style={{ color: 'var(--gray)', fontSize: '0.9rem' }}>Mensual: {fmt(totalBruto / tiempo.meses)}</span>
               </div>
             )}
          </div>
@@ -223,11 +224,21 @@ export const SueldosSection = ({ data, year }) => {
          <div className="waterfall-item">
             <span style={{color: 'var(--red)'}}>Retenciones y Descuentos</span>
             <strong style={{color: 'var(--red)'}}>{fmt(totalDeducciones)}</strong>
+            {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
+              <div style={{ color: '#f87171', fontSize: '0.9rem', fontWeight: '500', marginTop: '8px', opacity: 0.9 }}>
+                Mensual: {fmt(totalDeducciones / tiempo.meses)}
+              </div>
+            )}
          </div>
          <div className="waterfall-op">=</div>
          <div className="waterfall-item">
             <span style={{color: 'var(--green)'}}>Neto Recibido</span>
             <strong style={{color: 'var(--green)'}}>{fmt(neto)}</strong>
+            {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
+              <div style={{ color: '#34d399', fontSize: '0.9rem', fontWeight: '500', marginTop: '8px', opacity: 0.9 }}>
+                Mensual: {fmt(neto / tiempo.meses)}
+              </div>
+            )}
          </div>
       </div>
 
