@@ -4,6 +4,8 @@ import {
   DeduccionesPersonalesSection,
   DeterminacionSection,
   HonorariosSection,
+  AnaliticaAeypSection,
+  FacturasAeypSection,
   InteresesSection,
   OtrosIngresosSection,
   SueldosSection,
@@ -67,16 +69,18 @@ const App = () => {
     { id: 'analitica',    label: 'Gráficas',              icon: '📊' },
     { id: 'nomina',       label: 'Detalle de Recibos',    icon: '🧾' },
 
-    // 3-4: AEyP y Otros
-    { id: 'honorarios',   label: 'Honorarios (AEyP)',     icon: '💼' },
+    // 3-6: AEyP y Otros
+    { id: 'honorarios',   label: 'Info Global (AEyP)',    icon: '💼' },
+    { id: 'analitica_aeyp',label: 'Gráficas (AEyP)',      icon: '📈' },
+    { id: 'detalle_aeyp', label: 'Detalle de Facturas',   icon: '📄' },
     { id: 'otros',        label: 'Otros Ingresos',        icon: '💵' },
 
-    // 5-7: Egresos
-    { id: 'gastos',       label: 'Egresos (Negocio)',     icon: '📈' },
+    // 7-9: Egresos
+    { id: 'gastos',       label: 'Egresos (Negocio)',     icon: '💳' },
     { id: 'intereses',    label: 'Intereses y Notas',     icon: '🏦' },
     { id: 'deduciones',   label: 'Ded. Personales',       icon: '🏥' },
 
-    // 8: Cálculo
+    // 10: Cálculo
     { id: 'determinacion',label: 'Determinación ISR',     icon: '🧮' },
   ];
 
@@ -111,13 +115,13 @@ const App = () => {
            <TabNavigation tabs={tabs.slice(0, 3)} activeTab={activeTab} onTabChange={setActiveTab} />
            
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>AEyP y Otros Ingresos</div>
-           <TabNavigation tabs={tabs.slice(3, 5)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(3, 7)} activeTab={activeTab} onTabChange={setActiveTab} />
            
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Egresos y Deducciones</div>
-           <TabNavigation tabs={tabs.slice(5, 8)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(7, 10)} activeTab={activeTab} onTabChange={setActiveTab} />
 
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Cálculo Anual</div>
-           <TabNavigation tabs={tabs.slice(8, 9)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(10, 11)} activeTab={activeTab} onTabChange={setActiveTab} />
         </nav>
       </aside>
 
@@ -136,28 +140,32 @@ const App = () => {
             <ErrorBoundary><SueldosSection data={sections.sueldos} year={year} /></ErrorBoundary>
           )}
           
+          {activeTab === 'analitica' && (
+            <ErrorBoundary><AnaliticaSection data={sections.sueldos} year={year} /></ErrorBoundary>
+          )}
+
+          {activeTab === 'nomina' && (
+            <ErrorBoundary><NominaDetalleSection data={sections.sueldos} year={year} /></ErrorBoundary>
+          )}
+
           {activeTab === 'honorarios' && (
             <ErrorBoundary><HonorariosSection data={sections.honorarios} year={year} /></ErrorBoundary>
           )}
-          
-          {activeTab === 'intereses' && (
-            <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
+
+          {activeTab === 'analitica_aeyp' && (
+            <ErrorBoundary><AnaliticaAeypSection data={sections.honorarios} year={year} /></ErrorBoundary>
+          )}
+
+          {activeTab === 'detalle_aeyp' && (
+            <ErrorBoundary><FacturasAeypSection data={sections.honorarios} year={year} /></ErrorBoundary>
           )}
           
           {activeTab === 'otros' && (
             <ErrorBoundary><OtrosIngresosSection data={sections.otros_ingresos} /></ErrorBoundary>
           )}
-
-          {activeTab === 'analitica' && (
-            <ErrorBoundary>
-              <AnaliticaSection data={sections.sueldos} year={year} />
-            </ErrorBoundary>
-          )}
-
-          {activeTab === 'nomina' && (
-            <ErrorBoundary>
-              <NominaDetalleSection data={sections.sueldos} year={year} />
-            </ErrorBoundary>
+          
+          {activeTab === 'intereses' && (
+            <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
           )}
 
           {activeTab === 'deduciones' && (

@@ -66,6 +66,7 @@ def get_summary(year: str = "2025"):
             lista_honorarios.append({
                 'fecha': i['fecha'][:10],
                 'cliente': i.get('receptor_nombre') or i.get('receptor_rfc'),
+                'rfc': i.get('receptor_rfc'),
                 'subtotal': base_calc,
                 'iva': i['iva'],
                 'isr_ret': i['retencion_isr'],
@@ -73,7 +74,8 @@ def get_summary(year: str = "2025"):
                 'total': base_calc + i['iva'] - i['retencion_isr'] - i['retencion_iva'],
                 'uuid': i.get('uuid'),
                 'metodo': i.get('metodo_pago') or 'N/A',
-                'conceptos': i.get('conceptos', [])
+                'conceptos': i.get('conceptos', []),
+                'raw_cfdi': i
             })
         except: pass
 

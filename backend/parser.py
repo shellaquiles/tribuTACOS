@@ -1,6 +1,10 @@
 import os
 from lxml import etree
 from datetime import datetime
+try:
+    from . import cat_sat
+except ImportError:
+    import cat_sat
 from typing import List, Dict, Optional
 
 NS = {
@@ -197,9 +201,22 @@ def parse_cfdi(xml_path: str) -> Optional[Dict]:
         conceptos_node = root.find('cfdi:Conceptos', NS)
         if conceptos_node is not None:
             for c in conceptos_node.findall('cfdi:Concepto', NS):
-                desc = c.get('Descripcion', '').lower()
+                desc = c.get('Descripcion', '') # Mantenemos case original
                 imp = float(c.get('Importe', 0))
-                conceptos_list.append({'desc': desc, 'imp': imp})
+                clave = c.get('ClaveProdServ', '00000000')
+                no_id = c.get('NoIdentificacion', desc)
+                # Enriquecer con la descripción oficial del catálogo SAT
+                desc_cat = cat_sat.describe(clave)
+                # Si no hay match en el catálogo, usar la descripción del XML en Title Case
+                if not desc_cat:
+                    desc_cat = desc.title() if desc else 'Servicio profesional'
+                conceptos_list.append({
+                    'desc': desc.upper(),  # Badge interior (UPPER)
+                    'imp': imp,
+                    'clave': clave,
+                    'desc_sat': desc_cat,  # Título visual (desde catálogo SAT o Title Case)
+                    'no_id': no_id.title() if no_id == desc else no_id
+                })
                 if 'interé' in desc or 'intere' in desc:
                     # If it's a regular Comprobante (not a Retenciones file), we don't mark as es_interes (income)
                     # unless it's explicitly issued as a yield document.

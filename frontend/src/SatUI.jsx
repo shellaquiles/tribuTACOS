@@ -58,20 +58,34 @@ const CalcStep = ({ label, value, op, highlight }) => (
   </div>
 );
 
-const ConceptCard = ({ title, value, accent, metaItems }) => {
-  const titleParts = title.split(' - ');
-  const claveNumber = titleParts[0].replace('Clave: ', '');
-  const cleanTitle = titleParts[1] ? titleParts.slice(1).join(' - ') : title;
+const ConceptCard = ({ title, value, accent, metaItems, badge }) => {
+  let claveNumber = '';
+  let cleanTitle = title;
+
+  if (badge) {
+    claveNumber = badge;
+    cleanTitle = title;
+  } else {
+    const titleParts = title.split(' - ');
+    claveNumber = titleParts[0].replace('Clave: ', '');
+    // Solo si el formato coincide con 'Clave: '
+    if (titleParts.length > 1 && titleParts[0].startsWith('Clave:')) {
+      cleanTitle = titleParts.slice(1).join(' - ');
+    }
+  }
   
   const isGreen = accent === 'green';
-  const colorBase = isGreen ? '#10b981' : '#ef4444';
+  const isBlue = accent === 'blue';
+  
+  const colorBase = isGreen ? '#10b981' : (isBlue ? '#ef4444' : '#ef4444'); // Mantenemos el look and feel "rojo" por default o blue-to-red si el usuario prefiere ese contraste.
   const bgSoft = isGreen ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)';
+  const borderCol = isGreen ? '#a7f3d0' : '#fca5a5';
   const shadowHover = isGreen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
 
   return (
     <div 
        style={{ 
-         background: bgSoft, borderRadius: '16px', padding: '1.25rem', border: `1px solid ${isGreen ? '#a7f3d0' : '#fca5a5'}`,
+         background: bgSoft, borderRadius: '16px', padding: '1.25rem', border: `1px solid ${borderCol}`,
          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden'
        }}
        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = `0 12px 20px -8px ${shadowHover}`; e.currentTarget.style.transition = 'all 0.3s ease'; }}
@@ -80,11 +94,11 @@ const ConceptCard = ({ title, value, accent, metaItems }) => {
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: colorBase }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: colorBase, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              SAT: {claveNumber}
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: colorBase, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {claveNumber}
             </span>
             <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', lineHeight: '1.2' }}>
-              {cleanTitle.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+              {cleanTitle}
             </span>
          </div>
       </div>
@@ -558,173 +572,433 @@ export const NominaDetalleSection = ({ data, year }) => {
 // ─── SECCIÓN 2: AEyP / Honorarios ────────────────────────────────────────────
 
 export function HonorariosSection({ data, year }) {
+  const [selectedClient, setSelectedClient] = useState('Global');
   if (!data) return null;
-  const utilidad = data.ingresos - data.deducciones_autorizadas;
-  const isLoss = utilidad < 0;
-  const [viewMode, setViewMode] = useState('concept'); // 'concept' | 'monthly' | 'client'
+
+  const clients = useMemo(() => {
+    if (!data.detalle) return [];
+    const dict = {};
+    data.detalle.forEach(d => {
+      const key = d.rfc || d.cliente;
+      if (!dict[key]) dict[key] = d.cliente;
+      else if (d.cliente && d.cliente.length < dict[key].length) dict[key] = d.cliente; // Prefer shorter names
+    });
+    return Object.entries(dict).map(([rfc, nombre]) => ({ rfc, nombre })).sort((a,b) => a.nombre.localeCompare(b.nombre));
+  }, [data.detalle]);
+
+  const targetRecibos = useMemo(() => {
+    if (selectedClient === 'Global') return data.detalle || [];
+    return data.detalle?.filter(d => (d.rfc || d.cliente) === selectedClient) || [];
+  }, [data.detalle, selectedClient]);
+
+  // Calculamos montos totales puros (solo INGRESO EMITIDO) filtrados
+  const sumSubtotal = targetRecibos.reduce((acc, curr) => acc + curr.subtotal, 0);
+  const sumIva = targetRecibos.reduce((acc, curr) => acc + curr.iva, 0);
+  const sumIsrRet = targetRecibos.reduce((acc, curr) => acc + curr.isr_ret, 0);
+  const sumIvaRet = targetRecibos.reduce((acc, curr) => acc + curr.iva_ret, 0);
+  const cobradoBruto = sumSubtotal + sumIva;
+  const sumRetenciones = sumIsrRet + sumIvaRet;
+  const totalPagadoEfectivo = cobradoBruto - sumRetenciones;
+
+  // Recalcular conceptos según el filtro
+  const calcConceptos = useMemo(() => {
+    const cons = {};
+    targetRecibos.forEach(r => {
+      (r.conceptos || []).forEach(c => {
+         const clave = c.clave || '00000000';
+         if (!cons[clave]) {
+             cons[clave] = {
+                 clave: clave,
+                 desc_sat: c.desc_sat || c.desc || 'Servicio profesional',
+                 importe: 0,
+                 no_ids: new Set()
+             };
+         }
+         cons[clave].importe += c.imp || 0;
+         
+         // Agregamos el NoIdentificacion a la lista si no está vacío y difiere de la descripción base
+         if (c.no_id && c.no_id.trim() !== '' && c.no_id.toLowerCase() !== c.desc.toLowerCase()) {
+             cons[clave].no_ids.add(c.no_id.trim());
+         }
+      });
+    });
+    return Object.values(cons).map(item => ({
+       ...item,
+       no_ids: Array.from(item.no_ids)
+    })).sort((a,b) => b.importe - a.importe);
+  }, [targetRecibos]);
+
+  return (
+    <SectionCard icon="💼" title="Facturación Emitida (AEyP)">
+      <p className="sec-note">
+        Base de cálculo: <strong>Facturas PUE (Pagadas en una exhibición)</strong>. 
+        Muestra la radiografía cruda de tus cobros a lo largo del <strong>ejercicio {year}</strong>.
+      </p>
+
+      {clients.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
+           <button 
+             onClick={() => setSelectedClient('Global')}
+             style={{ 
+               padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
+               background: selectedClient === 'Global' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#f1f5f9',
+               color: selectedClient === 'Global' ? 'white' : '#475569',
+               fontWeight: selectedClient === 'Global' ? '700' : '500',
+               boxShadow: selectedClient === 'Global' ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none',
+               transition: 'all 0.3s ease', fontSize: '0.9rem'
+             }}
+           >
+             🌐 Portafolio Global
+           </button>
+           {clients.map((cli, i) => (
+             <button 
+               key={i}
+               onClick={() => setSelectedClient(cli.rfc)}
+               style={{ 
+                 padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
+                 background: selectedClient === cli.rfc ? 'linear-gradient(135deg, #10b981, #059669)' : '#f1f5f9',
+                 color: selectedClient === cli.rfc ? 'white' : '#475569',
+                 fontWeight: selectedClient === cli.rfc ? '700' : '500',
+                 boxShadow: selectedClient === cli.rfc ? '0 4px 10px rgba(16, 185, 129, 0.4)' : 'none',
+                 transition: 'all 0.3s ease', fontSize: '0.9rem'
+               }}
+             >
+               🏢 {cli.nombre}
+             </button>
+           ))}
+        </div>
+      )}
+
+      <KpiRow items={[
+        { label: 'Subtotal Facturado', value: sumSubtotal, accent: 'kpi-accent', help: 'Ingreso Base Acumulado' },
+        { label: 'IVA Trasladado (16%)', value: sumIva, help: 'Dinero recaudado pero del SAT' },
+        { label: 'Retenciones Sufridas', value: sumRetenciones, accent: 'kpi-danger', help: 'ISR e IVA retenido por clientes' },
+      ]} />
+
+      <div className="waterfall-summary" style={{ marginTop: '2rem' }}>
+        <div className="waterfall-item">
+          <span>Facturado Bruto (Sub+IVA)</span>
+          <strong style={{ color: 'var(--blue)' }}>{fmt(cobradoBruto)}</strong>
+        </div>
+        <div className="waterfall-op">−</div>
+        <div className="waterfall-item">
+          <span>El «Peaje» (Retenciones)</span>
+          <strong style={{ color: 'var(--red)' }}>{fmt(Math.abs(sumRetenciones))}</strong>
+        </div>
+        <div className="waterfall-op">=</div>
+        <div className="waterfall-item">
+          <span>Neto Depositado / Efectivo</span>
+          <strong style={{ color: 'var(--green)' }}>{fmt(totalPagadoEfectivo)}</strong>
+        </div>
+      </div>
+
+      <div className="animate-fade-in" style={{ marginTop: '2.5rem' }}>
+        <h3 style={{ fontSize: '1.05rem', color: 'var(--blue)', marginBottom: '1rem' }}>Desglose de Conceptos Billed</h3>
+        <div className="concept-grid">
+          {calcConceptos.map((c, i) => (
+            <ConceptCard
+              key={i}
+              title={c.desc_sat} // Título principal (Descripción capitalizada)
+              value={c.importe}
+              accent="blue"
+              badge={c.clave} // Código fiscal SAT de 8 dígitos
+              metaItems={c.no_ids.length > 0 ? [{ label: 'Conceptos reportados', value: c.no_ids.join(' • ') }] : []}
+            />
+          ))}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+export function AnaliticaAeypSection({ data, year }) {
+  if (!data || !data.detalle) return null;
+
+  const monthMaps = {};
+  data.detalle.forEach(item => {
+    const month = parseInt(item.fecha.split('-')[1]);
+    const monthName = MONTH_NAMES[month - 1].slice(0, 3);
+    if (!monthMaps[monthName]) monthMaps[monthName] = { name: monthName, Subtotal: 0, Neto: 0 };
+    monthMaps[monthName].Subtotal += item.subtotal;
+    monthMaps[monthName].Neto += item.total;
+  });
+  
+  // Rellenar meses vacíos
+  const mensualData = MONTH_NAMES.map(m => {
+    const name = m.slice(0, 3);
+    return monthMaps[name] || { name, Subtotal: 0, Neto: 0 };
+  });
+
+  const clientGroups = {};
+  data.detalle.forEach(item => {
+    const key = item.rfc || item.cliente;
+    if (!clientGroups[key]) clientGroups[key] = { name: item.cliente, value: 0 };
+    else if (item.cliente && item.cliente.length < clientGroups[key].name.length) clientGroups[key].name = item.cliente; // Prefer shorter names
+    
+    // El usuario pidió considerar el IVA en los totales de concentración / facturación
+    clientGroups[key].value += (item.subtotal + item.iva);
+  });
+  const clientData = Object.values(clientGroups).sort((a,b) => b.value - a.value);
+
+  return (
+    <SectionCard icon="📈" title="Evolución de Facturación (AEyP)">
+      <p className="sec-note">Auditoría visual interactiva de tus ingresos mes a mes y concentración financiera de clientes.</p>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '2rem', marginTop: '2rem' }}>
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+          <h4 style={{ margin: '0 0 1.5rem 0', color: 'var(--text-2)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Curva de Facturación vs Liquidez
+          </h4>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={mensualData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={(val) => '$'+(val/1000)+'k'} tick={{fill: '#64748b', fontSize: 12}} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(val) => fmt(val)} cursor={{ fill: '#f1f5f9' }} />
+              <Legend iconType="circle" />
+              <Bar dataKey="Subtotal" fill="#94a3b8" radius={[4, 4, 0, 0]} name="Subtotal Facturado" />
+              <Line type="monotone" dataKey="Neto" stroke="var(--blue)" strokeWidth={4} dot={{r:4}} isAnimationActive={false} name="Neto Depositado" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-2)', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>
+            Top Clientes (Concentración)
+          </h4>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={clientData.slice(0, 5)} 
+                cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2}
+                dataKey="value"
+                stroke="none"
+              >
+                {clientData.map((e, idx) => <Cell key={`c-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(val) => fmt(val)} />
+              <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+const ReciboAeyp = ({ recibo, onViewCfdi, onViewXml }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  return (
+    <div className="nomina-recibo-card">
+      <div className="nomina-recibo-header" onClick={() => setExpanded(!expanded)}>
+        <div className="nomina-recibo-summary">
+          <div className="nomina-fechas">
+            <strong>{recibo.fecha}</strong>
+            <span style={{fontFamily: 'monospace', fontSize: '11px'}}>{recibo.uuid?.split('-')[0]}***</span>
+          </div>
+          <div className="nomina-kpis">
+            <div className="nomina-kpi-min">
+              <span className="label">Subtotal PUE</span>
+              <span className="val">{fmt(recibo.subtotal)}</span>
+            </div>
+            <div className="nomina-kpi-min">
+              <span className="label">Retenciones</span>
+              <span className="val text-danger">{fmt(recibo.isr_ret + recibo.iva_ret)}</span>
+            </div>
+            <div className="nomina-kpi-min highlighted">
+              <span className="label">Cobro Neto</span>
+              <span className="val">{fmt(recibo.total)}</span>
+            </div>
+          </div>
+          <div className="nomina-expand-icon">
+            {expanded ? '▲' : '▼'}
+          </div>
+        </div>
+      </div>
+      
+      {expanded && (
+        <div className="nomina-recibo-body animate-fade-in">
+          <div className="nomina-ticket-grid">
+            <div className="nomina-ticket-col">
+              <h4>Servicios Facturados</h4>
+              <div className="nomina-ticket-items">
+                <div className="nomina-ticket-row header">
+                  <span>Concepto</span>
+                  <span>Importe Base</span>
+                </div>
+                {(recibo.conceptos || []).map((c, idx) => (
+                  <div className="nomina-ticket-row" key={'aeyp-c'+idx}>
+                    <span className="concepto">{c.desc}</span>
+                    <span className="importe">{fmt(c.imp)}</span>
+                  </div>
+                ))}
+                <div className="nomina-ticket-row total">
+                  <span>Subtotal</span>
+                  <span>{fmt(recibo.subtotal)}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="nomina-ticket-col">
+              <h4>Impuestos (Traslados y Retenciones)</h4>
+              <div className="nomina-ticket-items">
+                <div className="nomina-ticket-row header">
+                  <span>Rubro Fiscal</span>
+                  <span>Monto</span>
+                </div>
+                {recibo.iva > 0 && (
+                  <div className="nomina-ticket-row">
+                     <span className="concepto"><span className="clave">002</span> IVA Trasladado</span>
+                     <span className="importe">{fmt(recibo.iva)}</span>
+                  </div>
+                )}
+                {recibo.isr_ret > 0 && (
+                  <div className="nomina-ticket-row">
+                     <span className="concepto"><span className="clave">001</span> Retención ISR</span>
+                     <span className="importe text-danger">{fmt(recibo.isr_ret)}</span>
+                  </div>
+                )}
+                {recibo.iva_ret > 0 && (
+                  <div className="nomina-ticket-row">
+                     <span className="concepto"><span className="clave">002</span> Retención IVA</span>
+                     <span className="importe text-danger">{fmt(recibo.iva_ret)}</span>
+                  </div>
+                )}
+                <div className="nomina-ticket-row total">
+                  <span>Total Retenciones</span>
+                  <span className="text-danger">{fmt(recibo.isr_ret + recibo.iva_ret)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="nomina-ticket-footer">
+             <div className="uuid-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Folio: 
+                <button 
+                  onClick={(e) => { e.stopPropagation(); if (onViewCfdi) onViewCfdi(recibo.raw_cfdi); }}
+                  style={{ 
+                    background: '#e0f2fe', border: 'none', padding: '3px 8px', borderRadius: '4px',
+                    color: '#2563eb', textDecoration: 'underline', fontWeight: '600',
+                    cursor: 'pointer', fontFamily: 'monospace', fontSize: '11px', transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => e.target.style.color = '#1d4ed8'}
+                  onMouseLeave={e => e.target.style.color = '#2563eb'}
+                >
+                  {recibo.uuid}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); if (onViewXml) onViewXml(recibo.raw_cfdi); }}
+                  style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#64748b', cursor: 'pointer', fontSize: '10px', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  onMouseEnter={e => { e.target.style.background = '#f1f5f9'; e.target.style.color = '#334155'; }}
+                  onMouseLeave={e => { e.target.style.background = 'none'; e.target.style.color = '#64748b'; }}
+                  title="Ver estructura subyacente del CFDI en JSON"
+                >
+                  <span role="img" aria-label="code" style={{ fontSize: '11px' }}>💻</span> JSON
+                </button>
+                {recibo.raw_cfdi?.filename && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); window.open(`http://localhost:8010/api/download_xml?filename=${recibo.raw_cfdi.filename}`, '_blank'); }}
+                    style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', color: '#64748b', cursor: 'pointer', fontSize: '10px', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    onMouseEnter={e => { e.target.style.background = '#f1f5f9'; e.target.style.color = '#334155'; }}
+                    onMouseLeave={e => { e.target.style.background = 'none'; e.target.style.color = '#64748b'; }}
+                    title="Descargar archivo original (.xml)"
+                  >
+                    <span role="img" aria-label="download" style={{ fontSize: '11px' }}>⬇️</span> XML
+                  </button>
+                )}
+             </div>
+             <div className="neto-final">
+                Neto Cobrado: <strong>{fmt(recibo.total)}</strong>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export function FacturasAeypSection({ data, year }) {
+  const [selectedCfdi, setSelectedCfdi] = useState(null);
+  const [viewingXml, setViewingXml] = useState(null);
+
+  if (!data || !data.detalle || data.detalle.length === 0) return (
+     <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+        No se encontraron comprobantes PUE emitidos en este ejercicio.
+     </div>
+  );
 
   const clientGroups = useMemo(() => {
-    if (!data.detalle) return [];
     const groups = {};
     data.detalle.forEach(item => {
-      const key = item.cliente;
+      const key = item.rfc || item.cliente;
       if (!groups[key]) {
-        groups[key] = { cliente: key, subtotal: 0, iva: 0, isr_ret: 0, iva_ret: 0, items: [] };
+        groups[key] = { nombre: item.cliente, rfc: key, recibos: [], subtotal: 0, iva: 0, isr_ret: 0, iva_ret: 0, total: 0 };
+      } else if (item.cliente && item.cliente.length < groups[key].nombre.length) {
+        groups[key].nombre = item.cliente; // Prefer shorter names
       }
+      
+      groups[key].recibos.push(item);
       groups[key].subtotal += item.subtotal;
       groups[key].iva += item.iva;
       groups[key].isr_ret += item.isr_ret;
       groups[key].iva_ret += item.iva_ret;
-      groups[key].items.push(item);
+      groups[key].total += item.total;
     });
-    return Object.values(groups).sort((a, b) => b.subtotal - a.subtotal);
+    return Object.values(groups).sort((a, b) => b.recibos.length - a.recibos.length);
   }, [data.detalle]);
 
+  // Totales acumulados para el pie de tabla o resumen en tarjetas
+  const totalSubtotal = data.detalle.reduce((acc, curr) => acc + curr.subtotal, 0);
+  const totalIva = data.detalle.reduce((acc, curr) => acc + curr.iva, 0);
+  const totalIsrRet = data.detalle.reduce((acc, curr) => acc + curr.isr_ret, 0);
+  const totalIvaRet = data.detalle.reduce((acc, curr) => acc + curr.iva_ret, 0);
+  const granTotalNeto = data.detalle.reduce((acc, curr) => acc + curr.total, 0);
+
   return (
-    <SectionCard icon="🏢" title="Actividad empresarial y servicios profesionales (AEyP)">
-      <p className="sec-note">
-        Base de cálculo: <strong>efectivo cobrado / pagado</strong> (método PUE + Complementos de pago). 
-        Periodo: <strong>enero–diciembre {year}</strong>.
-      </p>
-
-      <KpiRow items={[
-        { label: 'Ingresos cobrados del ejercicio', value: data.ingresos, accent: 'kpi-accent', help: `Total acumulado ${year}` },
-        { label: 'Deducciones autorizadas pagadas', value: data.deducciones_autorizadas, help: 'CFDIs PUE + Pagos recibidos' },
-        { label: isLoss ? 'Pérdida fiscal' : 'Utilidad fiscal', value: Math.abs(utilidad), accent: isLoss ? 'kpi-danger' : 'kpi-success', help: 'Ingresos − Deducciones' },
-        { label: 'ISR retenido por clientes', value: data.isr_retenido },
-      ]} />
-
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button 
-          className={`sat-btn ${viewMode === 'concept' ? 'sat-btn-primary' : 'sat-btn-outline'}`}
-          onClick={() => setViewMode('concept')}
-        >
-          📊 Vista por Conceptos
-        </button>
-        <button 
-          className={`sat-btn ${viewMode === 'monthly' ? 'sat-btn-primary' : 'sat-btn-outline'}`}
-          onClick={() => setViewMode('monthly')}
-        >
-          📅 Vista Mensual
-        </button>
-        <button 
-          className={`sat-btn ${viewMode === 'client' ? 'sat-btn-primary' : 'sat-btn-outline'}`}
-          onClick={() => setViewMode('client')}
-        >
-          👤 Vista por Cliente
-        </button>
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        {clientGroups.map((grp, i) => (
+          <SectionCard 
+             key={`cli-${i}`} 
+             icon="🏢" 
+             title={`Cliente: ${grp.nombre}`} 
+             badge={`${grp.recibos?.length || 0} facturas | Total Neto: ${fmt(grp.total)}`}
+          >
+            <p className="sec-note">
+              Total facturado a este cliente: <strong>Subtotal {fmt(grp.subtotal)}</strong> + <strong>IVA {fmt(grp.iva)}</strong> = <strong>Efectivo Bruto {fmt(grp.subtotal + grp.iva)}</strong>.
+            </p>
+            
+            <div className="nomina-list-container">
+               {grp.recibos.map((recibo, idx) => (
+                  <ReciboAeyp key={idx} recibo={recibo} onViewCfdi={setSelectedCfdi} onViewXml={setViewingXml} />
+               ))}
+               
+               {/* Fila de Totales por Cliente */}
+               <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '1.5rem', background: '#f8fafc', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-color)', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+                  <span>Total Acumulado Cliente:</span>
+                  <span style={{color: 'var(--blue)'}}>Base: {fmt(grp.subtotal)}</span>
+                  <span>IVA: {fmt(grp.iva)}</span>
+                  <span style={{color: 'var(--red)'}}>Retenciones: {fmt(grp.isr_ret + grp.iva_ret)}</span>
+                  <span>Neto: {fmt(grp.total)}</span>
+               </div>
+            </div>
+          </SectionCard>
+        ))}
       </div>
 
-      {viewMode === 'concept' ? (
-        <div className="animate-fade-in" style={{ marginTop: '1.5rem' }}>
-          <div className="concept-grid">
-            {(data.resumen_conceptos || []).map((c, i) => (
-              <ConceptCard
-                key={i}
-                title={c.concepto}
-                value={c.importe}
-                accent="blue"
-              />
-            ))}
-          </div>
-        </div>
-      ) : viewMode === 'monthly' ? (
-        <details className="collapsible" open>
-          <summary className="collapsible-header">
-            📅 Pagos provisionales — desglose mensual
-            <span className="collapsible-hint">expandir / contraer</span>
-          </summary>
-          <div className="table-wrap" style={{ marginTop: '1rem' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Mes</th>
-                  <th className="text-right">Ingresos cobrados</th>
-                  <th className="text-right">Gastos pagados</th>
-                  <th className="text-right">Resultado del periodo</th>
-                  <th className="text-right">ISR retenido</th>
-                  <th>Estatus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.mensual.map((m, i) => {
-                  const d = m.datos || {};
-                  const res = (d.ingresos || 0) - (d.egresos || 0);
-                  const hasActivity = (d.ingresos || 0) + (d.egresos || 0) > 0;
-                  return (
-                    <tr key={i} className={hasActivity ? '' : 'row-muted'}>
-                      <td>{MONTH_NAMES[m.mes - 1]}</td>
-                      <td className="text-right mono">{fmt(d.ingresos || 0)}</td>
-                      <td className="text-right mono">{fmt(d.egresos || 0)}</td>
-                      <td className={`text-right mono ${res < 0 ? 'text-danger' : res > 0 ? 'text-success' : ''}`}>
-                        {fmt(res)}
-                      </td>
-                      <td className="text-right mono">{fmt(d.isr_ret || 0)}</td>
-                      <td>
-                        {d.ingresos > 0
-                          ? <Pill text="Con ingreso" color="green" />
-                          : <Pill text="Presentada en cero" color="gray" />}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="table-total">
-                  <td><strong>Total</strong></td>
-                  <td className="text-right mono"><strong>{fmt(data.ingresos)}</strong></td>
-                  <td className="text-right mono"><strong>{fmt(data.deducciones_autorizadas)}</strong></td>
-                  <td className={`text-right mono ${isLoss ? 'text-danger' : 'text-success'}`}>
-                    <strong>{fmt(utilidad)}</strong>
-                  </td>
-                  <td className="text-right mono"><strong>{fmt(data.isr_retenido)}</strong></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </details>
-      ) : (
-        <div className="animate-fade-in">
-          <table className="sat-table">
-            <thead>
-              <tr>
-                <th>Cliente / Receptor</th>
-                <th className="text-right">Ingresos (PUE)</th>
-                <th className="text-right">IVA Trasladado</th>
-                <th className="text-right">ISR Retenido</th>
-                <th className="text-right">IVA Retenido</th>
-                <th className="text-right">Total Neto</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientGroups.map((g, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: '500' }}>{g.cliente}</td>
-                  <td className="text-right mono">{fmt(g.subtotal)}</td>
-                  <td className="text-right mono">{fmt(g.iva)}</td>
-                  <td className="text-right mono text-danger">{fmt(g.isr_ret)}</td>
-                  <td className="text-right mono text-danger">{fmt(g.iva_ret)}</td>
-                  <td className="text-right mono" style={{ fontWeight: 'bold' }}>
-                    {fmt(g.subtotal + g.iva - g.isr_ret - g.iva_ret)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr style={{ fontWeight: 'bold', background: '#fcfcfc' }}>
-                <td>Total acumulado</td>
-                <td className="text-right">{fmt(data.ingresos)}</td>
-                <td className="text-right"></td>
-                <td className="text-right text-danger">{fmt(data.isr_retenido)}</td>
-                <td className="text-right text-danger">{fmt(data.iva_retenido)}</td>
-                <td className="text-right"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
-    </SectionCard>
+      <div className="data-table" style={{ marginTop: '2rem', padding: '1.5rem', background: 'white', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+         <span style={{ color: 'var(--text-color)' }}>Gran Total Acumulado ({data.detalle.length} facturas)</span>
+         <span style={{ color: 'var(--blue)' }}>Subtotal: {fmt(totalSubtotal)}</span>
+         <span style={{ color: 'var(--text-2)' }}>IVA: {fmt(totalIva)}</span>
+         <span style={{ color: 'var(--red)' }}>Retenciones: {fmt(totalIsrRet + totalIvaRet)}</span>
+         <span style={{ color: 'var(--green)' }}>Total Neto: {fmt(granTotalNeto)}</span>
+      </div>
+
+      {selectedCfdi && <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />}
+      {viewingXml && <XmlViewerModal data={viewingXml} onClose={() => setViewingXml(null)} />}
+    </>
   );
 }
 
