@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Component, useEffect, useState } from 'react';
 import {
+  DashboardSection,
   DeduccionesPersonalesSection,
   DeterminacionSection,
   HonorariosSection,
@@ -37,7 +38,7 @@ const App = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('sueldos');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [year, setYear] = useState('2024'); // Default to 2024 as requested
 
   useEffect(() => {
@@ -64,6 +65,9 @@ const App = () => {
   const { sections, summary } = data;
 
   const tabs = [
+    // Dashboard Global
+    { id: 'dashboard',    label: 'Dashboard',             icon: '🏠' },
+
     // 0-2: Nómina
     { id: 'sueldos',      label: 'Info Global',           icon: '👥' },
     { id: 'analitica',    label: 'Gráficas',              icon: '📊' },
@@ -111,17 +115,20 @@ const App = () => {
         </div>
 
         <nav className="sat-sidebar-nav">
-           <div className="nav-group-title">Sueldos y Nómina</div>
-           <TabNavigation tabs={tabs.slice(0, 3)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <div className="nav-group-title">Resumen Fiscal</div>
+           <TabNavigation tabs={tabs.slice(0, 1)} activeTab={activeTab} onTabChange={setActiveTab} />
+
+           <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Sueldos y Nómina</div>
+           <TabNavigation tabs={tabs.slice(1, 4)} activeTab={activeTab} onTabChange={setActiveTab} />
            
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>AEyP y Otros Ingresos</div>
-           <TabNavigation tabs={tabs.slice(3, 7)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(4, 8)} activeTab={activeTab} onTabChange={setActiveTab} />
            
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Egresos y Deducciones</div>
-           <TabNavigation tabs={tabs.slice(7, 10)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(8, 11)} activeTab={activeTab} onTabChange={setActiveTab} />
 
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Cálculo Anual</div>
-           <TabNavigation tabs={tabs.slice(10, 11)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(11, 12)} activeTab={activeTab} onTabChange={setActiveTab} />
         </nav>
       </aside>
 
@@ -136,6 +143,10 @@ const App = () => {
         </header>
 
         <div className="sat-content-body">
+          {activeTab === 'dashboard' && (
+            <ErrorBoundary><DashboardSection sections={sections} year={year} /></ErrorBoundary>
+          )}
+
           {activeTab === 'sueldos' && (
             <ErrorBoundary><SueldosSection data={sections.sueldos} year={year} /></ErrorBoundary>
           )}

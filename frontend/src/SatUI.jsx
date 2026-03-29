@@ -577,6 +577,150 @@ export const NominaDetalleSection = ({ data, year }) => {
 
 // ─── SECCIÓN 2: AEyP / Honorarios ────────────────────────────────────────────
 
+export function DashboardSection({ sections, year }) {
+  const nomina = sections?.sueldos;
+  const aeyp = sections?.honorarios;
+
+  const mLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const fmt = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(val ?? 0);
+
+  const nominaMaps = {};
+  (nomina?.detalle || []).flatMap(emp => emp.recibos || []).forEach(r => {
+    const month = parseInt(r.fecha.split('-')[1]);
+    if (isNaN(month) || month < 1 || month > 12) return;
+    const m = mLabels[month-1];
+    nominaMaps[m] = (nominaMaps[m] || 0) + (r.percepciones || []).reduce((s,p) => s+(p.total||0), 0);
+  });
+
+  const aeypMaps = {};
+  (aeyp?.detalle || []).forEach(item => {
+    const month = parseInt(item.fecha.split('-')[1]);
+    if (isNaN(month) || month < 1 || month > 12) return;
+    const m = mLabels[month-1];
+    aeypMaps[m] = (aeypMaps[m] || 0) + (item.subtotal||0) + (item.iva||0);
+  });
+
+  const totalNomina = Object.values(nominaMaps).reduce((s,v)=>s+v,0);
+  const totalAeyp = Object.values(aeypMaps).reduce((s,v)=>s+v,0);
+  const totalGeneral = totalNomina + totalAeyp;
+
+  const mensualData = mLabels.map(m => ({
+    name: m,
+    'Nómina': nominaMaps[m] || 0,
+    'Honorarios': aeypMaps[m] || 0,
+    'Total': (nominaMaps[m]||0) + (aeypMaps[m]||0),
+  }));
+
+  const pieSources = [
+    { name: 'Sueldos y Nómina', value: totalNomina },
+    { name: 'AEyP / Honorarios', value: totalAeyp },
+  ].filter(x => x.value > 0);
+
+  const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444'];
+  const bestMonth = mensualData.reduce((a,b) => b.Total > a.Total ? b : a, mensualData[0]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+        {[
+          { label: 'Ingreso Total',       value: fmt(totalGeneral), color: '#6366f1', icon: '💰', sub: year },
+          { label: 'Sueldos y Nómina',    value: fmt(totalNomina),  color: '#3b82f6', icon: '👥', sub: totalGeneral>0 ? ((totalNomina/totalGeneral)*100).toFixed(0)+'%' : '—' },
+          { label: 'AEyP / Honorarios',   value: fmt(totalAeyp),    color: '#10b981', icon: '💼', sub: totalGeneral>0 ? ((totalAeyp/totalGeneral)*100).toFixed(0)+'%' : '—' },
+          { label: 'Mejor Mes',           value: bestMonth?.name||'—', color: '#f59e0b', icon: '📅', sub: fmt(bestMonth?.Total) },
+        ].map((k,i) => (
+          <div key={i} style={{ background:'white', borderRadius:'14px', padding:'1.25rem 1.5rem', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)', position:'relative', overflow:'hidden' }}>
+            <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:k.color }} />
+            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'8px' }}>
+              <span style={{ fontSize:'1.1rem' }}>{k.icon}</span>
+              <span style={{ fontSize:'0.7rem', fontWeight:800, textTransform:'uppercase', color:'#94a3b8', letterSpacing:'0.05em' }}>{k.label}</span>
+            </div>
+            <div style={{ fontSize:'1.5rem', fontWeight:900, color:k.color, lineHeight:1 }}>{k.value}</div>
+            <div style={{ fontSize:'0.75rem', color:'#94a3b8', marginTop:'4px', fontWeight:600 }}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background:'white', padding:'1.5rem 1.75rem', borderRadius:'14px', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)' }}>
+        <h4 style={{ margin:'0 0 1.5rem 0', color:'#475569', fontSize:'0.85rem', textTransform:'uppercase', letterSpacing:'1px' }}>
+          Evolución Mensual — Sueldos vs Honorarios
+        </h4>
+        <ResponsiveContainer width='100%' height={300}>
+          <ComposedChart data={mensualData} margin={{ top:10, right:20, left:0, bottom:0 }}>
+            <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#e2e8f0' />
+            <XAxis dataKey='name' tick={{ fill:'#64748b', fontSize:12 }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={v => '$'+(v/1000).toFixed(0)+'k'} tick={{ fill:'#64748b', fontSize:12 }} axisLine={false} tickLine={false} />
+            <Tooltip formatter={(val,name) => [fmt(val),name]} cursor={{ fill:'#f8fafc' }} />
+            <Legend iconType='circle' wrapperStyle={{ fontSize:'12px' }} />
+            <Bar dataKey='Nómina' stackId='a' fill='#6366f1' name='Sueldos y Nómina' />
+            <Bar dataKey='Honorarios' stackId='a' fill='#10b981' radius={[4,4,0,0]} name='AEyP / Honorarios' />
+            <Line type='monotone' dataKey='Total' stroke='#f59e0b' strokeWidth={3} dot={{ r:4, fill:'#f59e0b' }} name='Total Ingreso' />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem' }}>
+        <div style={{ background:'white', padding:'1.5rem', borderRadius:'14px', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)' }}>
+          <h4 style={{ margin:'0 0 1rem 0', color:'#475569', fontSize:'0.85rem', textTransform:'uppercase', letterSpacing:'1px', textAlign:'center' }}>
+            Composición de Ingresos {year}
+          </h4>
+          <ResponsiveContainer width='100%' height={200}>
+            <PieChart>
+              <Pie data={pieSources} cx='50%' cy='50%' innerRadius={55} outerRadius={85} paddingAngle={3} dataKey='value' stroke='none'>
+                {pieSources.map((e,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} />)}
+              </Pie>
+              <Tooltip formatter={(val) => fmt(val)} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px', marginTop:'0.75rem' }}>
+            {pieSources.map((s,i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+                <span style={{ width:'10px', height:'10px', borderRadius:'50%', background:COLORS[i%COLORS.length], flexShrink:0 }} />
+                <span style={{ flex:1, fontSize:'13px', color:'#334155', fontWeight:600 }}>{s.name}</span>
+                <span style={{ fontSize:'13px', color:'#475569', fontWeight:700 }}>{fmt(s.value)}</span>
+                <span style={{ fontSize:'11px', color:'#94a3b8' }}>{totalGeneral>0 ? ((s.value/totalGeneral)*100).toFixed(0) : 0}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background:'white', padding:'1.5rem', borderRadius:'14px', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)', overflowX:'auto' }}>
+          <h4 style={{ margin:'0 0 1rem 0', color:'#475569', fontSize:'0.85rem', textTransform:'uppercase', letterSpacing:'1px' }}>
+            Resumen por Mes
+          </h4>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12px' }}>
+            <thead>
+              <tr style={{ borderBottom:'2px solid #e2e8f0' }}>
+                <th style={{ textAlign:'left', padding:'4px 8px', color:'#64748b', fontWeight:700 }}>Mes</th>
+                <th style={{ textAlign:'right', padding:'4px 8px', color:'#6366f1', fontWeight:700 }}>Nómina</th>
+                <th style={{ textAlign:'right', padding:'4px 8px', color:'#10b981', fontWeight:700 }}>Honorarios</th>
+                <th style={{ textAlign:'right', padding:'4px 8px', color:'#f59e0b', fontWeight:700 }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mensualData.filter(m => m.Total > 0).map((m,i) => (
+                <tr key={i} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                  <td style={{ padding:'5px 8px', fontWeight:600, color:'#334155' }}>{m.name}</td>
+                  <td style={{ padding:'5px 8px', textAlign:'right', color:'#6366f1' }}>{m['Nómina']>0 ? fmt(m['Nómina']) : '—'}</td>
+                  <td style={{ padding:'5px 8px', textAlign:'right', color:'#10b981' }}>{m.Honorarios>0 ? fmt(m.Honorarios) : '—'}</td>
+                  <td style={{ padding:'5px 8px', textAlign:'right', fontWeight:700, color:'#0f172a' }}>{fmt(m.Total)}</td>
+                </tr>
+              ))}
+              <tr style={{ borderTop:'2px solid #e2e8f0', background:'#f8fafc' }}>
+                <td style={{ padding:'6px 8px', fontWeight:800, color:'#0f172a' }}>TOTAL</td>
+                <td style={{ padding:'6px 8px', textAlign:'right', fontWeight:800, color:'#6366f1' }}>{fmt(totalNomina)}</td>
+                <td style={{ padding:'6px 8px', textAlign:'right', fontWeight:800, color:'#10b981' }}>{fmt(totalAeyp)}</td>
+                <td style={{ padding:'6px 8px', textAlign:'right', fontWeight:900, color:'#0f172a' }}>{fmt(totalGeneral)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function HonorariosSection({ data, year }) {
   const [selectedClient, setSelectedClient] = useState('Global');
   if (!data) return null;
