@@ -247,6 +247,9 @@ def get_summary(year: str = "2025"):
         elif dias_pagados is None:
             dias_pagados = 0.0
             
+        # Calculate Vouchers (Type 029) to subtract from Net Pay
+        vales = sum(p.get('total', 0) for p in i.get('percepciones_detalle', []) if p.get('tipo') == '029')
+            
         recibo = {
             'uuid': i.get('uuid'),
             'fecha': i.get('fecha_pago_nomina') or i.get('fecha', '')[:10],
@@ -255,7 +258,8 @@ def get_summary(year: str = "2025"):
             'dias_pagados': dias_pagados,
             'total_bruto': i.get('subtotal', 0),
             'total_deducciones': i.get('descuento', 0),
-            'neto': i.get('total', 0),
+            'vales': vales,
+            'neto': round(i.get('total', 0) - vales, 2),
             'isr_retenido': i.get('retencion_isr', 0),
             'percepciones': i.get('percepciones_detalle', []),
             'deducciones': i.get('deducciones_detalle', []),

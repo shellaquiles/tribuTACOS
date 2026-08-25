@@ -49,11 +49,11 @@ export const AnaliticaSection = ({ data, year }) => {
         : data.detalle.filter(emp => emp.nombre === selectedEmployer);
 
     const allRecibos = targetDetalles.flatMap(emp => emp.recibos);
-    const byMonth = Array(12).fill(0).map((_, i) => ({ name: monthNames[i], bruto: 0, retenido: 0, neto: 0 }));
+    const byMonth = Array(12).fill(0).map((_, i) => ({ name: monthNames[i], bruto: 0, retenido: 0, vales: 0, neto: 0 }));
     
     let percMap = {};
     let retMap = {};
-    let tBruto = 0, tRet = 0, tNeto = 0, mesesActivos = new Set();
+    let tBruto = 0, tRet = 0, tVales = 0, tNeto = 0, mesesActivos = new Set();
     
     allRecibos.forEach(r => {
       const mMatch = r.fecha.match(/-(\d{2})-/);
@@ -62,14 +62,17 @@ export const AnaliticaSection = ({ data, year }) => {
          mesesActivos.add(mIdx);
          const rBruto = (r.percepciones || []).reduce((acc, p) => acc + (p.total || 0), 0);
          const rDeduc = (r.deducciones || []).reduce((acc, d) => acc + (d.importe || 0), 0);
+         const rVales = (r.percepciones || []).reduce((acc, p) => acc + (p.tipo === '029' ? (p.total || 0) : 0), 0);
          
          byMonth[mIdx].bruto += rBruto;
          byMonth[mIdx].retenido += rDeduc;
-         byMonth[mIdx].neto += (rBruto - rDeduc);
+         byMonth[mIdx].vales += rVales;
+         byMonth[mIdx].neto += (rBruto - rDeduc - rVales);
 
          tBruto += rBruto;
          tRet += rDeduc;
-         tNeto += (rBruto - rDeduc);
+         tVales += rVales;
+         tNeto += (rBruto - rDeduc - rVales);
       }
       
       (r.percepciones || []).forEach(p => {
@@ -101,6 +104,7 @@ export const AnaliticaSection = ({ data, year }) => {
       summary: { 
         bruto: tBruto, 
         retenidas: tRet, 
+        vales: tVales,
         neto: tNeto, 
         promNeto: tNeto / (mesesActivos.size || 1),
         promBruto: tBruto / (mesesActivos.size || 1)
@@ -179,13 +183,25 @@ export const AnaliticaSection = ({ data, year }) => {
               </div>
             </div>
          </div>
-         <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #10b981, #059669)', '--kpi-text-gradient': 'linear-gradient(135deg, #064e3b, #10b981)' }}>
-            <div className="kpi-title">Promedio Mensual Neto</div>
+         <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #ec4899, #f43f5e)', '--kpi-text-gradient': 'linear-gradient(135deg, #9d174d, #ec4899)' }}>
+            <div className="kpi-title">Vales de Despensa</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <div className="kpi-value">{fmt(summary.promNeto)}</div>
+              <div className="kpi-value">{fmt(summary.vales)}</div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ec4899', opacity: 0.9 }}>
+                 ({summary.bruto ? ((summary.vales / summary.bruto) * 100).toFixed(1) : 0}%)
+              </div>
+            </div>
+         </div>
+         <div className="kpi-card" style={{ '--kpi-gradient': 'linear-gradient(90deg, #10b981, #059669)', '--kpi-text-gradient': 'linear-gradient(135deg, #064e3b, #10b981)' }}>
+            <div className="kpi-title">Ingreso Neto Anual</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <div className="kpi-value">{fmt(summary.neto)}</div>
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#10b981', opacity: 0.9 }}>
                  ({summary.bruto ? ((summary.neto / summary.bruto) * 100).toFixed(1) : 0}%)
               </div>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 700, marginTop: '8px', opacity: 0.8 }}>
+               Promedio Mensual: {fmt(summary.promNeto)}
             </div>
          </div>
       </div>
@@ -208,6 +224,10 @@ export const AnaliticaSection = ({ data, year }) => {
                 <linearGradient id="colorNeto" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
                   <stop offset="95%" stopColor="#059669" stopOpacity={0.7}/>
+                </linearGradient>
+                <linearGradient id="colorVales" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#ec4899" stopOpacity={0.9}/>
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.7}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
@@ -248,6 +268,7 @@ export const AnaliticaSection = ({ data, year }) => {
                  }} 
               />
               <Bar dataKey="neto" stackId="a" name="Ingreso Neto" fill="url(#colorNeto)" maxBarSize={40} animationDuration={1000} />
+              <Bar dataKey="vales" stackId="a" name="Despensa / Vales" fill="url(#colorVales)" maxBarSize={40} animationDuration={1000} />
               <Bar dataKey="retenido" stackId="a" name="Retenciones" fill="url(#colorRetenido)" radius={[6, 6, 0, 0]} maxBarSize={40} animationDuration={1000} />
             </ComposedChart>
           </ResponsiveContainer>

@@ -12,6 +12,7 @@ import {
   SueldosSection,
   NominaDetalleSection,
   GastosReport,
+  EgresosMensualesSection,
   TabNavigation
 } from './SatUI';
 import { AnaliticaSection } from './SatAnalitica';
@@ -79,8 +80,9 @@ const App = () => {
     { id: 'detalle_aeyp', label: 'Detalle de Facturas',   icon: '📄' },
     { id: 'otros',        label: 'Otros Ingresos',        icon: '💵' },
 
-    // 7-9: Egresos
-    { id: 'gastos',       label: 'Egresos (Negocio)',     icon: '💳' },
+    // 7-10: Egresos
+    { id: 'egresos_mes',  label: 'Egresos por Mes',       icon: '📅' },
+    { id: 'gastos',       label: 'Detalle de Gastos',     icon: '💳' },
     { id: 'intereses',    label: 'Intereses y Notas',     icon: '🏦' },
     { id: 'deduciones',   label: 'Ded. Personales',       icon: '🏥' },
 
@@ -125,10 +127,10 @@ const App = () => {
            <TabNavigation tabs={tabs.slice(4, 8)} activeTab={activeTab} onTabChange={setActiveTab} />
            
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Egresos y Deducciones</div>
-           <TabNavigation tabs={tabs.slice(8, 11)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(8, 12)} activeTab={activeTab} onTabChange={setActiveTab} />
 
            <div className="nav-group-title" style={{ marginTop: '1.75rem' }}>Cálculo Anual</div>
-           <TabNavigation tabs={tabs.slice(11, 12)} activeTab={activeTab} onTabChange={setActiveTab} />
+           <TabNavigation tabs={tabs.slice(12, 13)} activeTab={activeTab} onTabChange={setActiveTab} />
         </nav>
       </aside>
 
@@ -175,6 +177,12 @@ const App = () => {
             <ErrorBoundary><OtrosIngresosSection data={sections.otros_ingresos} /></ErrorBoundary>
           )}
           
+          {activeTab === 'egresos_mes' && (
+            <ErrorBoundary>
+              <EgresosMensualesSection data={sections.reporte_gastos} year={year} />
+            </ErrorBoundary>
+          )}
+
           {activeTab === 'intereses' && (
             <ErrorBoundary><InteresesSection data={sections.intereses} year={year} /></ErrorBoundary>
           )}

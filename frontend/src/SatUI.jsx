@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine
 } from 'recharts';
+import { exportEgresos, exportHonorarios, exportNomina, exportDeduccionesPersonales, exportIngresos } from './csvExport';
 
 const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
 
@@ -15,6 +16,36 @@ const fmt = (val) =>
   new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(val ?? 0);
 
 // ─── Shared UI primitives ────────────────────────────────────────────────────
+
+// Botón reutilizable de exportación CSV
+const CsvExportButton = ({ onClick, label = 'Exportar CSV', count }) => (
+  <button
+    onClick={onClick}
+    title={`Exportar ${count ? count + ' registros' : 'datos'} a CSV`}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '0.5rem 1rem',
+      borderRadius: '8px',
+      border: '1.5px solid #10b981',
+      background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+      color: '#065f46',
+      fontSize: '0.82rem',
+      fontWeight: 700,
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      letterSpacing: '0.01em',
+      whiteSpace: 'nowrap',
+    }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #10b981, #059669)'; e.currentTarget.style.color = '#ffffff'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)'; e.currentTarget.style.color = '#065f46'; }}
+  >
+    <span style={{ fontSize: '1rem' }}>⬇️</span>
+    {label}
+    {count !== undefined && <span style={{ background: 'rgba(16,185,129,0.15)', padding: '1px 6px', borderRadius: '10px', fontSize: '0.75rem' }}>{count}</span>}
+  </button>
+);
 
 const SectionCard = ({ icon, title, badge, children, accent }) => (
   <div className={`sec-card ${accent || ''}`}>
@@ -157,7 +188,7 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }) => (
 export const SueldosSection = ({ data, year }) => {
   const [selectedEmployer, setSelectedEmployer] = useState('Global');
 
-  const { totalBruto, totalDeducciones, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries, tiempo } = useMemo(() => {
+  const { totalBruto, totalDeducciones, totalVales, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries, tiempo } = useMemo(() => {
     if (!data) return {};
     
     let targetRecibos = [];
@@ -228,12 +259,23 @@ export const SueldosSection = ({ data, year }) => {
 
     const tBruto = calcPercs.reduce((acc, p) => acc + p.total, 0);
     const tDed = calcDeds.reduce((acc, d) => acc + d.total, 0);
+    const tVales = calcPercs.find(p => p.clave === '029')?.total || 0;
 
     const targetRecibosConSueldo = targetRecibos.filter(r => r.percepciones && r.percepciones.some(p => p.tipo === '001'));
     const totalDias = targetRecibosConSueldo.reduce((acc, r) => acc + (parseFloat(r.dias_pagados) || 0), 0);
     const meses = (totalDias / 30).toFixed(1);
 
-    return { percepcionesPorTipo: calcPercs, deduccionesPorTipo: calcDeds, kpiData: tmpKpi, totalBruto: tBruto, totalDeducciones: tDed, neto: tBruto - tDed, latestSalaries: sal, tiempo: { totalDias, meses } };
+    return { 
+      percepcionesPorTipo: calcPercs, 
+      deduccionesPorTipo: calcDeds, 
+      kpiData: tmpKpi, 
+      totalBruto: tBruto, 
+      totalDeducciones: tDed, 
+      totalVales: tVales,
+      neto: tBruto - tDed - tVales, 
+      latestSalaries: sal, 
+      tiempo: { totalDias, meses } 
+    };
   }, [data, selectedEmployer]);
 
   if (!data || !percepcionesPorTipo) return null;
@@ -242,7 +284,8 @@ export const SueldosSection = ({ data, year }) => {
     <SectionCard icon="👥" title="Sueldos, salarios y asimilados">
       
       {data.detalle && data.detalle.length > 0 && (
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
            <button 
              onClick={() => setSelectedEmployer('Global')}
              style={{ 
@@ -272,6 +315,12 @@ export const SueldosSection = ({ data, year }) => {
                🏢 {emp.nombre.length > 25 ? emp.nombre.substring(0, 25) + '...' : emp.nombre}
              </button>
            ))}
+          </div>
+          <CsvExportButton
+            onClick={() => exportNomina(data.detalle, year)}
+            label="Exportar Nómina"
+            count={data.detalle.reduce((s, e) => s + (e.recibos?.length || 0), 0)}
+          />
         </div>
       )}
 
@@ -292,6 +341,16 @@ export const SueldosSection = ({ data, year }) => {
             {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
               <div style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: 700, marginTop: '16px', background: '#fef2f2', padding: '6px 16px', borderRadius: '16px' }}>
                 Impacto Mensual: {fmt(totalDeducciones / tiempo.meses)}
+              </div>
+            )}
+         </div>
+         <div style={{ height: '48px', width: '48px', borderRadius: '24px', background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ec4899', fontSize: '1.75rem', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(236,72,153,0.1)' }}>−</div>
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ec4899', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Vales de Despensa</span>
+            <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #9d174d, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalVales)}</span>
+            {tiempo && tiempo.totalDias > 0 && parseFloat(tiempo.meses) > 0 && (
+              <div style={{ fontSize: '0.9rem', color: '#ec4899', fontWeight: 700, marginTop: '16px', background: '#fdf2f8', padding: '6px 16px', borderRadius: '16px' }}>
+                Promedio: {fmt(totalVales / tiempo.meses)}
               </div>
             )}
          </div>
@@ -409,10 +468,12 @@ const ReciboNomina = ({ recibo, onViewCfdi, onViewXml }) => {
               <span className="label">Bruto</span>
               <span className="val">{fmt(recibo.total_bruto)}</span>
             </div>
-            <div className="nomina-kpi-min">
-              <span className="label">ISR Ret.</span>
-              <span className="val text-danger">-{fmt(recibo.isr_retenido)}</span>
-            </div>
+            {recibo.vales > 0 && (
+              <div className="nomina-kpi-min">
+                <span className="label">Vales (029)</span>
+                <span className="val text-danger">-{fmt(recibo.vales)}</span>
+              </div>
+            )}
             <div className="nomina-kpi-min">
               <span className="label">Deducciones</span>
               <span className="val text-danger">-{fmt(recibo.total_deducciones)}</span>
@@ -589,7 +650,12 @@ export function DashboardSection({ sections, year }) {
     const month = parseInt(r.fecha.split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    nominaMaps[m] = (nominaMaps[m] || 0) + (r.percepciones || []).reduce((s,p) => s+(p.total||0), 0);
+    const valesMensual = (r.percepciones || []).reduce((s,p) => s + (p.tipo === '029' ? (p.total || 0) : 0), 0);
+    const percepcionesMensual = (r.percepciones || []).reduce((s,p) => s+(p.total||0), 0);
+    const deduccionesMensual = (r.deducciones || []).reduce((s,d) => s+(d.importe||0), 0);
+    
+    // We want the chart to show "Neto efectivo" (Cash income)
+    nominaMaps[m] = (nominaMaps[m] || 0) + (percepcionesMensual - deduccionesMensual - valesMensual);
   });
 
   const aeypMaps = {};
@@ -716,6 +782,122 @@ export function DashboardSection({ sections, year }) {
           </table>
         </div>
       </div>
+
+      {/* ── Panel Fiscal: Impuestos y Retenciones ──────────────────────────── */}
+      {(() => {
+        const isrNomina   = nomina?.isr_retenido || 0;
+        const isrAeyp     = aeyp?.isr_retenido   || 0;
+        const isrInt      = sections?.intereses?.isr_retenido || 0;
+        const ivaTrasl    = aeyp?.mensual?.reduce((s, m) => s + (m.datos?.iva_tras || 0), 0) || 0;
+        const ivaRet      = aeyp?.iva_retenido    || 0;
+        const totalIsrRet = isrNomina + isrAeyp + isrInt;
+        const ivaNetoCargo = ivaTrasl - ivaRet; // > 0 = a cargo del SAT
+
+        const kpis = [
+          { label: 'ISR Retenido (Nómina)',     value: fmt(isrNomina),   color: '#6366f1', icon: '👥', tip: 'ISR que tus empleadores retuvieron al pagarte' },
+          { label: 'ISR Retenido (AEyP)',        value: fmt(isrAeyp),    color: '#10b981', icon: '💼', tip: 'ISR que tus clientes retuvieron en facturas' },
+          { label: 'ISR Retenido (Intereses)',   value: fmt(isrInt),     color: '#8b5cf6', icon: '🏦', tip: 'ISR retenido por Cetes/bancos en tus rendimientos' },
+          { label: 'Total ISR Retenido',         value: fmt(totalIsrRet),color: '#ef4444', icon: '🧮', tip: 'Acreditable contra tu ISR anual' },
+          { label: 'IVA Trasladado (Cobrado)',   value: fmt(ivaTrasl),   color: '#f59e0b', icon: '🏛️', tip: 'IVA que cobraste a clientes — pertenece al SAT' },
+          { label: 'IVA Retenido (por Clientes)',value: fmt(ivaRet),     color: '#ec4899', icon: '✂️', tip: 'IVA que clientes te retuvieron y enteraron al SAT' },
+          { label: ivaNetoCargo >= 0 ? 'IVA a Cargo (SAT)' : 'IVA a Favor', value: fmt(Math.abs(ivaNetoCargo)), color: ivaNetoCargo >= 0 ? '#ef4444' : '#10b981', icon: ivaNetoCargo >= 0 ? '⬆️' : '⬇️', tip: 'IVA Trasladado − IVA Retenido (sin acreditable de gastos)' },
+        ];
+
+        return (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+              <div style={{ width: '4px', height: '22px', borderRadius: '2px', background: 'linear-gradient(180deg,#ef4444,#f59e0b)' }} />
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#334155' }}>Impuestos y Retenciones — {year}</h3>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem' }}>
+              {kpis.map((k, i) => (
+                <div key={i} title={k.tip} style={{ background: 'white', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: k.color }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <span>{k.icon}</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', lineHeight: 1.2 }}>{k.label}</span>
+                  </div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 900, color: k.color }}>{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Waterfall visual ISR */}
+            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', marginTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ISR Retenido por Fuente</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { label: 'Nómina (empleadores)', value: isrNomina, color: '#6366f1' },
+                  { label: 'AEyP / Honorarios (clientes)', value: isrAeyp, color: '#10b981' },
+                  { label: 'Intereses y Rendimientos', value: isrInt, color: '#8b5cf6' },
+                ].map((row, i) => {
+                  const pct = totalIsrRet > 0 ? (row.value / totalIsrRet) * 100 : 0;
+                  return (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '12px' }}>
+                        <span style={{ color: '#475569', fontWeight: 600 }}>{row.label}</span>
+                        <span style={{ color: row.color, fontWeight: 800 }}>{fmt(row.value)} <span style={{ color: '#94a3b8', fontWeight: 500 }}>({pct.toFixed(0)}%)</span></span>
+                      </div>
+                      <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: pct + '%', background: row.color, borderRadius: '4px', transition: 'width 0.8s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ fontWeight: 800, color: '#0f172a' }}>Total ISR Retenido (Acreditable)</span>
+                  <span style={{ fontWeight: 900, color: '#ef4444', fontSize: '1rem' }}>{fmt(totalIsrRet)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Panel de Exportación CSV ──────────────────────────────────────────── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+        border: '1.5px solid #86efac',
+        borderRadius: '14px',
+        padding: '1.25rem 1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1.25rem',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '1.2rem' }}>⬇️</span>
+            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#14532d' }}>Exportar Ingresos a CSV</span>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>
+            Descarga tus ingresos en formato Excel-compatible para análisis externo.
+            Genera hasta 3 archivos: resumen mensual, nómina detallada y facturas AEyP.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <CsvExportButton
+            onClick={() => exportIngresos(mensualData, nomina?.detalle, aeyp?.detalle, year)}
+            label="Resumen Mensual"
+            count={mensualData.filter(m => m.Total > 0).length + ' meses'}
+          />
+          {nomina?.detalle?.length > 0 && (
+            <CsvExportButton
+              onClick={() => exportNomina(nomina.detalle, year)}
+              label="Nómina Detallada"
+              count={nomina.detalle.reduce((s, e) => s + (e.recibos?.length || 0), 0)}
+            />
+          )}
+          {aeyp?.detalle?.length > 0 && (
+            <CsvExportButton
+              onClick={() => exportHonorarios(aeyp.detalle, year)}
+              label="Facturas AEyP"
+              count={aeyp.detalle.length}
+            />
+          )}
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -780,10 +962,17 @@ export function HonorariosSection({ data, year }) {
 
   return (
     <SectionCard icon="💼" title="Facturación Emitida (AEyP)">
-      <p className="sec-note">
-        Base de cálculo: <strong>Facturas PUE (Pagadas en una exhibición)</strong>. 
-        Muestra la radiografía cruda de tus cobros a lo largo del <strong>ejercicio {year}</strong>.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+        <p className="sec-note" style={{ margin: 0 }}>
+          Base de cálculo: <strong>Facturas PUE (Pagadas en una exhibición)</strong>. 
+          Muestra la radiografía cruda de tus cobros a lo largo del <strong>ejercicio {year}</strong>.
+        </p>
+        <CsvExportButton
+          onClick={() => exportHonorarios(targetRecibos, year)}
+          label="Exportar Honorarios"
+          count={targetRecibos.length}
+        />
+      </div>
 
       {clients.length > 0 && (
         <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
@@ -1416,8 +1605,15 @@ export const DeterminacionSection = ({ sections, summary, year }) => {
   const intereses = sections.intereses;
 
   // Ingresos acumulables
+  // Sueldos: solo el ingreso GRAVADO (Art. 94 LISR — exento no acumula)
   const ingSueldos = sueldos?.gravado || 0;
-  const ingHonorarios = Math.max(0, (honorarios?.ingresos || 0) - (honorarios?.deducciones_autorizadas || 0));
+
+  // AEyP: suma de subtotales del detalle — MISMA fuente que Info Global AEyP
+  // (honorarios.ingresos solo incluye PUE, pero ambos deben cuadrar)
+  const aeypSubtotalTotal = (honorarios?.detalle || []).reduce((s, r) => s + (r.subtotal || 0), 0);
+  const aeypDeducciones   = honorarios?.deducciones_autorizadas || 0;
+  const ingHonorarios = Math.max(0, aeypSubtotalTotal - aeypDeducciones);
+
   const ingIntereses = intereses?.real || 0;
   const totalAcumulables = ingSueldos + ingHonorarios + ingIntereses;
 
@@ -1439,11 +1635,17 @@ export const DeterminacionSection = ({ sections, summary, year }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <SectionCard icon="🧮" title="Ingresos acumulables">
-        <p className="sec-note">Suma de todos los ingresos del ejercicio que forman la base gravable del ISR.</p>
+        <p className="sec-note">Suma de todos los ingresos del ejercicio que forman la base gravable del ISR.
+          Los valores coinciden con los módulos <strong>Sueldos y Nómina</strong> y <strong>AEyP / Honorarios</strong>.
+        </p>
         <div className="calc-block">
-          <CalcStep label="Sueldos y salarios (gravado)" value={ingSueldos} op="+" />
-          <CalcStep label={ingHonorarios >= 0 ? "Utilidad fiscal AEyP" : "Pérdida fiscal AEyP (no acumula)"} value={ingHonorarios} op="+" />
-          <CalcStep label="Intereses nominales" value={ingIntereses} op="+" />
+          <CalcStep label={`Sueldos y salarios — gravado (de ${fmt(sueldos?.total_ingresos || 0)} total, exento no acumula)`} value={ingSueldos} op="+" />
+          <CalcStep
+            label={ingHonorarios >= 0
+              ? `Utilidad fiscal AEyP (${fmt(aeypSubtotalTotal)} subtotal − ${fmt(aeypDeducciones)} egresos negocio)`
+              : 'Pérdida fiscal AEyP (no acumula — Art. 109 LISR)'}
+            value={ingHonorarios} op="+" />
+          <CalcStep label="Intereses reales acumulables" value={ingIntereses} op="+" />
           <CalcStep label="Total de ingresos acumulables" value={totalAcumulables} op="=" highlight />
         </div>
       </SectionCard>
@@ -1514,11 +1716,20 @@ export const DeduccionesPersonalesSection = ({ data, year }) => {
   if (!data) return null;
   return (
     <SectionCard icon="🏥" title="Deducciones personales (Art. 151 LISR)">
-      <p className="sec-note">
-        Gastos personales deducibles que reducen tu base gravable del ISR. 
-        El SAT los precarga automáticamente de tus CFDIs recibidos.
-        Se aplica el límite del 15% del ingreso total o 5 UMAs anuales.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+        <p className="sec-note" style={{ margin: 0 }}>
+          Gastos personales deducibles que reducen tu base gravable del ISR. 
+          El SAT los precarga automáticamente de tus CFDIs recibidos.
+          Se aplica el límite del 15% del ingreso total o 5 UMAs anuales.
+        </p>
+        {data.detalle && data.detalle.length > 0 && (
+          <CsvExportButton
+            onClick={() => exportDeduccionesPersonales(data.detalle, year)}
+            label="Exportar Deducciones"
+            count={data.detalle.length}
+          />
+        )}
+      </div>
       <div className="ded-grid">
         {[
           ['🏥 Honorarios médicos, dentales y hospitalarios', 'D01'],
@@ -1829,8 +2040,10 @@ const InteractableRow = ({ item, groupBy, onViewCfdi }) => {
 
 // ─── SECCIÓN 4: Reporte Detallado de Gastos ───────────────────────────────────
 
+// ─── SECCIÓN 4: Reporte Detallado de Gastos ───────────────────────────────────
+
 export const GastosReport = ({ data, year }) => {
-  const [groupBy, setGroupBy] = useState('emisor'); // 'emisor' | 'uso_cfdi'
+  const [groupBy, setGroupBy] = useState('emisor'); // 'emisor' | 'uso_cfdi' | 'mes'
   const [selectedCfdi, setSelectedCfdi] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
 
@@ -1842,8 +2055,15 @@ export const GastosReport = ({ data, year }) => {
     if (!data || !Array.isArray(data)) return [];
     
     const groups = data.reduce((acc, curr) => {
-      const key = curr[groupBy] || 'Sin Clasificar';
-      if (!acc[key]) acc[key] = { key, subtotal: 0, iva: 0, total: 0, items: [] };
+      let key = 'Sin Clasificar';
+      if (groupBy === 'mes') {
+        const m = curr.fecha ? parseInt(curr.fecha.split('-')[1], 10) : null;
+        key = (m && m >= 1 && m <= 12) ? `${MONTH_NAMES[m - 1]} (${curr.fecha.slice(0, 7)})` : 'Fecha No Definida';
+      } else {
+        key = curr[groupBy] || 'Sin Clasificar';
+      }
+
+      if (!acc[key]) acc[key] = { key, subtotal: 0, iva: 0, total: 0, items: [], mesNum: curr.fecha ? parseInt(curr.fecha.split('-')[1], 10) : 99 };
       acc[key].subtotal += curr.subtotal;
       acc[key].iva += curr.iva;
       acc[key].total += curr.total;
@@ -1851,12 +2071,17 @@ export const GastosReport = ({ data, year }) => {
       return acc;
     }, {});
 
-    return Object.values(groups)
-      .sort((a, b) => b.subtotal - a.subtotal)
-      .map(g => {
-        g.items.sort((a, b) => b.fecha.localeCompare(a.fecha));
-        return g;
-      });
+    const list = Object.values(groups);
+    if (groupBy === 'mes') {
+      list.sort((a, b) => a.mesNum - b.mesNum);
+    } else {
+      list.sort((a, b) => b.subtotal - a.subtotal);
+    }
+
+    return list.map(g => {
+      g.items.sort((a, b) => b.fecha.localeCompare(a.fecha));
+      return g;
+    });
   }, [data, groupBy]);
 
   if (!data?.length) return <SectionCard icon="📈" title="Reporte Detallado de Egresos" badge="0">No hay gastos deducibles registrados en este periodo.</SectionCard>;
@@ -1870,7 +2095,7 @@ export const GastosReport = ({ data, year }) => {
       
       {/* Controles de Agrupación y KPI Globales */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <button 
             className={`pill ${groupBy === 'emisor' ? 'pill-blue' : 'pill-gray'}`} 
             onClick={() => setGroupBy('emisor')}
@@ -1879,12 +2104,24 @@ export const GastosReport = ({ data, year }) => {
             🏢 Agrupar por Proveedor / Emisor
           </button>
           <button 
+            className={`pill ${groupBy === 'mes' ? 'pill-blue' : 'pill-gray'}`} 
+            onClick={() => setGroupBy('mes')}
+            style={{ cursor: 'pointer', border: 'none', transition: 'all 0.2s', padding: '0.5rem 1rem' }}
+          >
+            📅 Agrupar por Mes
+          </button>
+          <button 
             className={`pill ${groupBy === 'uso_cfdi' ? 'pill-blue' : 'pill-gray'}`} 
             onClick={() => setGroupBy('uso_cfdi')}
             style={{ cursor: 'pointer', border: 'none', transition: 'all 0.2s', padding: '0.5rem 1rem' }}
           >
             🏷️ Agrupar por Cuenta / Uso CFDI
           </button>
+          <CsvExportButton
+            onClick={() => exportEgresos(data, year, 'Detalle')}
+            label="Exportar CSV"
+            count={data.length}
+          />
         </div>
         <div style={{ textAlign: 'right', background: '#f8fafc', padding: '0.75rem 1.25rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '4px' }}>
@@ -1946,3 +2183,901 @@ export const GastosReport = ({ data, year }) => {
     </>
   );
 };
+
+// ─── SECCIÓN 5: Vista de Egresos por Mes (Analítica y Desglose Mensual) ──────
+
+export function EgresosMensualesSection({ data, year }) {
+  const [selectedMonth, setSelectedMonth] = useState('Global'); // 'Global' | 1..12
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('fecha_desc'); // 'fecha_desc' | 'monto_desc' | 'monto_asc' | 'emisor_asc'
+  const [selectedCfdi, setSelectedCfdi] = useState(null);
+  const [viewingXml, setViewingXml] = useState(null);
+  const [expandedRows, setExpandedRows] = useState({});
+
+  const toggleRow = (uuid) => {
+    setExpandedRows(prev => ({ ...prev, [uuid]: !prev[uuid] }));
+  };
+
+  const rawList = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+
+  // Cálculos agrupados por los 12 meses
+  const {
+    mesesData,
+    totalesAnuales,
+    promedioMensual,
+    mesPico,
+    distribucionUso,
+    topProveedoresPeriodo
+  } = useMemo(() => {
+    const meses = MONTH_NAMES.map((name, idx) => ({
+      mes: idx + 1,
+      name,
+      shortName: name.slice(0, 3),
+      subtotal: 0,
+      iva: 0,
+      total: 0,
+      count: 0,
+      items: [],
+      proveedoresMap: {}
+    }));
+
+    let sumSubtotal = 0;
+    let sumIva = 0;
+    let sumTotal = 0;
+    let sumCount = 0;
+    const activeMonths = new Set();
+
+    rawList.forEach(item => {
+      const fecha = item.fecha || '';
+      const parts = fecha.split('-');
+      const mIdx = parts.length > 1 ? parseInt(parts[1], 10) - 1 : -1;
+
+      if (mIdx >= 0 && mIdx < 12) {
+        meses[mIdx].subtotal += item.subtotal || 0;
+        meses[mIdx].iva += item.iva || 0;
+        meses[mIdx].total += item.total || 0;
+        meses[mIdx].count += 1;
+        meses[mIdx].items.push(item);
+        activeMonths.add(mIdx);
+
+        const prov = item.emisor || 'Desconocido';
+        meses[mIdx].proveedoresMap[prov] = (meses[mIdx].proveedoresMap[prov] || 0) + (item.subtotal || 0);
+      }
+
+      sumSubtotal += item.subtotal || 0;
+      sumIva += item.iva || 0;
+      sumTotal += item.total || 0;
+      sumCount += 1;
+    });
+
+    // Identificar top provider por mes
+    meses.forEach(m => {
+      const provEntries = Object.entries(m.proveedoresMap);
+      if (provEntries.length > 0) {
+        provEntries.sort((a, b) => b[1] - a[1]);
+        m.topProvider = provEntries[0][0];
+      } else {
+        m.topProvider = '—';
+      }
+    });
+
+    const activeCount = activeMonths.size || 1;
+    const promTotal = sumTotal / activeCount;
+    const promSubtotal = sumSubtotal / activeCount;
+
+    // Mes pico (mayor gasto total)
+    const pico = meses.reduce((max, curr) => (curr.total > max.total ? curr : max), meses[0]);
+
+    // Items para el periodo seleccionado (Global o mes específico)
+    const targetItems = selectedMonth === 'Global' 
+      ? rawList 
+      : (meses[selectedMonth - 1]?.items || []);
+
+    // Mix por Uso CFDI
+    const usoMap = {};
+    targetItems.forEach(item => {
+      const k = item.uso_cfdi || 'Sin Uso';
+      usoMap[k] = (usoMap[k] || 0) + (item.subtotal || 0);
+    });
+    const distribucionUso = Object.entries(usoMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Top Proveedores del periodo
+    const provMap = {};
+    targetItems.forEach(item => {
+      const k = item.emisor || 'Desconocido';
+      provMap[k] = (provMap[k] || 0) + (item.total || 0);
+    });
+    const topProveedoresPeriodo = Object.entries(provMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+
+    return {
+      mesesData: meses,
+      totalesAnuales: {
+        subtotal: sumSubtotal,
+        iva: sumIva,
+        total: sumTotal,
+        count: sumCount
+      },
+      promedioMensual: {
+        total: promTotal,
+        subtotal: promSubtotal,
+        activeMonths: activeCount
+      },
+      mesPico: pico,
+      distribucionUso,
+      topProveedoresPeriodo
+    };
+  }, [rawList, selectedMonth]);
+
+  // Filtrar y ordenar facturas del mes seleccionado
+  const displayItems = useMemo(() => {
+    let items = selectedMonth === 'Global' 
+      ? [...rawList] 
+      : [...(mesesData[selectedMonth - 1]?.items || [])];
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      items = items.filter(it => {
+        const emisor = (it.emisor || '').toLowerCase();
+        const rfc = ((it.raw_cfdi?.emisor_rfc) || '').toLowerCase();
+        const uuid = (it.uuid || '').toLowerCase();
+        const uso = (it.uso_cfdi || '').toLowerCase();
+        const conceptos = (it.conceptos || []).some(c => 
+          (c.desc || '').toLowerCase().includes(q) || 
+          (c.desc_sat || '').toLowerCase().includes(q) ||
+          (c.clave || '').includes(q)
+        );
+        return emisor.includes(q) || rfc.includes(q) || uuid.includes(q) || uso.includes(q) || conceptos;
+      });
+    }
+
+    items.sort((a, b) => {
+      if (sortBy === 'fecha_desc') return (b.fecha || '').localeCompare(a.fecha || '');
+      if (sortBy === 'fecha_asc') return (a.fecha || '').localeCompare(b.fecha || '');
+      if (sortBy === 'monto_desc') return (b.total || 0) - (a.total || 0);
+      if (sortBy === 'monto_asc') return (a.total || 0) - (b.total || 0);
+      if (sortBy === 'emisor_asc') return (a.emisor || '').localeCompare(b.emisor || '');
+      return 0;
+    });
+
+    return items;
+  }, [rawList, selectedMonth, mesesData, searchTerm, sortBy]);
+
+  const activeMonthName = selectedMonth === 'Global' 
+    ? 'Todo el Ejercicio' 
+    : `${MONTH_NAMES[selectedMonth - 1]} ${year}`;
+
+  const currentSubtotal = displayItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
+  const currentIva = displayItems.reduce((acc, it) => acc + (it.iva || 0), 0);
+  const currentTotal = displayItems.reduce((acc, it) => acc + (it.total || 0), 0);
+
+  if (!rawList.length) {
+    return (
+      <SectionCard icon="📅" title="Vista de Egresos por Mes" badge="0 comprobantes">
+        <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
+          No se encontraron facturas ni complementos de egreso registrados para el ejercicio {year}.
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* ── 1. SELECTOR DE MESES TIPO PILLS ── */}
+      <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
+            📅 Seleccionar Periodo Mensual:
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+            Periodo Activo: <strong style={{ color: '#0f172a' }}>{activeMonthName}</strong> ({displayItems.length} comprobantes)
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setSelectedMonth('Global')}
+            style={{
+              padding: '0.55rem 1.1rem',
+              borderRadius: '24px',
+              cursor: 'pointer',
+              border: 'none',
+              background: selectedMonth === 'Global' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#f1f5f9',
+              color: selectedMonth === 'Global' ? '#ffffff' : '#475569',
+              fontWeight: selectedMonth === 'Global' ? 700 : 500,
+              fontSize: '0.85rem',
+              boxShadow: selectedMonth === 'Global' ? '0 4px 10px rgba(59, 130, 246, 0.35)' : 'none',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>🗓️ Todo el Año</span>
+            <span style={{ background: selectedMonth === 'Global' ? 'rgba(255,255,255,0.25)' : '#e2e8f0', padding: '1px 6px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+              {rawList.length}
+            </span>
+          </button>
+
+          {mesesData.map((m) => {
+            const isSelected = selectedMonth === m.mes;
+            const hasData = m.count > 0;
+            return (
+              <button
+                key={m.mes}
+                onClick={() => setSelectedMonth(m.mes)}
+                style={{
+                  padding: '0.55rem 0.9rem',
+                  borderRadius: '24px',
+                  cursor: 'pointer',
+                  border: isSelected ? 'none' : (hasData ? '1px solid #cbd5e1' : '1px dashed #e2e8f0'),
+                  background: isSelected 
+                    ? 'linear-gradient(135deg, #10b981, #059669)' 
+                    : (hasData ? '#ffffff' : '#f8fafc'),
+                  color: isSelected ? '#ffffff' : (hasData ? '#1e293b' : '#94a3b8'),
+                  fontWeight: isSelected ? 700 : (hasData ? 600 : 400),
+                  fontSize: '0.85rem',
+                  boxShadow: isSelected ? '0 4px 10px rgba(16, 185, 129, 0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <span>{m.shortName}</span>
+                {hasData && (
+                  <span style={{
+                    background: isSelected ? 'rgba(255,255,255,0.25)' : '#e0f2fe',
+                    color: isSelected ? '#ffffff' : '#0369a1',
+                    padding: '1px 6px',
+                    borderRadius: '12px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700
+                  }}>
+                    {m.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── 2. KPIS SUPERIORES ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+        {[
+          {
+            label: selectedMonth === 'Global' ? 'Egresos Pagados (Anual)' : `Egresos Pagados (${activeMonthName})`,
+            value: fmt(currentTotal),
+            color: '#ef4444',
+            icon: '💳',
+            sub: `${displayItems.length} comprobantes en periodo`
+          },
+          {
+            label: 'Gasto Neto Deducible (Base)',
+            value: fmt(currentSubtotal),
+            color: '#3b82f6',
+            icon: '📉',
+            sub: `Subtotal sin IVA trasladado`
+          },
+          {
+            label: 'IVA Acreditable Acumulado',
+            value: fmt(currentIva),
+            color: '#f59e0b',
+            icon: '🏛️',
+            sub: `${currentSubtotal > 0 ? ((currentIva / currentSubtotal) * 100).toFixed(1) : 0}% efectividad fiscal`
+          },
+          {
+            label: selectedMonth === 'Global' ? 'Promedio Mensual' : 'Mes Pico Anual',
+            value: selectedMonth === 'Global' ? fmt(promedioMensual.total) : `${mesPico.shortName}: ${fmt(mesPico.total)}`,
+            color: '#10b981',
+            icon: '📊',
+            sub: selectedMonth === 'Global' ? `Pico: ${mesPico.shortName} (${fmt(mesPico.total)})` : `Mayor volumen de gasto anual`
+          }
+        ].map((kpi, idx) => (
+          <div key={idx} style={{
+            background: 'white',
+            borderRadius: '16px',
+            padding: '1.25rem 1.5rem',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
+                {kpi.label}
+              </span>
+              <span style={{ fontSize: '1.25rem' }}>{kpi.icon}</span>
+            </div>
+            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: kpi.color, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
+              {kpi.value}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+              {kpi.sub}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 3. GRÁFICA DE EVOLUCIÓN MENSUAL DE EGRESOS ── */}
+      <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 700 }}>
+              📈 Evolución y Flujo de Egresos por Mes ({year})
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+              Subtotal Deducible + IVA Acreditable pagado en cada periodo. Haz clic en una barra para filtrar ese mes.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
+            <span>Promedio Mensual: <strong style={{ color: '#10b981' }}>{fmt(promedioMensual.total)}</strong></span>
+            <span>Total Anual: <strong style={{ color: '#ef4444' }}>{fmt(totalesAnuales.total)}</strong></span>
+          </div>
+        </div>
+
+        <div style={{ width: '100%', height: 320 }}>
+          <ResponsiveContainer>
+            <ComposedChart
+              data={mesesData}
+              margin={{ top: 15, right: 15, left: 10, bottom: 5 }}
+              onClick={(e) => {
+                if (e && e.activePayload && e.activePayload.length) {
+                  const m = e.activePayload[0].payload.mes;
+                  setSelectedMonth(m);
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            >
+              <defs>
+                <linearGradient id="gradEgrSubtotal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0.7} />
+                </linearGradient>
+                <linearGradient id="gradEgrIva" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.9} />
+                  <stop offset="95%" stopColor="#d97706" stopOpacity={0.7} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="shortName" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} dy={8} />
+              <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} dx={-8} />
+              <Tooltip
+                formatter={(val, name) => [fmt(val), name]}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const row = payload[0].payload;
+                    return (
+                      <div style={{ background: '#0f172a', color: 'white', padding: '0.85rem 1.1rem', borderRadius: '8px', boxShadow: '0 10px 15px rgba(0,0,0,0.3)', fontSize: '0.85rem' }}>
+                        <div style={{ fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.95rem' }}>
+                          {row.name} ({row.count} comprobantes)
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', color: '#93c5fd' }}>
+                          <span>Subtotal Deducible:</span>
+                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.subtotal)}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', color: '#fde68a' }}>
+                          <span>IVA Acreditable:</span>
+                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.iva)}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 800, color: '#fca5a5' }}>
+                          <span>Total Pagado:</span>
+                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.total)}</strong>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: '15px', fontSize: '0.85rem', fontWeight: 600 }} iconType="circle" />
+              <ReferenceLine
+                y={promedioMensual.total}
+                stroke="#10b981"
+                strokeDasharray="4 4"
+                strokeWidth={2}
+                label={{
+                  position: 'insideTopLeft',
+                  value: `Promedio: ${fmt(promedioMensual.total)}`,
+                  fill: '#065f46',
+                  fontSize: 12,
+                  fontWeight: 800
+                }}
+              />
+              <Bar dataKey="subtotal" stackId="egr" name="Subtotal Deducible" fill="url(#gradEgrSubtotal)" maxBarSize={38} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="iva" stackId="egr" name="IVA Acreditable" fill="url(#gradEgrIva)" maxBarSize={38} radius={[4, 4, 0, 0]} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── 4. GRÁFICAS DE DISTRIBUCIÓN (Top Proveedores & Mix Uso CFDI) ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem' }}>
+        
+        {/* Top Proveedores */}
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
+            🏢 Concentración por Proveedor ({activeMonthName})
+          </h4>
+          {topProveedoresPeriodo.length > 0 ? (
+            <>
+              <div style={{ width: '100%', height: 210 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={topProveedoresPeriodo}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {topProveedoresPeriodo.map((_, idx) => (
+                        <Cell key={`prov-cell-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '0.75rem' }}>
+                {topProveedoresPeriodo.map((p, idx) => {
+                  const pct = currentTotal > 0 ? ((p.value / currentTotal) * 100).toFixed(1) : 0;
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: CHART_COLORS[idx % CHART_COLORS.length], flexShrink: 0 }} />
+                        <span style={{ color: '#334155', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace' }}>
+                        <span style={{ color: '#64748b' }}>{fmt(p.value)}</span>
+                        <span style={{ color: '#0f172a', fontWeight: 700, width: '45px', textAlign: 'right' }}>{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+              Sin datos para este periodo
+            </div>
+          )}
+        </div>
+
+        {/* Mix Uso CFDI */}
+        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+          <h4 style={{ margin: '0 0 1rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
+            🏷️ Mix por Uso CFDI / Categoría ({activeMonthName})
+          </h4>
+          {distribucionUso.length > 0 ? (
+            <>
+              <div style={{ width: '100%', height: 210 }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={distribucionUso}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {distribucionUso.map((_, idx) => (
+                        <Cell key={`uso-cell-${idx}`} fill={CHART_COLORS[(idx + 3) % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => fmt(v)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '0.75rem' }}>
+                {distribucionUso.slice(0, 6).map((u, idx) => {
+                  const pct = currentSubtotal > 0 ? ((u.value / currentSubtotal) * 100).toFixed(1) : 0;
+                  return (
+                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: CHART_COLORS[(idx + 3) % CHART_COLORS.length], flexShrink: 0 }} />
+                        <span style={{ color: '#334155', fontWeight: 600 }}>{u.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace' }}>
+                        <span style={{ color: '#64748b' }}>{fmt(u.value)}</span>
+                        <span style={{ color: '#0f172a', fontWeight: 700, width: '45px', textAlign: 'right' }}>{pct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+              Sin datos para este periodo
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 5. TABLA MATRIZ ANUAL (12 MESES) ── */}
+      <SectionCard
+        icon="🗓️"
+        title="Matriz de Egresos Mensuales (12 Meses)"
+        badge={`${totalesAnuales.count} facturas | Total: ${fmt(totalesAnuales.total)}`}
+      >
+        <div className="table-responsive">
+          <table className="sat-table" style={{ margin: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ width: '140px' }}>Mes</th>
+                <th style={{ width: '110px' }} className="text-center">Comprobantes</th>
+                <th className="text-right" style={{ width: '140px' }}>Subtotal Base</th>
+                <th className="text-right" style={{ width: '120px' }}>IVA Acreditable</th>
+                <th className="text-right" style={{ width: '140px' }}>Total Pagado</th>
+                <th style={{ width: '140px' }}>% del Anual</th>
+                <th>Proveedor Principal</th>
+                <th style={{ width: '110px' }} className="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mesesData.map((m) => {
+                const pctAnual = totalesAnuales.total > 0 ? (m.total / totalesAnuales.total) * 100 : 0;
+                const isCurrentActive = selectedMonth === m.mes;
+                return (
+                  <tr
+                    key={m.mes}
+                    style={{
+                      backgroundColor: isCurrentActive ? '#eff6ff' : 'transparent',
+                      fontWeight: isCurrentActive ? 600 : 'normal'
+                    }}
+                  >
+                    <td>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: m.count > 0 ? '#10b981' : '#cbd5e1' }} />
+                        <strong style={{ color: '#0f172a' }}>{m.name}</strong>
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      {m.count > 0 ? (
+                        <span className="sat-badge sat-badge-blue">{m.count} docs</span>
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>0</span>
+                      )}
+                    </td>
+                    <td className="text-right mono">{fmt(m.subtotal)}</td>
+                    <td className="text-right mono">{fmt(m.iva)}</td>
+                    <td className="text-right mono font-medium" style={{ color: m.total > 0 ? '#0f172a' : '#94a3b8' }}>
+                      {fmt(m.total)}
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.min(pctAnual, 100)}%`, height: '100%', background: '#3b82f6', borderRadius: '4px' }} />
+                        </div>
+                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', width: '38px', color: '#64748b' }}>
+                          {pctAnual.toFixed(1)}%
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: '#475569', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {m.topProvider}
+                    </td>
+                    <td className="text-center">
+                      {m.count > 0 && (
+                        <button
+                          onClick={() => setSelectedMonth(m.mes)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            border: isCurrentActive ? '1px solid #3b82f6' : '1px solid #cbd5e1',
+                            background: isCurrentActive ? '#3b82f6' : '#ffffff',
+                            color: isCurrentActive ? '#ffffff' : '#334155',
+                            cursor: 'pointer',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {isCurrentActive ? '✓ Viendo' : 'Ver Mes'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: '#f8fafc', fontWeight: 800, borderTop: '2px solid #cbd5e1' }}>
+                <td>TOTAL ANUAL</td>
+                <td className="text-center">{totalesAnuales.count} facturas</td>
+                <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(totalesAnuales.subtotal)}</td>
+                <td className="text-right mono" style={{ color: '#d97706' }}>{fmt(totalesAnuales.iva)}</td>
+                <td className="text-right mono font-medium" style={{ color: '#0f172a', fontSize: '1rem' }}>{fmt(totalesAnuales.total)}</td>
+                <td colSpan={3} style={{ textAlign: 'right', color: '#64748b', fontSize: '0.85rem' }}>
+                  100% Gasto Acumulado
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </SectionCard>
+
+      {/* ── 6. LISTADO DETALLADO DE FACTURAS DEL MES SELECCIONADO ── */}
+      <SectionCard
+        icon="🧾"
+        title={`Comprobantes de Egresos: ${activeMonthName}`}
+        badge={`${displayItems.length} comprobantes`}
+      >
+        {/* Controles de Búsqueda y Ordenamiento */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px', maxWidth: '480px' }}>
+            <input
+              type="text"
+              placeholder="🔍 Buscar por proveedor, concepto, RFC o UUID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.6rem 1rem',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.85rem',
+                outline: 'none',
+                transition: 'border 0.2s'
+              }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', cursor: 'pointer', color: '#64748b' }}
+              >
+                ✖
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Ordenar por:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: '0.55rem 0.9rem',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.85rem',
+                color: '#1e293b',
+                background: '#ffffff',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="fecha_desc">Fecha (más reciente primero)</option>
+              <option value="fecha_asc">Fecha (más antigua primero)</option>
+              <option value="monto_desc">Monto Mayor a Menor</option>
+              <option value="monto_asc">Monto Menor a Mayor</option>
+              <option value="emisor_asc">Proveedor (A - Z)</option>
+            </select>
+            <CsvExportButton
+              onClick={() => exportEgresos(displayItems, year, activeMonthName)}
+              label={`Exportar ${activeMonthName}`}
+              count={displayItems.length}
+            />
+          </div>
+
+        </div>
+
+        {/* Listado de Facturas */}
+        {displayItems.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {displayItems.map((item, idx) => {
+              const rowId = item.uuid || `egr-${idx}`;
+              const isExpanded = expandedRows[rowId];
+              return (
+                <div
+                  key={rowId}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    background: '#ffffff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                    overflow: 'hidden',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {/* Header de la tarjeta de factura */}
+                  <div
+                    onClick={() => toggleRow(rowId)}
+                    style={{
+                      padding: '1rem 1.25rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      background: isExpanded ? '#f8fafc' : '#ffffff',
+                      borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '240px' }}>
+                      <span style={{ color: '#94a3b8', fontSize: '0.8rem', width: '12px' }}>
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
+                            {item.fecha}
+                          </span>
+                          <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.7rem' }}>
+                            {item.metodo}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 600 }}>
+                            {item.uso_cfdi}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
+                          {item.emisor}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Base: <span className="mono">{fmt(item.subtotal)}</span></div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>IVA: <span className="mono">{fmt(item.iva)}</span></div>
+                      </div>
+                      <div style={{ textAlign: 'right', minWidth: '120px' }}>
+                        <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Pagado</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
+                          {fmt(item.total)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cuerpo expandible: conceptos y botones de acción SAT */}
+                  {isExpanded && (
+                    <div style={{ padding: '1.25rem 1.5rem', background: '#fafbfc' }}>
+                      
+                      {/* Metadatos y 3 Botones de Acción SAT */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>UUID / Folio:</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (item.raw_cfdi) setSelectedCfdi(item.raw_cfdi);
+                            }}
+                            style={{
+                              background: '#e0f2fe',
+                              border: 'none',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              color: '#1d4ed8',
+                              fontFamily: 'monospace',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              textDecoration: 'underline'
+                            }}
+                            title="Ver Comprobante Fiscal Digital en alta fidelidad"
+                          >
+                            🔍 {item.uuid || 'N/D'}
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (item.raw_cfdi) setViewingXml(item.raw_cfdi);
+                            }}
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #cbd5e1',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              color: '#475569',
+                              fontSize: '0.75rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: 600
+                            }}
+                            title="Ver estructura JSON del comprobante"
+                          >
+                            💻 JSON
+                          </button>
+
+                          {item.raw_cfdi?.filename && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(`http://localhost:8010/api/download_xml?filename=${item.raw_cfdi.filename}`, '_blank');
+                              }}
+                              style={{
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                color: '#475569',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontWeight: 600
+                              }}
+                              title="Descargar archivo original (.xml)"
+                            >
+                              ⬇️ XML
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                          <strong>Forma de Pago:</strong> <span style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', marginLeft: '4px' }}>{item.forma_pago || 'N/D'}</span>
+                        </div>
+                      </div>
+
+                      {/* Tabla de Conceptos */}
+                      {item.conceptos && item.conceptos.length > 0 ? (
+                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse', margin: 0 }}>
+                            <thead style={{ backgroundColor: '#f1f5f9' }}>
+                              <tr>
+                                <th style={{ textAlign: 'left', padding: '0.6rem 1rem', fontWeight: 700, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>Clave SAT & Descripción del Concepto</th>
+                                <th style={{ textAlign: 'right', padding: '0.6rem 1rem', fontWeight: 700, color: '#475569', width: '160px', borderBottom: '1px solid #e2e8f0' }}>Subtotal Base</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {item.conceptos.map((c, cIdx) => (
+                                <tr key={cIdx}>
+                                  <td style={{ padding: '0.75rem 1rem', color: '#1e293b', borderBottom: cIdx !== item.conceptos.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                                    <div style={{ fontWeight: 600 }}>{c.desc}</div>
+                                    {c.clave && (
+                                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                                        Clave SAT: <span style={{ fontFamily: 'monospace', color: '#2563eb' }}>{c.clave}</span> {c.desc_sat ? `(${c.desc_sat})` : ''}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ textAlign: 'right', padding: '0.75rem 1rem', fontFamily: 'monospace', color: '#334155', fontWeight: 600, borderBottom: cIdx !== item.conceptos.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                                    {fmt(parseFloat(c.imp || 0))}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                          No hay desglose de conceptos detallado en el comprobante.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
+            No se encontraron comprobantes que coincidan con el criterio de búsqueda "{searchTerm}".
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Modales */}
+      {selectedCfdi && <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />}
+      {viewingXml && <XmlViewerModal data={viewingXml} onClose={() => setViewingXml(null)} />}
+    </div>
+  );
+}
+
