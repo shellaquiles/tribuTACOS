@@ -1,13 +1,14 @@
 import json
 from typing import Dict, List, Any, Optional
 from sqlalchemy.orm import Session
-from app.models import Cfdi, Client, SummaryCache
+from app.models import Cfdi, Client, SummaryCache, DeclaracionAnualSAT, PagoProvisionalSAT
 
 IGNORED_UUIDS = {
     '9CA1819A-BA40-4179-84A2-AFCBF5E885F3', # Cancelled MATTILDA payroll CFDI replaced by severance
 }
 
 UMA_5_ANUAL = {
+    "2021": 163467.00,
     "2022": 175597.70,
     "2023": 189222.00,
     "2024": 198031.80,
@@ -27,6 +28,31 @@ CAT_DEDUCCIONES = {
     'D09': {'nombre': 'Depósitos en cuentas especiales para el ahorro', 'icon': '🏦'},
     'D10': {'nombre': 'Pagos por servicios educativos (Colegiaturas)', 'icon': '🏫'},
 }
+
+# ─── TABLA DE TARIFA ANUAL DE ISR (ART. 152 LISR) ───
+TARIFA_ANUAL_ISR = [
+    (0.01, 8952.49, 0.00, 0.0192),
+    (8952.50, 75984.55, 171.88, 0.0640),
+    (75984.56, 133536.00, 4461.94, 0.1088),
+    (133536.01, 155229.80, 10723.55, 0.1600),
+    (155229.81, 185852.57, 14194.54, 0.1792),
+    (185852.58, 374837.88, 19682.13, 0.2136),
+    (374837.89, 590796.00, 60049.40, 0.2352),
+    (590796.01, 1127926.84, 110842.74, 0.3000),
+    (1127926.85, 1503902.46, 271981.99, 0.3200),
+    (1503902.47, 4511707.37, 392294.17, 0.3400),
+    (4511707.38, float('inf'), 1414947.85, 0.3500)
+]
+
+def calcular_isr_tarifa_anual(base_gravable: float) -> float:
+    if base_gravable <= 0: return 0.0
+    for lim_inf, lim_sup, cuota_fija, pct in TARIFA_ANUAL_ISR:
+        if lim_inf <= base_gravable <= lim_sup:
+            excedente = base_gravable - lim_inf
+            impuesto_marginal = excedente * pct
+            return round(cuota_fija + impuesto_marginal, 2)
+    return 0.0
+
 
 def resolver_emisor(emisor_original: str, conceptos: List[Dict]) -> str:
     texto = " ".join([str(c.get('desc', '')).lower() for c in conceptos])
@@ -58,50 +84,46 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
 
     cfdis_query = db.query(Cfdi).filter(Cfdi.client_id == client.id).all()
     all_cfdis = [c.to_dict() for c in cfdis_query]
-
-    EJERCICIO = str(year)
+    
+    EJERCICIO = year
     user_rfc = client.rfc.upper()
 
-    all_cfdis = [c for c in all_cfdis if (c.get('fecha') or '').startswith(EJERCICIO) or c.get('categoria') == 'pago' or c.get('categoria') == 'retencion']
-
-    seen_uuids = set()
-    uniq = []
-    for c in all_cfdis:
-        uid = c.get('uuid') or str(id(c))
-        if uid not in seen_uuids:
-            seen_uuids.add(uid)
-            uniq.append(c)
-    all_cfdis = uniq
-
-    mensual_pfae = {m: {'ingresos': 0.0, 'egresos': 0.0, 'isr_ret': 0.0, 'iva_ret': 0.0, 'iva_tras': 0.0, 'iva_acred': 0.0} for m in range(1, 13)}
-
-    # 1. Process EMITIDOS (Ingresos AEyP)
-    hon_items = [i for i in all_cfdis if i.get('categoria') == 'ingreso']
+    # ── 1. PROCESAR FACTURAS EMITIDAS (HONORARIOS / INGRESOS ACTIVIDAD PROFESIONAL) ──
+    emitidos_ingreso = [
+        i for i in all_cfdis 
+        if i.get('categoria') == 'ingreso' and (i.get('emisor_rfc') or '').upper() == user_rfc
+    ]
+    
+    mensual_pfae = {
+        m: {
+            'ingresos': 0.0, 'iva_tras': 0.0, 'isr_ret': 0.0, 'iva_ret': 0.0,
+            'egresos': 0.0, 'egresos_deducibles': 0.0, 'egresos_no_deducibles': 0.0,
+            'iva_acred': 0.0, 'iva_acred_fiscal': 0.0
+        } 
+        for m in range(1, 13)
+    }
+    
     lista_honorarios = []
-    for i in hon_items:
+    for i in emitidos_ingreso:
         if not i.get('fecha'): continue
+        if not i['fecha'].startswith(EJERCICIO): continue
         try:
             m = int(i['fecha'].split('-')[1])
-            base_calc = (i.get('subtotal') or 0.0) - (i.get('descuento') or 0.0)
-            if i.get('metodo_pago') == 'PUE':
-                mensual_pfae[m]['ingresos'] += base_calc
-                mensual_pfae[m]['isr_ret'] += (i.get('retencion_isr') or 0.0)
-                mensual_pfae[m]['iva_ret'] += (i.get('retencion_iva') or 0.0)
-                mensual_pfae[m]['iva_tras'] += (i.get('iva') or 0.0)
-                
+            sub = i.get('subtotal') or 0.0
+            mensual_pfae[m]['ingresos'] += sub
+            mensual_pfae[m]['iva_tras'] += (i.get('iva') or 0.0)
+            mensual_pfae[m]['isr_ret'] += (i.get('retencion_isr') or 0.0)
+            mensual_pfae[m]['iva_ret'] += (i.get('retencion_iva') or 0.0)
             lista_honorarios.append({
                 'fecha': i['fecha'][:10],
-                'cliente': i.get('receptor_nombre') or i.get('receptor_rfc'),
-                'rfc': i.get('receptor_rfc'),
-                'subtotal': base_calc,
+                'receptor': i.get('receptor_nombre') or i.get('receptor_rfc'),
+                'subtotal': sub,
                 'iva': i.get('iva', 0.0),
-                'isr_ret': i.get('retencion_isr', 0.0),
-                'iva_ret': i.get('retencion_iva', 0.0),
-                'total': base_calc + (i.get('iva') or 0.0) - (i.get('retencion_isr') or 0.0) - (i.get('retencion_iva') or 0.0),
+                'ret_isr': i.get('retencion_isr', 0.0),
+                'ret_iva': i.get('retencion_iva', 0.0),
+                'total': i.get('total', 0.0),
                 'uuid': i.get('uuid'),
-                'metodo': i.get('metodo_pago') or 'N/A',
-                'conceptos': i.get('conceptos', []),
-                'raw_cfdi': i
+                'conceptos': i.get('conceptos', [])
             })
         except Exception:
             pass
@@ -116,12 +138,11 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
     lista_hon_conceptos = [{'concepto': k, 'importe': v} for k, v in hon_conceptos.items()]
     lista_honorarios.sort(key=lambda x: x['fecha'], reverse=True)
 
-    # 2. Process Credit Notes
-    otros_ingresos_items = [i for i in all_cfdis if i.get('categoria') == 'egreso_egreso']
+    # ── 2. PROCESAR NOTAS DE CRÉDITO Y DESCUENTOS ──
+    otros_ingresos_items = [i for i in all_cfdis if i.get('categoria') == 'egreso_egreso' and (i.get('fecha') or '').startswith(EJERCICIO)]
     lista_otros_ingresos = []
     total_otros_ingresos = 0.0
     for i in otros_ingresos_items:
-        if not i.get('fecha'): continue
         base_calc = (i.get('subtotal') or 0.0) - (i.get('descuento') or 0.0)
         total_otros_ingresos += base_calc
         lista_otros_ingresos.append({
@@ -133,22 +154,16 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             'uuid': i.get('uuid'),
             'conceptos': i.get('conceptos', [])
         })
-    lista_otros_ingresos.sort(key=lambda x: x['fecha'], reverse=True)
 
-    otros_conceptos = {}
-    for i in lista_otros_ingresos:
-        for c in i.get('conceptos', []):
-            desc = c.get('desc', 'Descuento o Bonificación').upper()
-            if desc not in otros_conceptos:
-                otros_conceptos[desc] = 0.0
-            otros_conceptos[desc] += c.get('imp', 0.0)
-    lista_otros_conceptos = [{'concepto': k, 'importe': v} for k, v in otros_conceptos.items()]
-
-    # 3. Process RECIBIDOS (Egresos y Gastos de Negocio)
+    # ── 3. PROCESAR COMPRAS Y GASTOS RECIBIDOS (DEDUCCIONES AUTORIZADAS) ──
     lista_gastos = []
-    egresos = [i for i in all_cfdis if i.get('categoria') == 'egreso' and not (i.get('uso_cfdi') or '').startswith('D') and i.get('uso_cfdi') != 'S01' and not i.get('es_interes')]
+    egresos = [
+        i for i in all_cfdis 
+        if i.get('categoria') == 'egreso' and not (i.get('uso_cfdi') or '').startswith('D') and i.get('uso_cfdi') != 'S01' and not i.get('es_interes')
+    ]
+    
     for i in egresos:
-        if not i.get('fecha'): continue
+        if not i.get('fecha') or not i['fecha'].startswith(EJERCICIO): continue
         try:
             m = int(i['fecha'].split('-')[1])
             if i.get('metodo_pago') == 'PUE':
@@ -168,10 +183,15 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                     motivo_no_ded = "Combustible pagado en Efectivo (01): El SAT exige pago electrónico para combustible sin importar el monto."
                 elif fp == '01' and base_calc > 2000.0:
                     es_deducible = False
-                    motivo_no_ded = f"Gasto mayor a $2,000 pagado en Efectivo (01): El SAT exige medios electrónicos (Art. 27 LISR)."
+                    motivo_no_ded = "Gasto mayor a $2,000 pagado en Efectivo (01): El SAT exige medios electrónicos (Art. 27 LISR)."
                 
                 mensual_pfae[m]['egresos'] += base_calc
                 mensual_pfae[m]['iva_acred'] += iva_val
+                if es_deducible:
+                    mensual_pfae[m]['egresos_deducibles'] += base_calc
+                    mensual_pfae[m]['iva_acred_fiscal'] += iva_val
+                else:
+                    mensual_pfae[m]['egresos_no_deducibles'] += base_calc
                 
                 lista_gastos.append({
                     'fecha': i['fecha'][:10],
@@ -193,12 +213,11 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
         except Exception:
             pass
 
-    # 4. Process PAGOS 2.0 (Recibidos como deducciones pagadas)
+    # Pagos 2.0 (Complementos de Pago Recibidos)
     pagos_recibidos = [i for i in all_cfdis if i.get('categoria') == 'pago' and (i.get('receptor_rfc') or '').upper() == user_rfc]
     for p in pagos_recibidos:
         for det in p.get('pagos_detalle', []):
-            if not det.get('fecha_pago'): continue
-            if not det['fecha_pago'].startswith(EJERCICIO): continue
+            if not det.get('fecha_pago') or not det['fecha_pago'].startswith(EJERCICIO): continue
             try:
                 uuid_rel = det.get('uuid_rel', '')
                 orig = next((c for c in all_cfdis if (c.get('uuid') or '').upper() == uuid_rel.upper()), None)
@@ -210,7 +229,9 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 base = val / 1.16
                 iva = val - base
                 mensual_pfae[m]['egresos'] += base
+                mensual_pfae[m]['egresos_deducibles'] += base
                 mensual_pfae[m]['iva_acred'] += iva
+                mensual_pfae[m]['iva_acred_fiscal'] += iva
                 
                 conceptos_to_show = orig.get('conceptos', []) if orig else p.get('conceptos', [])
                 cfdi_to_show = orig if orig else p
@@ -236,146 +257,59 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             except Exception:
                 pass
 
-    # 5. Process SUELDOS Y NÓMINA (Regla Fiscal Estándar SAT Art. 94 & 93 LISR)
-    nomina_items = [i for i in all_cfdis if i.get('categoria') == 'nomina']
-    det_ex = {'aguinaldo': 0, 'ptu': 0, 'prima_vacacional': 0, 'prima_dominical': 0, 'otros': 0, 'desglose_otros': []}
+    # ── 4. PROCESAR NÓMINA (SUELDOS Y SALARIOS) ──
+    nomina_items = [i for i in all_cfdis if i.get('categoria') == 'nomina' and (i.get('fecha') or '').startswith(EJERCICIO)]
     by_emp = {}
     
     for i in nomina_items:
+        if i.get('uuid') in IGNORED_UUIDS: continue
         key = i.get('emisor_rfc') or i.get('emisor_nombre', 'Desconocido')
-            
         if key not in by_emp:
             by_emp[key] = {
                 'nombre_display': i.get('emisor_nombre') or key,
                 'rfc': key,
-                'gravado_raw': 0.0,
-                'prevision_social_exenta': 0.0,
                 'gravado': 0.0,
                 'exento': 0.0,
                 'isr': 0.0,
                 'detalle_exento': {'aguinaldo': 0, 'ptu': 0, 'prima_vacacional': 0, 'prima_dominical': 0, 'otros': 0, 'desglose_otros': []},
                 'recibos': []
             }
-        else:
-            current_name = by_emp[key]['nombre_display']
-            new_name = i.get('emisor_nombre')
-            if new_name and len(new_name) < len(current_name):
-                by_emp[key]['nombre_display'] = new_name
         
-        if i.get('uuid') not in IGNORED_UUIDS:
-            by_emp[key]['gravado_raw'] += i.get('nomina_gravado', 0.0)
-            by_emp[key]['exento'] += i.get('nomina_exento', 0.0)
-            
-            # Identificar previsión social y vales de despensa para ajustar base gravable
-            for p in i.get('percepciones_detalle', []):
-                tipo = p.get('tipo')
-                if tipo in ('029', '005'):
-                    by_emp[key]['prevision_social_exenta'] += p.get('exento', 0.0)
-
-            d = i.get('nomina_detalle_exento', {})
-            for k in ['aguinaldo', 'ptu', 'prima_vacacional', 'prima_dominical', 'otros']:
-                det_ex[k] += d.get(k, 0)
-                by_emp[key]['detalle_exento'][k] += d.get(k, 0)
-            det_ex['desglose_otros'].extend(d.get('desglose_otros', []))
-            by_emp[key]['detalle_exento']['desglose_otros'].extend(d.get('desglose_otros', []))
-            
-        by_emp[key]['isr'] += i.get('retencion_isr', 0.0)
-
-        # Agregar recibo a la lista del empleador
-        dias_pagados = i.get('num_dias_pagados') or 0.0
-        vales = sum(p.get('total', 0) for p in i.get('percepciones_detalle', []) if p.get('tipo') == '029')
-            
-        recibo = {
+        g = float(i.get('nomina_gravado') or 0.0)
+        e = float(i.get('nomina_exento') or 0.0)
+        r = float(i.get('retencion_isr') or 0.0)
+        
+        by_emp[key]['gravado'] += g
+        by_emp[key]['exento'] += e
+        by_emp[key]['isr'] += r
+        by_emp[key]['recibos'].append({
             'uuid': i.get('uuid'),
-            'fecha': i.get('fecha_pago_nomina') or (i.get('fecha') or '')[:10],
-            'fecha_inicial': i.get('fecha_inicial_pago'),
-            'fecha_final': i.get('fecha_final_pago'),
-            'dias_pagados': dias_pagados,
-            'total_bruto': i.get('subtotal', 0),
-            'total_deducciones': i.get('descuento', 0),
-            'vales': vales,
-            'neto': round(i.get('total', 0) - vales, 2),
-            'isr_retenido': i.get('retencion_isr', 0),
-            'percepciones': i.get('percepciones_detalle', []),
-            'deducciones': i.get('deducciones_detalle', []),
-            'raw_cfdi': i
-        }
-        by_emp[key]['recibos'].append(recibo)
+            'fecha': (i.get('fecha') or '')[:10],
+            'gravado': g,
+            'exento': e,
+            'isr_retenido': r,
+            'total': g + e - r
+        })
 
-    # Consolidar ingresos acumulables por empleador
-    tg = 0.0
-    te = 0.0
-    isr_n = 0.0
-    for k, v in by_emp.items():
-        if EJERCICIO == '2025':
-            v['gravado'] = max(0.0, v['gravado_raw'] - v['prevision_social_exenta'])
-        else:
-            v['gravado'] = v['gravado_raw']
-        tg += v['gravado']
-        te += v['exento']
-        isr_n += v['isr']
+    tg = sum(v['gravado'] for v in by_emp.values())
+    te = sum(v['exento'] for v in by_emp.values())
+    isr_n = sum(v['isr'] for v in by_emp.values())
 
-    for e_key in by_emp:
-        by_emp[e_key]['recibos'].sort(key=lambda r: r['fecha_final'] or r['fecha'] or '')
-
-    sueldos_conceptos = {}
-    for i in nomina_items:
-        if i.get('uuid') in IGNORED_UUIDS: continue
-        for p in i.get('percepciones_detalle', []):
-            cname = p.get('concepto', 'Otra Percepción').upper()
-            if cname not in sueldos_conceptos:
-                sueldos_conceptos[cname] = {'tipo': 'percepcion', 'gravado': 0, 'exento': 0, 'total': 0}
-            sueldos_conceptos[cname]['gravado'] += p.get('gravado', 0)
-            sueldos_conceptos[cname]['exento'] += p.get('exento', 0)
-            sueldos_conceptos[cname]['total'] += p.get('total', 0)
-        for d in i.get('deducciones_detalle', []):
-            cname = d.get('concepto', 'Otra Deducción').upper()
-            if cname not in sueldos_conceptos:
-                sueldos_conceptos[cname] = {'tipo': 'deduccion', 'total': 0}
-            sueldos_conceptos[cname]['total'] += d.get('importe', 0)
-    
-    lista_sueldos_conceptos = [{'concepto': k, **v} for k, v in sueldos_conceptos.items()]
-    lista_sueldos_conceptos.sort(key=lambda x: x.get('total', 0), reverse=True)
-
-    # 6. Process INTERESES
-    int_items = [i for i in all_cfdis if i.get('es_interes')]
+    # ── 5. PROCESAR INTERESES BANCARIOS / FINANCIEROS ──
+    int_items = [i for i in all_cfdis if i.get('es_interes') and (i.get('fecha') or '').startswith(EJERCICIO)]
     nom_i = sum(i.get('intereses_nominal', 0) for i in int_items)
     real_i = sum(i.get('intereses_real', 0) for i in int_items)
-    # Default fallback for bank real yields if 0
-    if real_i == 0.0 and EJERCICIO == '2024':
-        real_i = 18.00
+    if real_i == 0.0 and EJERCICIO == '2024': real_i = 18.00
     isr_i = sum(i.get('retencion_isr', 0) for i in int_items)
-    int_detalle = []
-    for i in int_items:
-        int_detalle.append({
-            "uuid": i.get('uuid'),
-            "emisor": i.get('emisor_nombre') or i.get('emisor_rfc'),
-            "fecha": (i.get('fecha') or '').split('T')[0],
-            "nominal": i.get('intereses_nominal', 0),
-            "real": i.get('intereses_real', 0),
-            "retencion_isr": i.get('retencion_isr', 0)
-        })
-    int_detalle.sort(key=lambda x: x['fecha'], reverse=True)
 
-    # 7. Totals
-    total_ing = sum(v['ingresos'] for v in mensual_pfae.values())
-    total_egr = sum(v['egresos'] for v in mensual_pfae.values())
-    total_isr_ret = sum(v['isr_ret'] for v in mensual_pfae.values())
-    total_iva_ret = sum(v['iva_ret'] for v in mensual_pfae.values())
-    total_iva_tras = sum(v['iva_tras'] for v in mensual_pfae.values())
-    total_iva_acred = sum(v['iva_acred'] for v in mensual_pfae.values())
-
-    # 8. PERSONAL DEDUCTIONS (Art. 151 LISR)
-    # Incluye facturas D01-D10 + Aportaciones Voluntarias / Retiro (ej. Insignia Life $7,578)
+    # ── 6. DEDUCCIONES PERSONALES (ART. 151 LISR) ──
     pers_d_raw = [
         i for i in all_cfdis 
-        if (i.get('uso_cfdi') or '').startswith('D')
+        if (i.get('uso_cfdi') or '').startswith('D') and (i.get('fecha') or '').startswith(EJERCICIO)
     ]
-
-    # Check for Insignia Life Plan de Retiro / Aportaciones complementarias
-    has_insignia = any(x.get('emisor_rfc') == 'ILI0805169R6' for x in pers_d_raw)
-    if not has_insignia and EJERCICIO == '2024':
-        # Añadir la constancia de aportaciones voluntarias al retiro anual reconocida por el SAT
+    
+    # Soporte PPR Insignia Life 2024
+    if EJERCICIO == '2024' and not any(x.get('emisor_rfc') == 'ILI0805169R6' for x in pers_d_raw):
         pers_d_raw.append({
             'uuid': 'ILI-CONSTANCIA-ANUAL-2024',
             'emisor_rfc': 'ILI0805169R6',
@@ -385,8 +319,7 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             'subtotal': 7578.00,
             'forma_pago': '03',
             'metodo_pago': 'PUE',
-            'categoria': 'egreso',
-            'conceptos': [{'desc': 'Aportaciones voluntarias y complementarias a planes personales de retiro (Art. 151 Fracc. V)', 'imp': 7578.00}]
+            'conceptos': [{'desc': 'Aportaciones complementarias a planes personales de retiro (Art. 151 Fracc. V)', 'imp': 7578.00}]
         })
 
     pers_d_validas = []
@@ -413,7 +346,7 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             "uuid": item.get('uuid'),
             "emisor": item.get('emisor_nombre') or item.get('emisor_rfc'),
             "rfc_emisor": item.get('emisor_rfc'),
-            "fecha": (item.get('fecha') or '').split('T')[0],
+            "fecha": (item.get('fecha') or '')[:10],
             "uso_cfdi": uso,
             "uso_nombre": CAT_DEDUCCIONES.get(uso, {}).get('nombre', uso),
             "uso_icon": CAT_DEDUCCIONES.get(uso, {}).get('icon', '📄'),
@@ -426,19 +359,18 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
 
         if not motivos_rechazo:
             pers_d_validas.append(cfdi_row)
-            if uso in pers_d_por_uso:
-                pers_d_por_uso[uso] += sub
-            else:
-                pers_d_por_uso[uso] = sub
+            pers_d_por_uso[uso] = pers_d_por_uso.get(uso, 0.0) + sub
         else:
             cfdi_row["motivos_rechazo"] = motivos_rechazo
             pers_d_observadas.append(cfdi_row)
 
-    pers_d_validas.sort(key=lambda x: x['fecha'], reverse=True)
-    pers_d_observadas.sort(key=lambda x: x['fecha'], reverse=True)
-
     pers_d_total_valido = sum(x['monto'] for x in pers_d_validas)
     pers_d_total_observado = sum(x['monto'] for x in pers_d_observadas)
+
+    total_ing = sum(v['ingresos'] for v in mensual_pfae.values())
+    total_egr = sum(v['egresos_deducibles'] for v in mensual_pfae.values())
+    total_isr_ret = sum(v['isr_ret'] for v in mensual_pfae.values())
+    total_iva_ret = sum(v['iva_ret'] for v in mensual_pfae.values())
 
     total_ingresos_ejercicio = tg + te + total_ing + total_otros_ingresos + real_i
     limite_15_pct = total_ingresos_ejercicio * 0.15
@@ -446,19 +378,178 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
     tope_legal = min(limite_15_pct, limite_5_umas) if total_ingresos_ejercicio > 0 else limite_5_umas
     monto_deducible_efectivo = min(pers_d_total_valido, tope_legal)
 
-    # Cálculo 100% dinámico y algorítmico derivado de los XMLs en base de datos
+    # ── 7. SIMULADOR DE PAGOS PROVISIONALES MENSUALES (ART. 106 LISR Y ART. 5 LIVA) ──
+    simulacion_provisionales = []
+    acum_ingresos_pfae = 0.0
+    acum_gastos_pfae = 0.0
+    acum_isr_ret_pfae = 0.0
+    acum_pagos_prov_isr = 0.0
+
+    MES_NAMES = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+
+    for m in range(1, 13):
+        m_datos = mensual_pfae[m]
+        ing_mes = m_datos['ingresos']
+        gas_ded_mes = m_datos['egresos_deducibles']
+        gas_no_ded_mes = m_datos['egresos_no_deducibles']
+        isr_ret_mes = m_datos['isr_ret']
+        
+        acum_ingresos_pfae += ing_mes
+        acum_gastos_pfae += gas_ded_mes
+        acum_isr_ret_pfae += isr_ret_mes
+        
+        base_prov = max(0.0, acum_ingresos_pfae - acum_gastos_pfae)
+        
+        # Tarifa mensual acumulada aproximada
+        # Para personas físicas, el ISR provisional acumulado se calcula con la tarifa del periodo m
+        isr_causado_acum = 0.0
+        if base_prov > 0:
+            # Escala anualizada proporcional al mes m/12
+            base_anualizada = base_prov * (12.0 / m)
+            isr_anual_est = calcular_isr_tarifa_anual(base_anualizada)
+            isr_causado_acum = round(isr_anual_est * (m / 12.0), 2)
+        
+        # Acreditamientos provisionales
+        isr_cargo_mes = max(0.0, isr_causado_acum - acum_pagos_prov_isr - acum_isr_ret_pfae)
+        acum_pagos_prov_isr += isr_cargo_mes
+        
+        # IVA del mes (Definitivo Art. 5 LIVA)
+        iva_cobrado = m_datos['iva_tras']
+        iva_acred = m_datos['iva_acred_fiscal']
+        iva_ret = m_datos['iva_ret']
+        
+        iva_cargo_mes = max(0.0, round(iva_cobrado - iva_acred - iva_ret, 2))
+        iva_favor_mes = max(0.0, round((iva_acred + iva_ret) - iva_cobrado, 2)) if iva_cobrado < (iva_acred + iva_ret) else 0.0
+        
+        total_pagar_mes = round(isr_cargo_mes + iva_cargo_mes, 2)
+        
+        simulacion_provisionales.append({
+            'mes_numero': m,
+            'mes_nombre': MES_NAMES[m],
+            'ingresos_periodo': round(ing_mes, 2),
+            'ingresos_acumulados': round(acum_ingresos_pfae, 2),
+            'deducciones_bancarizadas_periodo': round(gas_ded_mes, 2),
+            'deducciones_bancarizadas_acumuladas': round(acum_gastos_pfae, 2),
+            'deducciones_no_deducibles_efectivo': round(gas_no_ded_mes, 2),
+            'base_gravable_provisional': round(base_prov, 2),
+            'isr_causado_acumulado': round(isr_causado_acum, 2),
+            'isr_retenido_periodo': round(isr_ret_mes, 2),
+            'isr_retenido_acumulado': round(acum_isr_ret_pfae, 2),
+            'isr_a_cargo_mes': round(isr_cargo_mes, 2),
+            'iva_cobrado_16': round(iva_cobrado, 2),
+            'iva_acreditable_gastos': round(iva_acred, 2),
+            'iva_retenido': round(iva_ret, 2),
+            'iva_a_cargo_mes': round(iva_cargo_mes, 2),
+            'iva_a_favor_mes': round(iva_favor_mes, 2),
+            'total_a_pagar_mes': total_pagar_mes
+        })
+
+    # ── 8. SIMULADOR DE DECLARACIÓN ANUAL (ART. 152 LISR) ──
+    utilidad_honorarios_anual = max(0.0, total_ing - total_egr)
+    ingresos_acumulables_totales = tg + utilidad_honorarios_anual + real_i
+    base_gravable_anual = max(0.0, ingresos_acumulables_totales - monto_deducible_efectivo)
+    isr_anual_causado = calcular_isr_tarifa_anual(base_gravable_anual)
+    
+    total_pagos_provisionales_calculados = sum(m['isr_a_cargo_mes'] for m in simulacion_provisionales)
+    total_retenciones_anuales = isr_n + total_isr_ret + isr_i
+    
+    saldo_a_favor_proyectado = 0.0
+    saldo_a_cargo_proyectado = 0.0
+    
+    impuestos_ya_pagados_totales = total_pagos_provisionales_calculados + total_retenciones_anuales
+    if impuestos_ya_pagados_totales >= isr_anual_causado:
+        saldo_a_favor_proyectado = round(impuestos_ya_pagados_totales - isr_anual_causado, 2)
+    else:
+        saldo_a_cargo_proyectado = round(isr_anual_causado - impuestos_ya_pagados_totales, 2)
+
+    simulacion_anual = {
+        'ingresos_sueldos_gravados': round(tg, 2),
+        'ingresos_honorarios_utilidad': round(utilidad_honorarios_anual, 2),
+        'ingresos_intereses_reales': round(real_i, 2),
+        'ingresos_acumulables_totales': round(ingresos_acumulables_totales, 2),
+        'deducciones_personales_aplicadas': round(monto_deducible_efectivo, 2),
+        'deducciones_personales_brutas': round(pers_d_total_valido, 2),
+        'tope_legal_deducciones': round(tope_legal, 2),
+        'remanente_deducciones': max(0.0, round(tope_legal - pers_d_total_valido, 2)),
+        'base_gravable_anual': round(base_gravable_anual, 2),
+        'isr_anual_causado': round(isr_anual_causado, 2),
+        'pagos_provisionales_acreditables': round(total_pagos_provisionales_calculados, 2),
+        'retenciones_totales_acreditables': round(total_retenciones_anuales, 2),
+        'saldo_a_favor_proyectado': saldo_a_favor_proyectado,
+        'saldo_a_cargo_proyectado': saldo_a_cargo_proyectado
+    }
+
+    # ── 9. CONSULTAR ACUSE OFICIAL DEL SAT EN BD (SI EXISTE) ──
+    sat_rec = db.query(DeclaracionAnualSAT).filter(
+        DeclaracionAnualSAT.client_id == client.id,
+        DeclaracionAnualSAT.year == EJERCICIO
+    ).first()
+
+    sat_anual = None
+    if sat_rec:
+        sat_anual = {
+            'tipo_declaracion': sat_rec.tipo_declaracion,
+            'num_operacion': sat_rec.num_operacion,
+            'fecha_presentacion': sat_rec.fecha_presentacion,
+            'ingresos_acumulables_totales': sat_rec.ingresos_acumulables,
+            'deducciones_personales': sat_rec.deducciones_personales,
+            'base_gravable': sat_rec.base_gravable,
+            'isr_tarifa': sat_rec.isr_tarifa,
+            'pagos_provisionales_acreditados': sat_rec.pagos_provisionales_acreditados,
+            'isr_retenido_total': sat_rec.isr_retenido,
+            'saldo_a_favor': sat_rec.saldo_a_favor,
+            'saldo_a_cargo': sat_rec.saldo_a_cargo,
+            'clabe': sat_rec.clabe,
+            'banco': sat_rec.banco
+        }
+
+    resumen_regimenes = [
+        {
+            "regimen": "Sueldos y Salarios",
+            "ingresos": tg + te,
+            "deducciones": 0.0,
+            "retenciones": isr_n,
+            "status": "Activo" if (tg + te) > 0 else "Inactivo",
+            "icono": "👔"
+        },
+        {
+            "regimen": "Actividad Empresarial / Honorarios",
+            "ingresos": total_ing,
+            "deducciones": total_egr,
+            "retenciones": total_isr_ret,
+            "status": "Activo" if total_ing > 0 else "Inactivo",
+            "icono": "💼"
+        },
+        {
+            "regimen": "Intereses Financieros",
+            "ingresos": real_i,
+            "deducciones": 0.0,
+            "retenciones": isr_i,
+            "status": "Activo" if real_i > 0 else "Inactivo",
+            "icono": "📈"
+        }
+    ]
 
     result = {
+        "year": EJERCICIO,
+        "ejercicio": EJERCICIO,
         "client": {
             "id": client.id,
             "name": client.name,
             "rfc": client.rfc,
         },
+        "oficial_sat": sat_anual,
+        "simulacion_anual": simulacion_anual,
+        "simulacion_provisional_mensual": simulacion_provisionales,
+        "resumen_regimenes": resumen_regimenes,
         "sections": {
             "sueldos": {
                 "total_ingresos": tg + te, "gravado": tg, "exento": te, "isr_retenido": isr_n,
-                "detalle_exento": det_ex, "detalle": [{**v, "nombre": v.get('nombre_display', k)} for k, v in by_emp.items()],
-                "resumen_conceptos": lista_sueldos_conceptos
+                "detalle_exento": {}, "detalle": [{**v, "nombre": v.get('nombre_display', k)} for k, v in by_emp.items()],
+                "resumen_conceptos": []
             },
             "honorarios": {
                 "ingresos": total_ing,
@@ -470,12 +561,12 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 "detalle": lista_honorarios,
                 "resumen_conceptos": lista_hon_conceptos
             },
-            "intereses": {"nominal": nom_i, "real": real_i, "isr_retenido": isr_i, "detalle": int_detalle},
+            "intereses": {"nominal": nom_i, "real": real_i, "isr_retenido": isr_i, "detalle": []},
             "reporte_gastos": lista_gastos,
             "otros_ingresos": {
                 "total": total_otros_ingresos,
                 "detalle": lista_otros_ingresos,
-                "resumen_conceptos": lista_otros_conceptos
+                "resumen_conceptos": []
             },
             "deducciones_personales": {
                 "total": monto_deducible_efectivo,
@@ -496,26 +587,27 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             }
         },
         "summary": {
-            "ingresos_totales_cobrados": total_ing + total_otros_ingresos,
+            "ingresos_totales_cobrados": total_ing,
             "egresos_totales_pagados": total_egr,
-            "utilidad_fiscal": max((total_ing + total_otros_ingresos) - total_egr, 0),
+            "utilidad_fiscal": max(0.0, total_ing - total_egr),
             "isr_retenido": total_isr_ret + isr_n + isr_i,
-            "iva_favor_cargo": (total_iva_tras - total_iva_ret) - total_iva_acred
+            "iva_favor_cargo": round(sum(v['iva_tras'] - v['iva_acred_fiscal'] - v['iva_ret'] for v in mensual_pfae.values()), 2)
         }
     }
 
+    # Guardar en cache
     try:
         cache_entry = db.query(SummaryCache).filter(
             SummaryCache.client_id == client.id,
-            SummaryCache.year == year
+            SummaryCache.year == EJERCICIO
         ).first()
         if not cache_entry:
-            cache_entry = SummaryCache(client_id=client.id, year=year, summary_json=json.dumps(result, ensure_ascii=False))
+            cache_entry = SummaryCache(client_id=client.id, year=EJERCICIO)
             db.add(cache_entry)
-        else:
-            cache_entry.summary_json = json.dumps(result, ensure_ascii=False)
+        cache_entry.summary_json = json.dumps(result)
         db.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error guardando caché de resumen: {e}")
+        db.rollback()
 
     return result

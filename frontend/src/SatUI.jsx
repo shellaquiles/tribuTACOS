@@ -638,9 +638,13 @@ export const NominaDetalleSection = ({ data, year }) => {
 
 // ─── SECCIÓN 2: AEyP / Honorarios ────────────────────────────────────────────
 
-export function DashboardSection({ sections, year }) {
+export function DashboardSection({ sections, year, data }) {
   const nomina = sections?.sueldos;
   const aeyp = sections?.honorarios;
+  const gastos = sections?.reporte_gastos || [];
+  const deducciones = sections?.deducciones_personales || {};
+  const simAnual = data?.simulacion_anual || {};
+  const oficial = data?.oficial_sat;
 
   const mLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const fmt = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 }).format(val ?? 0);
@@ -650,8 +654,6 @@ export function DashboardSection({ sections, year }) {
     const month = parseInt((r.fecha || '').split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    
-    // Ingreso Bruto Fiscal (Percepciones gravadas + exentas sin incluir OtrosPagos informativos)
     const percsTotal = (r.percepciones || []).filter(p => !p.es_otro_pago && p.tipo !== '029').reduce((s,p) => s + (p.total || (p.gravado + p.exento) || 0), 0);
     const montoRecibo = percsTotal > 0 ? percsTotal : (r.total_bruto || 0);
     nominaMaps[m] = (nominaMaps[m] || 0) + montoRecibo;
@@ -662,17 +664,14 @@ export function DashboardSection({ sections, year }) {
     const month = parseInt((item.fecha || '').split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    // Subtotal de honorarios antes de IVA (Base gravable)
     aeypMaps[m] = (aeypMaps[m] || 0) + (item.subtotal || 0);
   });
 
-  const totalNomina = (nomina?.gravado || 0) + (nomina?.exento || 0) > 0 
-    ? ((nomina?.gravado || 0) + (nomina?.exento || 0)) 
-    : Object.values(nominaMaps).reduce((s,v)=>s+v,0);
-  const totalAeyp = (aeyp?.ingresos || 0) > 0 
-    ? (aeyp?.ingresos || 0) 
-    : Object.values(aeypMaps).reduce((s,v)=>s+v,0);
+  const totalNomina = (nomina?.gravado || 0) + (nomina?.exento || 0);
+  const totalAeyp = aeyp?.ingresos || 0;
   const totalGeneral = totalNomina + totalAeyp;
+  const totalGastosDed = gastos.filter(g => g.es_deducible_fiscal !== false).reduce((s, g) => s + (g.subtotal || 0), 0);
+  const totalRetenciones = (nomina?.isr_retenido || 0) + (aeyp?.isr_retenido || 0) + (sections?.intereses?.isr_retenido || 0);
 
   const mensualData = mLabels.map(m => ({
     name: m,
@@ -683,48 +682,122 @@ export function DashboardSection({ sections, year }) {
 
   const pieSources = [
     { name: 'Sueldos y Nómina', value: totalNomina },
-    { name: 'AEyP / Honorarios', value: totalAeyp },
+    { name: 'Honorarios / AEyP', value: totalAeyp },
   ].filter(x => x.value > 0);
 
   const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444'];
-  const bestMonth = mensualData.reduce((a,b) => b.Total > a.Total ? b : a, mensualData[0]);
+  const esSaldoFavor = (simAnual.saldo_a_favor_proyectado || 0) > 0;
+  const saldoMonto = esSaldoFavor ? simAnual.saldo_a_favor_proyectado : simAnual.saldo_a_cargo_proyectado;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-        {[
-          { label: 'Ingreso Total',       value: fmt(totalGeneral), color: '#6366f1', icon: '💰', sub: year },
-          { label: 'Sueldos y Nómina',    value: fmt(totalNomina),  color: '#3b82f6', icon: '👥', sub: totalGeneral>0 ? ((totalNomina/totalGeneral)*100).toFixed(0)+'%' : '—' },
-          { label: 'AEyP / Honorarios',   value: fmt(totalAeyp),    color: '#10b981', icon: '💼', sub: totalGeneral>0 ? ((totalAeyp/totalGeneral)*100).toFixed(0)+'%' : '—' },
-          { label: 'Mejor Mes',           value: bestMonth?.name||'—', color: '#f59e0b', icon: '📅', sub: fmt(bestMonth?.Total) },
-        ].map((k,i) => (
-          <div key={i} style={{ background:'white', borderRadius:'14px', padding:'1.25rem 1.5rem', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)', position:'relative', overflow:'hidden' }}>
-            <div style={{ position:'absolute', top:0, left:0, right:0, height:'3px', background:k.color }} />
-            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'8px' }}>
-              <span style={{ fontSize:'1.1rem' }}>{k.icon}</span>
-              <span style={{ fontSize:'0.7rem', fontWeight:800, textTransform:'uppercase', color:'#94a3b8', letterSpacing:'0.05em' }}>{k.label}</span>
+      {/* ── HERO BANNER DEL RESULTADO ANUAL PREVIO ── */}
+      <div style={{
+        background: esSaldoFavor
+          ? 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #0f172a 100%)'
+          : 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #1e1b4b 100%)',
+        borderRadius: '24px',
+        padding: '2.25rem',
+        color: 'white',
+        boxShadow: esSaldoFavor ? '0 12px 30px -8px rgba(6,78,59,0.4)' : '0 12px 30px -8px rgba(127,29,29,0.4)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: esSaldoFavor ? 'rgba(52, 211, 153, 0.2)' : 'rgba(248, 113, 113, 0.2)',
+            border: `1px solid ${esSaldoFavor ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
+            padding: '4px 14px',
+            borderRadius: '999px',
+            fontSize: '0.8rem',
+            fontWeight: 800,
+            color: esSaldoFavor ? '#6ee7b7' : '#fca5a5'
+          }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: esSaldoFavor ? '#34d399' : '#ef4444' }} />
+            PRE-DECLARACIÓN FISCAL ANUAL • EJERCICIO {year}
+          </div>
+
+          {oficial && (
+            <span style={{ fontSize: '0.8rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>
+              🏛️ Acuse SAT Registrado (Op. {oficial.num_operacion})
+            </span>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '0.8rem', color: esSaldoFavor ? '#a7f3d0' : '#fecaca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {esSaldoFavor ? '🎉 Saldo a Favor Estimado (Devolución)' : '⚠️ Impuesto Anual a Cargo Estimado'}
             </div>
-            <div style={{ fontSize:'1.5rem', fontWeight:900, color:k.color, lineHeight:1 }}>{k.value}</div>
+            <h1 style={{ margin: '4px 0 0 0', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+              {fmt(saldoMonto || 0)}
+            </h1>
+            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.9rem', color: '#f1f5f9', opacity: 0.9 }}>
+              {esSaldoFavor
+                ? `Cálculo automático de tus XMLs: Tienes derecho a solicitar ${fmt(saldoMonto)} de devolución ante el SAT.`
+                : `Cálculo automático de tus XMLs: Se proyecta un impuesto a cargo de ${fmt(saldoMonto)} para este año.`}
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+              <span style={{ color: '#cbd5e1' }}>Ingresos Acumulables:</span>
+              <b style={{ color: 'white', fontFamily: 'monospace' }}>{fmt(simAnual.ingresos_acumulables_totales || 0)}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+              <span style={{ color: '#cbd5e1' }}>Deducciones Personales:</span>
+              <b style={{ color: '#fcd34d', fontFamily: 'monospace' }}>-{fmt(simAnual.deducciones_personales_aplicadas || 0)}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+              <span style={{ color: '#cbd5e1' }}>ISR Causado (Art. 152):</span>
+              <b style={{ color: '#fca5a5', fontFamily: 'monospace' }}>{fmt(simAnual.isr_anual_causado || 0)}</b>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+              <span style={{ color: '#cbd5e1' }}>Retenciones Acreditables:</span>
+              <b style={{ color: '#34d399', fontFamily: 'monospace' }}>-{fmt(simAnual.retenciones_totales_acreditables || 0)}</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4 KPIS CONSOLIDADOS ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        {[
+          { label: 'Ingresos Totales', value: fmt(totalNomina + totalAeyp), color: '#3b82f6', icon: '💼', sub: `Sueldos: ${fmt(totalNomina)} | Hon: ${fmt(totalAeyp)}` },
+          { label: 'Gastos Deducibles', value: fmt(totalGastosDed), color: '#059669', icon: '📉', sub: `${gastos.length} comprobantes en disco` },
+          { label: 'Deducciones Personales', value: fmt(deducciones.total || 0), color: '#f59e0b', icon: '🏥', sub: `Tope: ${fmt(deducciones.tope?.tope_aplicable || 0)}` },
+          { label: 'Retenciones ISR', value: fmt(totalRetenciones), color: '#7c3aed', icon: '🏛️', sub: `Acreditables a tu favor` },
+        ].map((k,i) => (
+          <div key={i} style={{ background:'white', borderRadius:'14px', padding:'1.25rem 1.5rem', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.03)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+              <span style={{ fontSize:'1.1rem' }}>{k.icon}</span>
+              <span style={{ fontSize:'0.72rem', fontWeight:800, textTransform:'uppercase', color:'#64748b', letterSpacing:'0.05em' }}>{k.label}</span>
+            </div>
+            <div style={{ fontSize:'1.5rem', fontWeight:900, color:k.color, fontFamily: 'monospace' }}>{k.value}</div>
             <div style={{ fontSize:'0.75rem', color:'#94a3b8', marginTop:'4px', fontWeight:600 }}>{k.sub}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background:'white', padding:'1.5rem 1.75rem', borderRadius:'14px', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.04)' }}>
-        <h4 style={{ margin:'0 0 1.5rem 0', color:'#475569', fontSize:'0.85rem', textTransform:'uppercase', letterSpacing:'1px' }}>
-          Evolución Mensual — Sueldos vs Honorarios
+      {/* ── GRÁFICA DE EVOLUCIÓN MENSUAL ── */}
+      <div style={{ background:'white', padding:'1.5rem 1.75rem', borderRadius:'16px', border:'1px solid #e2e8f0', boxShadow:'0 4px 12px rgba(0,0,0,0.03)' }}>
+        <h4 style={{ margin:'0 0 1.25rem 0', color:'#0f172a', fontSize:'1rem', fontWeight: 800 }}>
+          📈 Flujo Mensual de Ingresos — Sueldos vs Honorarios ({year})
         </h4>
-        <ResponsiveContainer width='100%' height={300}>
+        <ResponsiveContainer width='100%' height={280}>
           <ComposedChart data={mensualData} margin={{ top:10, right:20, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#e2e8f0' />
-            <XAxis dataKey='name' tick={{ fill:'#64748b', fontSize:12 }} axisLine={false} tickLine={false} />
+            <XAxis dataKey='name' tick={{ fill:'#64748b', fontSize:12, fontWeight:600 }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={v => '$'+(v/1000).toFixed(0)+'k'} tick={{ fill:'#64748b', fontSize:12 }} axisLine={false} tickLine={false} />
             <Tooltip formatter={(val,name) => [fmt(val),name]} cursor={{ fill:'#f8fafc' }} />
-            <Legend iconType='circle' wrapperStyle={{ fontSize:'12px' }} />
-            <Bar dataKey='Nómina' stackId='a' fill='#6366f1' name='Sueldos y Nómina' />
-            <Bar dataKey='Honorarios' stackId='a' fill='#10b981' radius={[4,4,0,0]} name='AEyP / Honorarios' />
-            <Line type='monotone' dataKey='Total' stroke='#f59e0b' strokeWidth={3} dot={{ r:4, fill:'#f59e0b' }} name='Total Ingreso' />
+            <Legend iconType='circle' wrapperStyle={{ fontSize:'12px', fontWeight:600 }} />
+            <Bar dataKey='Nómina' stackId='a' fill='#6366f1' name='Sueldos y Salarios' />
+            <Bar dataKey='Honorarios' stackId='a' fill='#10b981' radius={[4,4,0,0]} name='Honorarios / Facturación' />
+            <Line type='monotone' dataKey='Total' stroke='#f59e0b' strokeWidth={3} dot={{ r:4, fill:'#f59e0b' }} name='Ingreso Total' />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

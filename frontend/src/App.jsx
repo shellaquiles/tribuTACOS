@@ -15,6 +15,8 @@ import {
 } from './SatUI';
 import { UploadModal } from './components/UploadModal';
 import ConciliacionSatSection from './components/ConciliacionSatSection';
+import PreDeclaracionMensualSection from './components/PreDeclaracionMensualSection';
+import PreDeclaracionAnualSection from './components/PreDeclaracionAnualSection';
 import './index.css';
 
 class ErrorBoundary extends Component {
@@ -92,41 +94,42 @@ const App = () => {
 
   const currentClientInfo = clients.find(c => c.id === currentClientId) || data?.client;
 
-  // ─── Navegación consolidada: 8 secciones con sentido lógico ─────────────────
+  // ─── Navegación Inteligente tributacos: 6 Módulos Principales ─────────────────
   const navGroups = [
     {
-      title: 'Resumen',
+      title: 'Visión General',
       tabs: [
-        { id: 'dashboard', label: 'Dashboard General', icon: '🏠' },
+        { id: 'dashboard', label: 'Dashboard Global', icon: '🌮' },
       ]
     },
     {
-      title: 'Ingresos',
+      title: 'Pre-Declaraciones SAT',
       tabs: [
-        { id: 'nomina',        label: 'Nómina y Sueldos',       icon: '👥' },
-        { id: 'nomina_detalle',label: 'Detalle de Recibos',     icon: '🧾' },
-        { id: 'aeyp',          label: 'Honorarios / AEyP',      icon: '💼' },
-        { id: 'facturas_aeyp', label: 'Detalle de Facturas',    icon: '📄' },
-        { id: 'notas_credito', label: 'Notas de Crédito',       icon: '💵' },
+        { id: 'pre_mensual', label: 'Pre-Declaración Mensual', icon: '📅' },
+        { id: 'pre_anual',   label: 'Pre-Declaración Anual',   icon: '🏛️' },
       ]
     },
     {
       title: 'Egresos y Deducciones',
       tabs: [
-        { id: 'egresos_mes',   label: 'Egresos por Mes',        icon: '📅' },
-        { id: 'deducciones',   label: 'Deducciones Personales', icon: '🏥' },
+        { id: 'egresos_mes', label: 'Gastos y Compras',        icon: '📉' },
+        { id: 'deducciones', label: 'Deducciones Personales',  icon: '🏥' },
       ]
     },
     {
-      title: 'Cálculo Anual',
+      title: 'Ingresos y Nómina',
       tabs: [
-        { id: 'determinacion', label: 'Determinación ISR',      icon: '🧮' },
+        { id: 'nomina',        label: 'Sueldos y Salarios',     icon: '👥' },
+        { id: 'nomina_detalle',label: 'Detalle de Recibos',     icon: '🧾' },
+        { id: 'aeyp',          label: 'Honorarios Emitidos',    icon: '💼' },
+        { id: 'facturas_aeyp', label: 'Facturas Clientes',      icon: '📄' },
+        { id: 'notas_credito', label: 'Notas de Crédito',       icon: '💵' },
       ]
     },
     {
-      title: 'Declaraciones Oficiales',
+      title: 'Verificación Oficial',
       tabs: [
-        { id: 'conciliacion_sat', label: 'Auditoría SAT (PDFs)', icon: '🏛️' },
+        { id: 'conciliacion_sat', label: 'Auditoría SAT (PDFs)', icon: '🔍' },
       ]
     },
   ];
@@ -139,7 +142,7 @@ const App = () => {
       <div style={{ fontSize: '3.5rem', animation: 'bounce 1s infinite' }}>🌮</div>
       <div className="spinner" />
       <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1e293b' }}>tributacos</div>
-      <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Desmenuzando CFDIs del ejercicio {year}…</p>
+      <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Calculando declaraciones del ejercicio {year} a partir de tus CFDIs…</p>
     </div>
   );
 
@@ -233,6 +236,7 @@ const App = () => {
               onChange={(e) => setYear(e.target.value)} 
               style={{ flex: 1, padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a', background: '#ffffff', cursor: 'pointer', fontSize: '0.9rem' }}
             >
+              <option value="2021">2021</option>
               <option value="2022">2022</option>
               <option value="2023">2023</option>
               <option value="2024">2024</option>
@@ -280,36 +284,58 @@ const App = () => {
              <div>
                <h2>{activeLabel?.label}</h2>
                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                 tributacos — Radiografía del ejercicio <strong>{year}</strong> para <strong>{currentClientInfo?.rfc}</strong>
+                 tributacos — Pre-Declarador Fiscal para <strong>{currentClientInfo?.rfc}</strong> • Ejercicio <strong>{year}</strong>
                </div>
              </div>
            </div>
-           {loading && <div className="sat-sync-badge"><div className="spinner-micro"></div>Actualizando...</div>}
+           {loading && <div className="sat-sync-badge"><div className="spinner-micro"></div>Calculando...</div>}
         </header>
 
         <div className="sat-content-body">
-          {/* ── 1. Resumen ── */}
+          {/* ── 1. Dashboard Global ── */}
           {activeTab === 'dashboard' && (
-            <ErrorBoundary><DashboardSection sections={sections} year={year} /></ErrorBoundary>
+            <ErrorBoundary><DashboardSection sections={sections} year={year} data={data} /></ErrorBoundary>
           )}
 
-          {/* ── 2. Nómina ── */}
+          {/* ── 2. Pre-Declaración Mensual ── */}
+          {activeTab === 'pre_mensual' && (
+            <ErrorBoundary>
+              <PreDeclaracionMensualSection data={data} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {/* ── 3. Pre-Declaración Anual ── */}
+          {activeTab === 'pre_anual' && (
+            <ErrorBoundary>
+              <PreDeclaracionAnualSection data={data} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {/* ── 4. Egresos y Deducciones ── */}
+          {activeTab === 'egresos_mes' && (
+            <ErrorBoundary>
+              <EgresosMensualesSection data={sections?.reporte_gastos} year={year} />
+            </ErrorBoundary>
+          )}
+          {activeTab === 'deducciones' && (
+            <ErrorBoundary>
+              <DeduccionesPersonalesSection data={sections?.deducciones_personales} year={year} />
+            </ErrorBoundary>
+          )}
+
+          {/* ── 5. Ingresos y Nómina ── */}
           {activeTab === 'nomina' && (
             <ErrorBoundary><SueldosSection data={sections?.sueldos} year={year} /></ErrorBoundary>
           )}
           {activeTab === 'nomina_detalle' && (
             <ErrorBoundary><NominaDetalleSection data={sections?.sueldos} year={year} /></ErrorBoundary>
           )}
-
-          {/* ── 3. Honorarios / AEyP ── */}
           {activeTab === 'aeyp' && (
             <ErrorBoundary><HonorariosSection data={sections?.honorarios} year={year} /></ErrorBoundary>
           )}
           {activeTab === 'facturas_aeyp' && (
             <ErrorBoundary><FacturasAeypSection data={sections?.honorarios} year={year} /></ErrorBoundary>
           )}
-
-          {/* ── 4. Notas de Crédito & Intereses ── */}
           {activeTab === 'notas_credito' && (
             <ErrorBoundary>
               <>
@@ -323,26 +349,7 @@ const App = () => {
             </ErrorBoundary>
           )}
 
-          {/* ── 5. Egresos y Deducciones ── */}
-          {activeTab === 'egresos_mes' && (
-            <ErrorBoundary>
-              <EgresosMensualesSection data={sections?.reporte_gastos} year={year} />
-            </ErrorBoundary>
-          )}
-          {activeTab === 'deducciones' && (
-            <ErrorBoundary>
-              <DeduccionesPersonalesSection data={sections?.deducciones_personales} year={year} />
-            </ErrorBoundary>
-          )}
-
-          {/* ── 6. Determinación Fiscal ISR ── */}
-          {activeTab === 'determinacion' && (
-            <ErrorBoundary>
-              <DeterminacionSection sections={sections} summary={summary} year={year} />
-            </ErrorBoundary>
-          )}
-
-          {/* ── 7. Auditoría & Conciliación Oficial SAT (PDFs) ── */}
+          {/* ── 6. Auditoría & Conciliación Oficial SAT (PDFs) ── */}
           {activeTab === 'conciliacion_sat' && (
             <ErrorBoundary>
               <ConciliacionSatSection year={year} onYearChange={setYear} />
