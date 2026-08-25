@@ -184,22 +184,9 @@ frontend/node_modules/
 backend/__pycache__/
 *.log
 .agents/
-backend/reports/
-backend/master_scan_report.json
-backend/draytek_config.json
-cfdi_recibidos/2025/1BA94C3F-9200-4F1C-A5A7-85F70E02BC6B_01.txt
-cfdi_recibidos/2025/3B8104D7-47FC-4680-81BF-E9B42169C54E_01.txt
-cfdi_recibidos/2025/6AF6672C-45FE-4EBE-A9C2-3B111D926F5F_01.txt
-cfdi_recibidos/2025/9C68F3E4-55A0-4092-8F07-922E9419594A_01.txt
-cfdi_recibidos/2025/19B0D9EC-285E-494D-8057-8405723F7ECC_01.txt
-cfdi_recibidos/2025/23D98DDE-A0FC-4FE6-8EE6-E5C6E4BBE53C_01.txt
-cfdi_recibidos/2025/41F47077-7D25-40C5-9484-63D9BBFED4E1_01.txt
-cfdi_recibidos/2025/91DD008A-E6D4-4038-AAE2-0D98135FDD59_01.txt
-cfdi_recibidos/2025/B3729B34-A8BE-4916-B361-82D3048F3DB6_01.txt
-cfdi_recibidos/2025/B4543A30-A19D-482E-82CF-9CCA63956C01_01.txt
-cfdi_recibidos/2025/D271F93F-1CF1-462E-89C8-80BC37A23509_01.txt
-cfdi_recibidos/2025/FCF243C3-AE53-45FA-BDD0-278FCA145442_01.txt
+
 # Additional rules based on project files
 cfdi_recibidos/
 cfdi_emitidos/
 declaraciones/
+gggg_*

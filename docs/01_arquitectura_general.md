@@ -1,6 +1,6 @@
 # 🏗️ 01. Arquitectura General y Ecosistema Técnico
 
-> **Visión técnica global del sistema tributacos (Declara Pro), capas de software, pipelines de procesamiento y flujo de datos.**
+> **Visión técnica global del sistema tribuTACOS, capas de software, pipelines de procesamiento y flujo de datos.**
 
 ---
 

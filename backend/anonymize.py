@@ -62,9 +62,9 @@ EMPRESAS_DEMO = [
 
 # Cliente principal
 RFC_ORIGINAL_USER = "GAQA810905BCA"
-RFC_NUEVO_USER = "HECA850101XYZ"
-NOMBRE_NUEVO_USER = "CARLOS HERNANDEZ SANCHEZ"
-EMAIL_NUEVO_USER = "carlos.hernandez@tributacos.mx"
+RFC_NUEVO_USER = "SHLL250825XYZ"
+NOMBRE_NUEVO_USER = "pixelead0 Shellaquiles org"
+EMAIL_NUEVO_USER = "tributacos@shellaquiles.org"
 
 
 def generar_pf_ficticio(rfc_orig: str, nombre_orig: str) -> Tuple[str, str]:
@@ -226,10 +226,13 @@ def anonimizar_base_de_datos():
         a.rfc = RFC_NUEVO_USER
         if a.id and RFC_ORIGINAL_USER in a.id:
             a.id = a.id.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+        if a.raw_pdf_path:
+            a.raw_pdf_path = a.raw_pdf_path.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
         if a.clabe:
             a.clabe = "012180000000000000"
         if a.parsed_json:
             a.parsed_json = a.parsed_json.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+            a.parsed_json = re.sub(r"GAQA[0-9A-Z]+", "SHLL250825HDFXYZ01", a.parsed_json)
             a.parsed_json = re.sub(r"ADAN\s+GARCIA(\s+QUIROZ)?", NOMBRE_NUEVO_USER, a.parsed_json, flags=re.IGNORECASE)
     db.commit()
     print(f"   ✓ {len(anuales)} declaraciones anuales anonimizadas.")
@@ -241,8 +244,13 @@ def anonimizar_base_de_datos():
         p.rfc = RFC_NUEVO_USER
         if p.id and RFC_ORIGINAL_USER in p.id:
             p.id = p.id.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+        if p.raw_pdf_path:
+            p.raw_pdf_path = p.raw_pdf_path.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+        if p.raw_acuse_path:
+            p.raw_acuse_path = p.raw_acuse_path.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
         if p.parsed_json:
             p.parsed_json = p.parsed_json.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+            p.parsed_json = re.sub(r"GAQA[0-9A-Z]+", "SHLL250825HDFXYZ01", p.parsed_json)
             p.parsed_json = re.sub(r"ADAN\s+GARCIA(\s+QUIROZ)?", NOMBRE_NUEVO_USER, p.parsed_json, flags=re.IGNORECASE)
     db.commit()
     print(f"   ✓ {len(pagos)} pagos provisionales anonimizados.")
@@ -254,6 +262,8 @@ def anonimizar_base_de_datos():
         ac.rfc = RFC_NUEVO_USER
         if ac.id and RFC_ORIGINAL_USER in ac.id:
             ac.id = ac.id.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
+        if ac.raw_pdf_path:
+            ac.raw_pdf_path = ac.raw_pdf_path.replace(RFC_ORIGINAL_USER, RFC_NUEVO_USER)
     db.commit()
     print(f"   ✓ {len(acuses)} acuses anonimizados.")
 

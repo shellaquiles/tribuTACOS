@@ -1,4 +1,4 @@
-# 📚 Documentación Técnica de tributacos (Declara Pro)
+# 📚 Documentación Técnica de tribuTACOS
 
 > **Suite Integral de Arquitectura, Algoritmos Fiscales, Modelo de Datos y Especificación de API para la Plataforma de Inteligencia Fiscal y Pre-Declaración Anual/Mensual.**
 

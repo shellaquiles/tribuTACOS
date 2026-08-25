@@ -717,7 +717,7 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, display: 'block' }}>RFC / CURP:</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{selectedMonthModal.detalle_oficial_completo?.rfc || 'HECA850101XYZ'}</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{selectedMonthModal.detalle_oficial_completo?.rfc || 'SHLL250825XYZ'}</span>
                 </div>
               </div>
 

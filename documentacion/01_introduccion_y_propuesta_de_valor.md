@@ -1,8 +1,8 @@
 # Capítulo 1: Introducción y Propuesta de Valor
 
-## 🌮 ¿Qué es tributacos (Declara Pro)?
+## 🌮 ¿Qué es tribuTACOS?
 
-**tributacos** (Declara Pro) es una plataforma de **inteligencia fiscal, analítica de comprobantes digitales (CFDI) y pre-declaración automática** diseñada específicamente para el marco tributario de México.
+**tribuTACOS** es una plataforma de **inteligencia fiscal, analítica de comprobantes digitales (CFDI) y pre-declaración automática** diseñada específicamente para el marco tributario de México.
 
 El sistema transforma carpetas caóticas de archivos `.XML` emitidos y recibidos en un **centro de mando financiero y fiscal transparente**, capaz de simular con exactitud milimétrica:
 - Los **12 Pagos Provisionales Mensuales de ISR (Formulario R122)** y de **IVA Definitivo (Formulario R21)**.
@@ -57,7 +57,7 @@ En lugar de esperar al mes de abril para saber si la Declaración Anual resultar
 
 ## 📊 Matriz Comparativa: tributacos vs Métodos Tradicionales
 
-| Criterio | Hoja de Cálculo (Excel) | Portal Oficial del SAT | tributacos (Declara Pro) |
+| Criterio | Hoja de Cálculo (Excel) | Portal Oficial del SAT | tribuTACOS |
 | :--- | :--- | :--- | :--- |
 | **Tiempo de procesamiento** | Horas / Días manuales | Lento, caídas recurrentes | **Instantáneo (Segundos)** |
 | **Detección de duplicados** | Propenso a error humano | Ignora errores de carpetas | **Automática por UUID** |

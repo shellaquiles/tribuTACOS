@@ -1,6 +1,6 @@
 /**
- * csvExport.js — Utilería de exportación CSV para Declara Pro
- * Genera archivos .csv con BOM UTF-8 (compatible con Microsoft Excel y Google Sheets en español).
+ * csvExport.js — Utilería de exportación CSV para tribuTACOS
+ * Genera y descarga archivos CSV formateados para Excel / Google Sheets
  */
 
 function escapeCsvCell(value) {

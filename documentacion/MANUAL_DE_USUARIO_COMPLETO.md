@@ -1,4 +1,4 @@
-# 🌮 tributacos (Declara Pro) — Manual de Usuario Integral y Guía Comercial del Sistema
+# 🌮 tribuTACOS — Manual de Usuario Integral y Guía Comercial del Sistema
 
 > **Versión 1.0 • Guía Maestra de Operación, Auditoría Fiscal y Presentación Comercial**  
 > *Plataforma de Inteligencia Tributaria, Auditoría de CFDIs y Pre-Declaración Anual y Mensual para Personas Físicas (México)*
@@ -21,9 +21,9 @@
 
 # Capítulo 1: Introducción y Propuesta de Valor
 
-## 🌮 ¿Qué es tributacos (Declara Pro)?
+## 🌮 ¿Qué es tribuTACOS?
 
-**tributacos** es una solución tecnológica integral de **inteligencia fiscal y pre-declaración automatizada** creada para Personas Físicas y Despachos Contables en México.
+**tribuTACOS** es una plataforma de **inteligencia fiscal, analítica de comprobantes digitales (CFDI) y pre-declaración automática** diseñada específicamente para el marco tributario de México.
 
 El sistema procesa y audita comprobantes fiscales digitales por internet (**CFDI 3.3 y CFDI 4.0**), convirtiendo carpetas de archivos XML en un tablero financiero interactivo de alta precisión capaz de calcular:
 - **Pagos Provisionales Mensuales de ISR (Formulario R122)** y de **IVA Definitivo (Formulario R21)** según el Artículo 106 de la LISR y Artículos 5 y 6 de la LIVA.

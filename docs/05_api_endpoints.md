@@ -36,9 +36,9 @@ Calcula el estado fiscal integral del ejercicio solicitado.
 {
   "client": {
     "id": "default",
-    "name": "CARLOS HERNANDEZ SANCHEZ",
-    "rfc": "HECA850101XYZ",
-    "email": "carlos.hernandez@tributacos.mx"
+    "name": "pixelead0 Shellaquiles org",
+    "rfc": "SHLL250825XYZ",
+    "email": "tributacos@shellaquiles.org"
   },
   "year": "2024",
   "anios_disponibles": ["2021", "2022", "2023", "2024", "2025", "2026"],

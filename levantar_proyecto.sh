@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to start the Declara project locally
+# Script to start the tribuTACOS project locally
 
 # Navigate to the project root directory
 cd "$(dirname "$0")" || exit 1

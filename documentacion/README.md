@@ -1,19 +1,14 @@
-# 🌮 tributacos (Declara Pro) — Manual de Usuario y Guía Comercial
+# 🌮 tribuTACOS — Manual de Usuario y Guía Comercial
 
 > **Plataforma de Inteligencia Fiscal, Auditoría de CFDIs y Pre-Declaración Anual y Mensual para Personas Físicas en México.**
 
----
+# 🌮 tribuTACOS — Manual de Usuario y Guía Comercial
 
-## 📑 Índice General de la Documentación
-
-Esta suite de documentación ha sido diseñada con un triple propósito:
-1. **Manual de Operación Paso a Paso:** Para guiar al usuario final en el uso diario de cada pantalla y herramienta.
-2. **Material de Venta y Presentación:** Para mostrar a prospectos, despachos contables, directores financieros y profesionistas el valor de negocio de la plataforma.
-3. **Guía de Referencia Fiscal y Técnica:** Para entender los fundamentos legales (LISR, LIVA, CFF) y la lógica algorítmica detrás de cada cálculo.
+Bienvenido al **Manual de Usuario Integral y Guía Comercial** de **tribuTACOS**, la plataforma definitiva de inteligencia fiscal, conciliación de CFDI y pre-declaración para personas físicas en México.
 
 ```mermaid
 graph TD
-    A[🌮 tributacos / Declara Pro] --> B[Ingesta de CFDIs & Multi-RFC]
+    A[🌮 tribuTACOS] --> B[Ingesta de CFDIs & Multi-RFC]
     A --> C[Módulo 1: Visión General]
     A --> D[Módulo 2: Pre-Declaraciones SAT]
     A --> E[Módulo 3: Egresos y Deducciones]

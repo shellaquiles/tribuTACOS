@@ -109,7 +109,9 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict[s
         total_pago = 0.0
         pagos_detalle = []
         if category == "pago" and complemento is not None:
-            pagos = complemento.find('{http://www.sat.gob.mx/Pagos20}Pagos') or complemento.find('{http://www.sat.gob.mx/Pagos}Pagos')
+            pagos = complemento.find('{http://www.sat.gob.mx/Pagos20}Pagos')
+            if pagos is None:
+                pagos = complemento.find('{http://www.sat.gob.mx/Pagos}Pagos')
             if pagos is not None:
                 totales = pagos.find('{http://www.sat.gob.mx/Pagos20}Totales')
                 if totales is not None:

@@ -146,8 +146,8 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
   "uuid": "4A1B2C3D-E4F5-6789-ABCD-EF0123456789",
   "emisor_rfc": "STM180415AA1",
   "emisor_nombre": "SOLUCIONES TECNOLÓGICAS DE MÉXICO S.A. DE C.V.",
-  "receptor_rfc": "HECA850101XYZ",
-  "receptor_nombre": "CARLOS HERNANDEZ SANCHEZ",
+  "receptor_rfc": "SHLL250825XYZ",
+  "receptor_nombre": "pixelead0 Shellaquiles org",
   "regimen_fiscal_emisor": "601",
   "regimen_fiscal_receptor": "605",
   "conceptos": [

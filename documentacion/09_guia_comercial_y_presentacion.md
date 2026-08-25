@@ -1,6 +1,6 @@
 # Capítulo 9: Guía Comercial, Presentación de Ventas y Argumentario
 
-## 🎯 El Pitch Comercial: ¿Por qué tributacos (Declara Pro)?
+## 🎯 El Pitch Comercial: ¿Por qué tribuTACOS?
 
 En México, el cumplimiento fiscal es percibido como un proceso engorroso, opaco y estresante. Los contribuyentes temen cometer errores con el SAT y desconocen cuánto dinero pueden recuperar legalmente en su declaración anual. Por su parte, los despachos contables dedican cientos de horas manuales a descargar, ordenar y formular hojas de cálculo en Excel para cada uno de sus clientes.
 

@@ -1,8 +1,8 @@
 ---
-description: Contexto del proyecto Declara Pro – guía de arquitectura, convenciones y estado actual para retomar el proyecto rápidamente.
+description: Contexto del proyecto tribuTACOS – guía de arquitectura, convenciones y estado actual para retomar el proyecto rápidamente.
 ---
 
-# 🏢 Proyecto: Declara Pro
+# 🏢 Proyecto: tribuTACOS
 
 Aplicación local de análisis fiscal personal (CFDI) para México.
 - **Stack**: FastAPI (Python 3.11 venv) + React/Vite (frontend)

@@ -160,9 +160,8 @@ def download_xml(
     if cfdi_obj and cfdi_obj.filepath and os.path.exists(cfdi_obj.filepath):
         return FileResponse(cfdi_obj.filepath, media_type='application/xml', filename=filename)
 
-    # Fallback to scanning configured folders
-    from app.config import LEGACY_EMITIDOS, LEGACY_RECIBIDOS, DATA_DIR
-    for directory in [LEGACY_EMITIDOS, LEGACY_RECIBIDOS, DATA_DIR]:
+    from app.config import DEFAULT_EMITIDOS_DIR, DEFAULT_RECIBIDOS_DIR, DATA_DIR
+    for directory in [DEFAULT_EMITIDOS_DIR, DEFAULT_RECIBIDOS_DIR, DATA_DIR]:
         if directory and os.path.exists(directory):
             for root, _, files in os.walk(directory):
                 if filename in files:

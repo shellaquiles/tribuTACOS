@@ -10,8 +10,8 @@ from fastapi import UploadFile
 
 from app.config import (
     DATA_DIR,
-    LEGACY_EMITIDOS,
-    LEGACY_RECIBIDOS,
+    DEFAULT_EMITIDOS_DIR,
+    DEFAULT_RECIBIDOS_DIR,
     DEFAULT_CLIENT_RFC,
     DEFAULT_CLIENT_NAME,
     DEFAULT_CLIENT_EMAIL
@@ -29,8 +29,8 @@ def ensure_default_client(db: Session) -> Client:
             rfc=DEFAULT_CLIENT_RFC,
             email=DEFAULT_CLIENT_EMAIL,
             plan="pro",
-            local_path_emitidos=str(LEGACY_EMITIDOS) if LEGACY_EMITIDOS.exists() else None,
-            local_path_recibidos=str(LEGACY_RECIBIDOS) if LEGACY_RECIBIDOS.exists() else None,
+            local_path_emitidos=str(DEFAULT_EMITIDOS_DIR) if DEFAULT_EMITIDOS_DIR.exists() else None,
+            local_path_recibidos=str(DEFAULT_RECIBIDOS_DIR) if DEFAULT_RECIBIDOS_DIR.exists() else None,
         )
         db.add(client)
         db.commit()

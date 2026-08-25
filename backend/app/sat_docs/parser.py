@@ -40,8 +40,8 @@ def parse_declaracion_anual(pdf_path: str) -> Dict[str, Any]:
     data = {
         'archivo': fn,
         'tipo': 'Declaracion_Anual',
-        'rfc': 'HECA850101XYZ',
-        'nombre': 'CARLOS HERNANDEZ SANCHEZ',
+        'rfc': 'SHLL250825XYZ',
+        'nombre': 'pixelead0 Shellaquiles org',
         'curp': '',
         'ejercicio': '',
         'num_operacion': '',
@@ -160,7 +160,7 @@ def parse_pago_provisional(pdf_path: str) -> Dict[str, Any]:
     data = {
         'archivo': fn,
         'tipo': 'Pago_Provisional',
-        'rfc': 'HECA850101XYZ',
+        'rfc': 'SHLL250825XYZ',
         'curp': '',
         'ejercicio': '',
         'periodo': '',

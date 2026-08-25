@@ -119,7 +119,7 @@ class SummaryCache(Base):
 class DeclaracionAnualSAT(Base):
     __tablename__ = "declaraciones_anuales_sat"
 
-    id = Column(String(100), primary_key=True) # e.g. HECA850101XYZ_2024_Op250500190419
+    id = Column(String(100), primary_key=True) # e.g. SHLL250825XYZ_2024_Op250500190419
     client_id = Column(String(50), ForeignKey("clients.id"), index=True)
     rfc = Column(String(13), index=True, nullable=False)
     year = Column(String(4), index=True, nullable=False)
@@ -148,7 +148,7 @@ class DeclaracionAnualSAT(Base):
 class PagoProvisionalSAT(Base):
     __tablename__ = "pagos_provisionales_sat"
 
-    id = Column(String(100), primary_key=True) # e.g. HECA850101XYZ_2024_04_Op618297908
+    id = Column(String(100), primary_key=True) # e.g. SHLL250825XYZ_2024_04_Op618297908
     client_id = Column(String(50), ForeignKey("clients.id"), index=True)
     rfc = Column(String(13), index=True, nullable=False)
     year = Column(String(4), index=True, nullable=False)
@@ -183,7 +183,7 @@ class PagoProvisionalSAT(Base):
 class AcusePagoSAT(Base):
     __tablename__ = "acuses_pagos_sat"
 
-    id = Column(String(100), primary_key=True) # e.g. HECA850101XYZ_2022_01_Acuse_463342775
+    id = Column(String(100), primary_key=True) # e.g. SHLL250825XYZ_2022_01_Acuse_463342775
     client_id = Column(String(50), ForeignKey("clients.id"), index=True)
     rfc = Column(String(13), index=True, nullable=False)
     year = Column(String(4), index=True, nullable=False)

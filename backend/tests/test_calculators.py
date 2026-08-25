@@ -1,5 +1,5 @@
 """
-Tests unitarios para las calculadoras fiscales de Declara Pro / tributacos.
+Tests unitarios para las calculadoras fiscales de tribuTACOS.
 """
 
 import pytest
