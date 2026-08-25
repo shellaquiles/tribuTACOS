@@ -2989,21 +2989,108 @@ export const GastosReport = ({ data, year }) => {
   );
 };
 
-// ─── CLASIFICACIÓN DINÁMICA DE RUBROS SAT (ALIMENTADA POR BASE DE DATOS) ───
+// ─── CLASIFICACIÓN DINÁMICA DE RUBROS SAT (ALIMENTADA POR BASE DE DATOS Y CLAVES) ───
 
 export function getConceptoCat(c, parentItem) {
   if (c?.categoria_gasto && c.categoria_gasto.id) return c.categoria_gasto;
-  if (parentItem?.categoria_gasto && parentItem.categoria_gasto.id) return parentItem.categoria_gasto;
-  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
+  
+  const clave = String(c?.clave || '').trim();
+  const desc = String(c?.desc || '').toUpperCase();
+
+  // 1. CLAVES SAT DE 8 Y 6 DÍGITOS (MÁXIMA PRIORIDAD OFICIAL)
+  if (clave.startsWith('801615')) {
+    return { id: 'seguros_polizas', nombre: 'Seguros y Fianzas', icono: '🛡️', color: '#0d9488', tipo: 'operativo' };
+  }
+  if (clave.startsWith('781118') || clave.startsWith('781115')) {
+    if (clave === '78111502' || clave === '78111500' || /AEROMEXICO|VOLARIS|VIVAEROBUS|VUELO|AVION/.test(desc)) {
+      return { id: 'vuelos_aviones', nombre: 'Boletos de Avión y Vuelos', icono: '✈️', color: '#0284c7', tipo: 'viaticos' };
+    }
+    if (clave === '78111808' || clave === '78111804' || clave === '78111802' || /UBER|DIDI|CABIFY|TAXI|TARIFA/.test(desc)) {
+      return { id: 'movilidad_taxis', nombre: 'Plataformas de Movilidad y Taxis', icono: '🚖', color: '#eab308', tipo: 'viaticos' };
+    }
+    if (clave === '78111811' || /RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO/.test(desc)) {
+      return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
+    }
+    return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
+  }
+  if (clave.startsWith('151015')) {
+    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f59e0b', tipo: 'operativo' };
+  }
+  if (clave.startsWith('951116')) {
+    return { id: 'peajes_casetas', nombre: 'Casetas y Peajes', icono: '🛣️', color: '#8b5cf6', tipo: 'viaticos' };
+  }
+  if (clave.startsWith('8411')) {
+    return { id: 'contabilidad_facturacion', nombre: 'Contabilidad y Facturación', icono: '🧾', color: '#6366f1', tipo: 'operativo' };
+  }
+  if (clave.startsWith('8013')) {
+    return { id: 'arrendamiento_inmuebles', nombre: 'Renta de Inmuebles y Oficinas', icono: '🏢', color: '#0284c7', tipo: 'operativo' };
+  }
+  if (clave.startsWith('8012')) {
+    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
+  }
+
+  // 2. FAMILIAS Y SEGMENTOS UNSPSC (4 Y 2 DÍGITOS)
+  const fam = clave.slice(0, 4);
+  const seg = clave.slice(0, 2);
+
+  if (seg === '84') {
+    return { id: 'servicios_financieros', nombre: 'Servicios Bancarios y Financieros', icono: '🏦', color: '#475569', tipo: 'financiero' };
+  }
+  if (seg === '81') {
+    return { id: 'servicios_ti_software', nombre: 'Software, Nube y Telecomunicaciones', icono: '💻', color: '#6366f1', tipo: 'operativo' };
+  }
+  if (seg === '32') {
+    return { id: 'componentes_electronicos', nombre: 'Componentes Electrónicos', icono: '🔌', color: '#3b82f6', tipo: 'inversion' };
+  }
+  if (seg === '43') {
+    return { id: 'equipo_computo', nombre: 'Equipo de Cómputo y Servidores', icono: '🖥️', color: '#3b82f6', tipo: 'inversion' };
+  }
+  if (seg === '44') {
+    return { id: 'papeleria_oficina', nombre: 'Papelería y Artículos de Oficina', icono: '📎', color: '#64748b', tipo: 'operativo' };
+  }
+  if (seg === '90') {
+    return { id: 'alimentos_restaurantes', nombre: 'Restaurantes y Consumo de Alimentos', icono: '🍽️', color: '#f97316', tipo: 'viaticos' };
+  }
+  if (seg === '78') {
+    return { id: 'fletes_logistica', nombre: 'Transporte, Fletes y Envíos', icono: '🚚', color: '#ea580c', tipo: 'operativo' };
+  }
+  if (seg === '70') {
+    return { id: 'veterinaria_animales', nombre: 'Servicios Veterinarios y Cuidado Animal', icono: '🐾', color: '#10b981', tipo: 'operativo' };
+  }
+  if (seg === '80') {
+    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
+  }
+
+  // 3. ANÁLISIS SEMÁNTICO POR DESCRIPCIÓN SI LA CLAVE NO FUE IDENTIFICADA
+  if (/SEGURO|POLIZA|COBERTURA|FIANZA|QUALITAS|GNP|AXA|CHUBB/.test(desc)) {
+    return { id: 'seguros_polizas', nombre: 'Seguros y Fianzas', icono: '🛡️', color: '#0d9488', tipo: 'operativo' };
+  }
+  if (/RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO/.test(desc)) {
+    return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
+  }
+  if (/GASOLINA|COMBUSTIBLE|DIESEL/.test(desc)) {
+    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f59e0b', tipo: 'operativo' };
+  }
+  if (/CASETA|PEAJE|TAG|TELEVIA|AUTOPISTA/.test(desc)) {
+    return { id: 'peajes_casetas', nombre: 'Casetas y Peajes', icono: '🛣️', color: '#8b5cf6', tipo: 'viaticos' };
+  }
+  if (/HONORARIOS|ASESORIA|CONSULTORIA|CONTABILIDAD|LEGAL|ADMINISTRACION/.test(desc)) {
+    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
+  }
+
+  if (parentItem?.categoria_gasto && parentItem.categoria_gasto.id && parentItem.categoria_gasto.id !== 'otros_operativos') {
+    return parentItem.categoria_gasto;
+  }
+  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b', tipo: 'operativo' };
 }
 
 export function getGastoCat(item) {
   if (item?.categoria_gasto && item.categoria_gasto.id) return item.categoria_gasto;
   const conceptos = item?.conceptos || [];
-  if (conceptos.length > 0 && conceptos[0]?.categoria_gasto) {
-    return conceptos[0].categoria_gasto;
+  if (conceptos.length > 0) {
+    return getConceptoCat(conceptos[0], item);
   }
-  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
+  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b', tipo: 'operativo' };
 }
 
 // ─── SECCIÓN 5: Vista de Egresos por Mes (Analítica y Desglose Mensual) ──────
@@ -3192,10 +3279,10 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
       const ivaFactura = Number(it.iva) || 0;
       const factorIva = subtotalFactura > 0 ? (ivaFactura / subtotalFactura) : 0.16;
 
-      conceptos.forEach(c => {
+      conceptos.forEach((c, ci) => {
         const cat = getConceptoCat(c, it);
         if (!map[cat.id]) {
-          map[cat.id] = { ...cat, total: 0, subtotal: 0, iva: 0, count: 0, items: [] };
+          map[cat.id] = { ...cat, total: 0, subtotal: 0, iva: 0, count: 0, conceptosList: [], uuidsSet: new Set() };
         }
         const impPartida = Number(c.subtotal_partida != null ? c.subtotal_partida : (c.imp != null ? c.imp : it.subtotal)) || 0;
         const ivaPartida = Number(c.iva_partida != null ? c.iva_partida : (impPartida * factorIva)) || 0;
@@ -3205,26 +3292,31 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
         map[cat.id].iva += ivaPartida;
         map[cat.id].total += totalPartida;
         map[cat.id].count += 1;
+        if (it.uuid) map[cat.id].uuidsSet.add(it.uuid);
 
-        // Agregar o acumular la factura en la lista de items de este rubro con su monto específico
-        const existingItem = map[cat.id].items.find(x => x.uuid === it.uuid);
-        if (existingItem) {
-          existingItem.subtotal_rubro += impPartida;
-          existingItem.iva_rubro += ivaPartida;
-          existingItem.total_rubro += totalPartida;
-          existingItem.conceptos_rubro.push(c);
-        } else {
-          map[cat.id].items.push({
-            ...it,
-            subtotal_rubro: impPartida,
-            iva_rubro: ivaPartida,
-            total_rubro: totalPartida,
-            conceptos_rubro: [c]
-          });
-        }
+        map[cat.id].conceptosList.push({
+          rowId: `${it.uuid || 'cfdi'}_p_${ci}`,
+          fecha: it.fecha,
+          desc: c.desc || it.emisor,
+          clave: c.clave || '—',
+          emisor: it.emisor,
+          rfc_emisor: it.rfc_emisor || it.raw_cfdi?.emisor_rfc || '',
+          metodo: it.metodo,
+          forma_pago: it.forma_pago,
+          uso_cfdi: it.uso_cfdi,
+          es_deducible_fiscal: it.es_deducible_fiscal,
+          motivo_no_deducible: it.motivo_no_deducible,
+          subtotal: impPartida,
+          iva: ivaPartida,
+          total: totalPartida,
+          concepto_raw: c,
+          cfdi_padre: it
+        });
       });
     });
-    return Object.values(map).sort((a, b) => b.total - a.total);
+    return Object.values(map)
+      .map(cat => ({ ...cat, numFacturas: cat.uuidsSet?.size || cat.count }))
+      .sort((a, b) => b.total - a.total);
   }, [rawList, selectedMonth, mesesData]);
 
   // Resumen y agrupación por proveedores del periodo actual
@@ -3947,7 +4039,7 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
             <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '380px' }}>
               <input
                 type="text"
-                placeholder="🔍 Filtrar por proveedor, concepto, RFC..."
+                placeholder="🔍 Filtrar por artículo, clave SAT, proveedor..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -3978,34 +4070,67 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
           </div>
         </div>
 
-        {/* ── MODO 1: MAESTRO-DETALLE (2 COLUMNAS ESTILO STRIPE / RAMP) ── */}
+        {/* ── MODO 1: MAESTRO-DETALLE (POR RUBRO SAT A NIVEL DE PARTIDAS/ARTÍCULOS) ── */}
         {viewMode === 'categoria' && (() => {
+          const allConceptosList = categorySummary.flatMap(c => c.conceptosList || []);
+          
           const activeCat = selectedCategory === 'ALL'
-            ? { id: 'ALL', nombre: 'Todos los Gastos', icono: '✨', color: '#0f172a', items: displayItems, total: periodTotal, subtotal: periodSubtotal, iva: periodIva, count: periodItems.length }
-            : selectedCategory === 'no_deducible'
-              ? { id: 'no_deducible', nombre: 'Gastos No Deducibles (Efectivo > $2k)', icono: '⚠️', color: '#dc2626', items: displayItems.filter(it => it.es_deducible_fiscal === false), total: noDeduciblesSubtotal, subtotal: noDeduciblesSubtotal, iva: 0, count: displayItems.filter(it => it.es_deducible_fiscal === false).length }
-              : categorySummary.find(c => c.id === selectedCategory) || categorySummary[0] || { id: 'ALL', nombre: 'Todos los Gastos', icono: '✨', color: '#0f172a', items: displayItems, total: periodTotal, subtotal: periodSubtotal, iva: periodIva, count: periodItems.length };
+            ? { 
+                id: 'ALL', 
+                nombre: 'Todos los Artículos y Conceptos', 
+                icono: '✨', 
+                color: '#0f172a', 
+                conceptosList: allConceptosList, 
+                total: periodTotal, 
+                subtotal: periodSubtotal, 
+                iva: periodIva, 
+                count: allConceptosList.length,
+                numFacturas: periodItems.length
+              }
+            : (categorySummary.find(c => c.id === selectedCategory) || {
+                id: selectedCategory,
+                nombre: 'Rubro Seleccionado',
+                icono: '📋',
+                color: '#0f172a',
+                conceptosList: [],
+                total: 0,
+                subtotal: 0,
+                iva: 0,
+                count: 0,
+                numFacturas: 0
+              });
 
-          const filteredCatItems = (activeCat.items || []).filter(it => {
-            if (!searchTerm) return true;
-            const q = searchTerm.toLowerCase();
-            return (it.emisor || '').toLowerCase().includes(q) ||
-                   (it.raw_cfdi?.emisor_rfc || it.rfc_emisor || '').toLowerCase().includes(q) ||
-                   (it.conceptos || []).some(c => (c.desc || '').toLowerCase().includes(q));
+          const filteredConceptos = (activeCat.conceptosList || []).filter(p => {
+            if (!searchTerm.trim()) return true;
+            const q = searchTerm.toLowerCase().trim();
+            const desc = (p.desc || '').toLowerCase();
+            const clave = (p.clave || '').toLowerCase();
+            const emisor = (p.emisor || '').toLowerCase();
+            const rfc = (p.rfc_emisor || '').toLowerCase();
+            const uuid = (p.cfdi_padre?.uuid || '').toLowerCase();
+            return desc.includes(q) || clave.includes(q) || emisor.includes(q) || rfc.includes(q) || uuid.includes(q);
           });
 
           return (
-            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr', gap: '1.25rem', alignItems: 'start' }}>
               
-              {/* ── PANEL IZQUIERDO: LISTA DE RUBROS / CATEGORÍAS (MAESTRO) ── */}
+              {/* ── PANEL IZQUIERDO: LISTA DE RUBROS SAT (MAESTRO) ── */}
               <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                
+                {/* Cabecera del Panel Izquierdo */}
                 <div style={{ padding: '0.9rem 1.1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Rubros SAT</strong>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{categorySummary.length} categorías</span>
+                  <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Rubros SAT
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                    {categorySummary.length} categorías
+                  </span>
                 </div>
 
-                <div style={{ padding: '0.5rem', maxHeight: '720px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {/* Opción Todos */}
+                {/* Lista de Tarjetas de Categoría */}
+                <div style={{ maxHeight: '640px', overflowY: 'auto', padding: '0.4rem' }}>
+                  
+                  {/* Opción 1: Todos los Gastos (Global Periodo) */}
                   <div
                     onClick={() => setSelectedCategory('ALL')}
                     style={{
@@ -4013,27 +4138,29 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                       borderRadius: '10px',
                       cursor: 'pointer',
                       background: selectedCategory === 'ALL' ? '#0f172a' : 'transparent',
-                      color: selectedCategory === 'ALL' ? '#ffffff' : '#1e293b',
+                      color: selectedCategory === 'ALL' ? '#ffffff' : '#0f172a',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      marginBottom: '4px',
                       transition: 'all 0.15s ease'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '1.2rem' }}>✨</span>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Todos los Gastos</div>
-                        <div style={{ fontSize: '0.72rem', opacity: 0.8 }}>{periodItems.length} comprobantes</div>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem' }}>Todos los Artículos</div>
+                        <div style={{ fontSize: '0.7rem', color: selectedCategory === 'ALL' ? '#94a3b8' : '#64748b' }}>
+                          {periodItems.length} facturas • {allConceptosList.length} partidas
+                        </div>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.88rem' }}>{fmt(periodTotal)}</div>
-                      <div style={{ fontSize: '0.68rem', opacity: 0.8 }}>100%</div>
+                    <div style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.88rem' }}>
+                      {fmt(periodTotal)}
                     </div>
                   </div>
 
-                  {/* Opción No Deducibles si existen */}
+                  {/* Opción 2: Alerta de No Deducibles */}
                   {noDeduciblesSubtotal > 0 && (
                     <div
                       onClick={() => setSelectedCategory('no_deducible')}
@@ -4041,34 +4168,31 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                         padding: '0.75rem 0.9rem',
                         borderRadius: '10px',
                         cursor: 'pointer',
-                        background: selectedCategory === 'no_deducible' ? '#dc2626' : '#fef2f2',
-                        color: selectedCategory === 'no_deducible' ? '#ffffff' : '#dc2626',
+                        background: selectedCategory === 'no_deducible' ? '#fee2e2' : 'transparent',
+                        borderLeft: selectedCategory === 'no_deducible' ? '4px solid #ef4444' : '4px solid transparent',
+                        color: '#991b1b',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        border: '1px solid #fecaca',
+                        marginBottom: '4px',
                         transition: 'all 0.15s ease'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+                        <span style={{ fontSize: '1.2rem' }}>⚠️</span>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>No Deducibles</div>
                           <div style={{ fontSize: '0.7rem', opacity: 0.85 }}>Efectivo 01 &gt; $2,000</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {fmt(noDeduciblesSubtotal)}
-                      </div>
                     </div>
                   )}
-
                   <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }} />
 
                   {/* Lista de Categorías */}
                   {categorySummary.map(cat => {
                     const isSelected = selectedCategory === cat.id;
-                    const pctGasto = currentTotal > 0 ? (cat.total / currentTotal) * 100 : 0;
+                    const pctGasto = periodTotal > 0 ? (cat.total / periodTotal) * 100 : 0;
 
                     return (
                       <div
@@ -4083,13 +4207,8 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
+                          marginBottom: '4px',
                           transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = '#f8fafc';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = 'transparent';
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
@@ -4099,19 +4218,15 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                               {cat.nombre}
                             </div>
                             <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span>{cat.count} docs</span>
+                              <span>{cat.count} partidas ({cat.numFacturas} facturas)</span>
                               <span>•</span>
                               <span>{pctGasto.toFixed(1)}%</span>
                             </div>
                           </div>
                         </div>
-
                         <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: '8px' }}>
                           <div style={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.85rem', color: isSelected ? '#1d4ed8' : '#0f172a' }}>
                             {fmt(cat.total)}
-                          </div>
-                          <div style={{ fontSize: '0.68rem', color: '#2563eb' }}>
-                            IVA: {fmt(cat.iva)}
                           </div>
                         </div>
                       </div>
@@ -4120,7 +4235,7 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                 </div>
               </div>
 
-              {/* ── PANEL DERECHO: DETALLE DE COMPROBANTES (DETALLE) ── */}
+              {/* ── PANEL DERECHO: DETALLE DE ARTÍCULOS Y CONCEPTOS (DETALLE) ── */}
               <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column' }}>
                 
                 {/* Cabecera del Panel Detalle */}
@@ -4131,58 +4246,55 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>{activeCat.nombre}</h3>
                         <span style={{ background: '#e2e8f0', color: '#475569', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
-                          {filteredCatItems.length} facturas
+                          {filteredConceptos.length} artículos / partidas
                         </span>
                       </div>
                       <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px', display: 'flex', gap: '12px' }}>
-                        <span>Subtotal Base: <strong style={{ color: '#1e293b' }}>{fmt(activeCat.subtotal)}</strong></span>
+                        <span>Subtotal Partidas: <strong style={{ color: '#1e293b' }}>{fmt(activeCat.subtotal)}</strong></span>
                         <span>IVA Acreditable: <strong style={{ color: '#2563eb' }}>{fmt(activeCat.iva)}</strong></span>
                       </div>
                     </div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Liquidado</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Rubro</div>
                     <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
                       {fmt(activeCat.total)}
                     </div>
                   </div>
                 </div>
 
-                {/* Tabla Limpia de Comprobantes */}
+                {/* Tabla de Artículos / Partidas */}
                 <div className="table-responsive" style={{ maxHeight: '640px', overflowY: 'auto' }}>
                   <table className="sat-table" style={{ margin: 0, fontSize: '0.82rem' }}>
                     <thead>
                       <tr style={{ background: '#ffffff', position: 'sticky', top: 0, zIndex: 2, borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '0.72rem', textTransform: 'uppercase' }}>
                         <th style={{ width: '30px' }}></th>
                         <th style={{ width: '95px' }}>Fecha</th>
+                        <th>Artículo / Concepto Facturado</th>
+                        <th style={{ width: '85px' }}>Clave SAT</th>
                         <th>Proveedor / Emisor</th>
-                        <th style={{ width: '90px' }}>Método</th>
-                        <th style={{ width: '120px' }}>Deducibilidad</th>
-                        <th className="text-right" style={{ width: '105px' }}>Subtotal</th>
-                        <th className="text-right" style={{ width: '85px' }}>IVA</th>
-                        <th className="text-right" style={{ width: '105px' }}>Total</th>
-                        <th className="text-center" style={{ width: '75px' }}>Acción</th>
+                        <th style={{ width: '100px' }}>Deducibilidad</th>
+                        <th className="text-right" style={{ width: '95px' }}>Subtotal</th>
+                        <th className="text-right" style={{ width: '80px' }}>IVA</th>
+                        <th className="text-right" style={{ width: '95px' }}>Total</th>
+                        <th className="text-center" style={{ width: '75px' }}>CFDI</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredCatItems.length === 0 ? (
+                      {filteredConceptos.length === 0 ? (
                         <tr>
-                          <td colSpan={9} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
+                          <td colSpan={10} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
                             <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔍</div>
-                            <div>No se encontraron comprobantes para este rubro o filtro</div>
+                            <div>No se encontraron artículos o partidas para este rubro o filtro</div>
                           </td>
                         </tr>
                       ) : (
-                        filteredCatItems.map((item, idx) => {
-                          const rowId = item.uuid || `det-${idx}`;
+                        filteredConceptos.map((partida, idx) => {
+                          const rowId = partida.rowId || `part-${idx}`;
                           const isRowExp = expandedRows[rowId];
-                          const isDed = item.es_deducible_fiscal !== false;
-                          const isCatView = selectedCategory !== 'ALL' && selectedCategory !== 'no_deducible';
-                          const subtotalRow = isCatView && item.subtotal_rubro != null ? item.subtotal_rubro : item.subtotal;
-                          const ivaRow = isCatView && item.iva_rubro != null ? item.iva_rubro : item.iva;
-                          const totalRow = isCatView && item.total_rubro != null ? item.total_rubro : item.total;
-                          const isMultiItem = isCatView && Math.abs((item.total || 0) - totalRow) > 1.0;
+                          const isDed = partida.es_deducible_fiscal !== false;
+                          const cfdiPadre = partida.cfdi_padre;
 
                           return (
                             <React.Fragment key={rowId}>
@@ -4197,26 +4309,18 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                                 <td style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.65rem' }}>
                                   {isRowExp ? '▼' : '▶'}
                                 </td>
-                                <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{item.fecha}</td>
+                                <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{partida.fecha}</td>
                                 <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.emisor}</span>
-                                    {isMultiItem && (
-                                      <span style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }} title={`Factura total de ${fmt(item.total)} con múltiples rubros`}>
-                                        Partida (Total CFDI: {fmt(item.total)})
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                                    {item.conceptos_rubro?.[0]?.desc 
-                                      ? `${item.conceptos_rubro[0].desc.slice(0, 55)}${item.conceptos_rubro[0].desc.length > 55 ? '...' : ''}` 
-                                      : (item.conceptos?.[0]?.desc ? `${item.conceptos[0].desc.slice(0, 55)}...` : (item.raw_cfdi?.emisor_rfc || ''))}
-                                  </div>
+                                  <div style={{ fontWeight: 700, color: '#0f172a' }}>{partida.desc}</div>
                                 </td>
                                 <td>
-                                  <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.68rem' }}>
-                                    {item.metodo}
+                                  <span style={{ fontFamily: 'monospace', color: '#475569', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                    {partida.clave}
                                   </span>
+                                </td>
+                                <td>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>{partida.emisor}</div>
+                                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{partida.rfc_emisor}</div>
                                 </td>
                                 <td>
                                   {isDed ? (
@@ -4225,12 +4329,13 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                                     <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 800 }}>⚠️ Efectivo 01</span>
                                   )}
                                 </td>
-                                <td className="text-right mono">{fmt(subtotalRow)}</td>
-                                <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(ivaRow)}</td>
-                                <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(totalRow)}</td>
+                                <td className="text-right mono">{fmt(partida.subtotal)}</td>
+                                <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(partida.iva)}</td>
+                                <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(partida.total)}</td>
                                 <td className="text-center" onClick={(e) => e.stopPropagation()}>
                                   <button
-                                    onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                    onClick={() => cfdiPadre?.raw_cfdi && setSelectedCfdi(cfdiPadre.raw_cfdi)}
+                                    title="Ver CFDI completo en visor oficial"
                                     style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}
                                   >
                                     🔍 CFDI
@@ -4238,61 +4343,78 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                                 </td>
                               </tr>
 
+                              {/* Drill-Down del CFDI Origen */}
                               {isRowExp && (
-                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                                  <td colSpan={9} style={{ padding: '0.85rem 1.25rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                                      <div style={{ fontSize: '0.78rem', color: '#475569' }}>
-                                        <b>UUID:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid}</span> • <b>RFC:</b> {item.raw_cfdi?.emisor_rfc || item.rfc_emisor} • <b>Uso:</b> {item.uso_cfdi} • <b>Pago:</b> {item.forma_pago}
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button
-                                          onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
-                                          style={{ padding: '3px 8px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                        >
-                                          Detalle
-                                        </button>
-                                        <button
-                                          onClick={() => item.raw_cfdi && setViewingXml(item.raw_cfdi)}
-                                          style={{ padding: '3px 8px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                        >
-                                          XML
-                                        </button>
-                                      </div>
-                                    </div>
+                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                                  <td colSpan={10} style={{ padding: '1rem 1.5rem' }}>
+                                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1rem' }}>
+                                      
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                                        <div>
+                                          <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a' }}>
+                                            📄 CFDI Origen: {cfdiPadre?.emisor} ({cfdiPadre?.rfc_emisor || cfdiPadre?.raw_cfdi?.emisor_rfc || 'Sin RFC'})
+                                          </span>
+                                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                                            <b>UUID:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{cfdiPadre?.uuid || 'N/D'}</span> • <b>Método:</b> {cfdiPadre?.metodo || 'PUE'} • <b>Forma Pago:</b> {cfdiPadre?.forma_pago || 'N/D'} • <b>Uso:</b> {cfdiPadre?.uso_cfdi || 'N/D'} • <b>Total CFDI:</b> {fmt(cfdiPadre?.total || partida.total)}
+                                          </div>
+                                        </div>
 
-                                    {(item.conceptos || []).length > 0 && (
-                                      <table style={{ width: '100%', fontSize: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                                        <thead>
-                                          <tr style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.7rem' }}>
-                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Clave SAT</th>
-                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Descripción de la Partida</th>
-                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Rubro Asignado</th>
-                                            <th style={{ padding: '4px 8px', textAlign: 'right' }}>Importe Partida</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {item.conceptos.map((c, ci) => {
-                                            const cCat = getConceptoCat(c, item);
-                                            const isThisCat = isCatView && cCat.id === selectedCategory;
-                                            return (
-                                              <tr key={ci} style={{ borderBottom: '1px solid #f1f5f9', background: isThisCat ? '#eff6ff' : 'transparent' }}>
-                                                <td style={{ padding: '5px 8px', color: '#64748b', fontFamily: 'monospace' }}>{c.clave || '—'}</td>
-                                                <td style={{ padding: '5px 8px', color: '#0f172a', fontWeight: isThisCat ? 700 : 400 }}>{c.desc}</td>
-                                                <td style={{ padding: '5px 8px' }}>
-                                                  <span style={{ fontSize: '0.7rem', color: cCat.color || '#475569', fontWeight: 600 }}>
-                                                    {cCat.icono} {cCat.nombre}
-                                                  </span>
-                                                </td>
-                                                <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: isThisCat ? '#1d4ed8' : '#334155' }}>
-                                                  {fmt(c.subtotal_partida != null ? c.subtotal_partida : c.imp)}
-                                                </td>
+                                        <div style={{ display: 'flex', gap: '6px' }}>
+                                          <button
+                                            onClick={() => cfdiPadre?.raw_cfdi && setSelectedCfdi(cfdiPadre.raw_cfdi)}
+                                            style={{ padding: '4px 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                          >
+                                            Ver CFDI Completo
+                                          </button>
+                                          <button
+                                            onClick={() => cfdiPadre?.raw_cfdi && setViewingXml(cfdiPadre.raw_cfdi)}
+                                            style={{ padding: '4px 10px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                          >
+                                            Ver XML
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      {/* Desglose de todas las partidas de este CFDI si tiene más de una */}
+                                      {cfdiPadre?.conceptos && cfdiPadre.conceptos.length > 1 && (
+                                        <div style={{ marginTop: '10px' }}>
+                                          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', marginBottom: '4px', textTransform: 'uppercase' }}>
+                                            Todas las partidas de esta factura ({cfdiPadre.conceptos.length}):
+                                          </div>
+                                          <table style={{ width: '100%', fontSize: '0.75rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                            <thead>
+                                              <tr style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.68rem' }}>
+                                                <th style={{ padding: '3px 8px', textAlign: 'left' }}>Clave SAT</th>
+                                                <th style={{ padding: '3px 8px', textAlign: 'left' }}>Concepto</th>
+                                                <th style={{ padding: '3px 8px', textAlign: 'left' }}>Rubro</th>
+                                                <th style={{ padding: '3px 8px', textAlign: 'right' }}>Importe</th>
                                               </tr>
-                                            );
-                                          })}
-                                        </tbody>
-                                      </table>
-                                    )}
+                                            </thead>
+                                            <tbody>
+                                              {cfdiPadre.conceptos.map((c, ci) => {
+                                                const cCat = getConceptoCat(c, cfdiPadre);
+                                                const isCurrentPartida = c.desc === partida.desc;
+                                                return (
+                                                  <tr key={ci} style={{ borderBottom: '1px solid #e2e8f0', background: isCurrentPartida ? '#eff6ff' : 'transparent' }}>
+                                                    <td style={{ padding: '4px 8px', fontFamily: 'monospace', color: '#64748b' }}>{c.clave || '—'}</td>
+                                                    <td style={{ padding: '4px 8px', color: '#0f172a', fontWeight: isCurrentPartida ? 700 : 400 }}>
+                                                      {c.desc} {isCurrentPartida && '👈 (Esta partida)'}
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', color: cCat.color || '#475569', fontWeight: 600 }}>
+                                                      {cCat.icono} {cCat.nombre}
+                                                    </td>
+                                                    <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>
+                                                      {fmt(c.subtotal_partida != null ? c.subtotal_partida : c.imp)}
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+
+                                    </div>
                                   </td>
                                 </tr>
                               )}
