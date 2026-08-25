@@ -647,27 +647,31 @@ export function DashboardSection({ sections, year }) {
 
   const nominaMaps = {};
   (nomina?.detalle || []).flatMap(emp => emp.recibos || []).forEach(r => {
-    const month = parseInt(r.fecha.split('-')[1]);
+    const month = parseInt((r.fecha || '').split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    const valesMensual = (r.percepciones || []).reduce((s,p) => s + (p.tipo === '029' ? (p.total || 0) : 0), 0);
-    const percepcionesMensual = (r.percepciones || []).reduce((s,p) => s+(p.total||0), 0);
-    const deduccionesMensual = (r.deducciones || []).reduce((s,d) => s+(d.importe||0), 0);
     
-    // We want the chart to show "Neto efectivo" (Cash income)
-    nominaMaps[m] = (nominaMaps[m] || 0) + (percepcionesMensual - deduccionesMensual - valesMensual);
+    // Ingreso Bruto Fiscal (Percepciones gravadas + exentas sin incluir OtrosPagos informativos)
+    const percsTotal = (r.percepciones || []).filter(p => !p.es_otro_pago && p.tipo !== '029').reduce((s,p) => s + (p.total || (p.gravado + p.exento) || 0), 0);
+    const montoRecibo = percsTotal > 0 ? percsTotal : (r.total_bruto || 0);
+    nominaMaps[m] = (nominaMaps[m] || 0) + montoRecibo;
   });
 
   const aeypMaps = {};
   (aeyp?.detalle || []).forEach(item => {
-    const month = parseInt(item.fecha.split('-')[1]);
+    const month = parseInt((item.fecha || '').split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    aeypMaps[m] = (aeypMaps[m] || 0) + (item.subtotal||0) + (item.iva||0);
+    // Subtotal de honorarios antes de IVA (Base gravable)
+    aeypMaps[m] = (aeypMaps[m] || 0) + (item.subtotal || 0);
   });
 
-  const totalNomina = Object.values(nominaMaps).reduce((s,v)=>s+v,0);
-  const totalAeyp = Object.values(aeypMaps).reduce((s,v)=>s+v,0);
+  const totalNomina = (nomina?.gravado || 0) + (nomina?.exento || 0) > 0 
+    ? ((nomina?.gravado || 0) + (nomina?.exento || 0)) 
+    : Object.values(nominaMaps).reduce((s,v)=>s+v,0);
+  const totalAeyp = (aeyp?.ingresos || 0) > 0 
+    ? (aeyp?.ingresos || 0) 
+    : Object.values(aeypMaps).reduce((s,v)=>s+v,0);
   const totalGeneral = totalNomina + totalAeyp;
 
   const mensualData = mLabels.map(m => ({
@@ -1046,6 +1050,42 @@ export function HonorariosSection({ data, year }) {
           ))}
         </div>
       </div>
+
+      {/* ── Evolución Mensual ──────────────────────────────────────────── */}
+      {(() => {
+        const mensualMap = {};
+        targetRecibos.forEach(item => {
+          if (!item.fecha) return;
+          const month = parseInt(item.fecha.split('-')[1]);
+          if (isNaN(month) || month < 1 || month > 12) return;
+          const name = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][month - 1];
+          if (!mensualMap[name]) mensualMap[name] = { name, Subtotal: 0, IVA: 0 };
+          mensualMap[name].Subtotal += item.subtotal || 0;
+          mensualMap[name].IVA += item.iva || 0;
+        });
+        const mData = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'].map(
+          n => mensualMap[n] || { name: n, Subtotal: 0, IVA: 0 }
+        );
+        if (!mData.some(d => d.Subtotal > 0)) return null;
+        return (
+          <div style={{ marginTop: '2rem', background: '#f8fafc', borderRadius: '12px', padding: '1.5rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Evolución Mensual — Subtotal + IVA Facturado
+            </h4>
+            <ResponsiveContainer width="100%" height={240}>
+              <ComposedChart data={mData} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => '$' + (v/1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(val, name) => [fmt(val), name]} cursor={{ fill: '#f1f5f9' }} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                <Bar dataKey="Subtotal" stackId="a" fill="#10b981" name="Subtotal Base" />
+                <Bar dataKey="IVA" stackId="a" fill="#6366f1" radius={[4,4,0,0]} name="IVA Trasladado" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
     </SectionCard>
   );
 }
@@ -1435,10 +1475,10 @@ export function FacturasAeypSection({ data, year }) {
 
 // ─── SECCIÓN 2.5: Otros Ingresos (Notas de Crédito Recibidas) ─────────────────
 
-export function OtrosIngresosSection({ data }) {
+export function NotasCreditoSection({ data }) {
   if (!data || !data.detalle || data.detalle.length === 0) return null;
   return (
-    <SectionCard icon="💰" title="Otros Ingresos (Notas de Crédito de Proveedores)">
+    <SectionCard icon="💵" title="Notas de Crédito (Devoluciones y Bonificaciones)">
       <p className="sec-note">
         CFDIs de tipo <strong>Egreso</strong> donde eres el receptor. Representan devoluciones, descuentos o bonificaciones que operan como ingreso contable.
       </p>
@@ -1579,7 +1619,7 @@ const ISR_TARIFA_2025 = [
   { li: 185852.58,   ls: 374837.88,  cuota: 19682.13, tasa: 0.2136 },
   { li: 374837.89,   ls: 590795.99,  cuota: 60049.40, tasa: 0.2352 },
   { li: 590796.00,   ls: 1127926.84, cuota: 110842.74,tasa: 0.3000 },
-  { li: 1127926.85,  ls: 1503902.46, cuota: 271981.99,tasa: 0.3200 },
+  { li: 1127926.85,  ls: 1503902.46, cuota: 271981.90,tasa: 0.3200 },
   { li: 1503902.47,  ls: 4511707.37, cuota: 392294.17,tasa: 0.3400 },
   { li: 4511707.38,  ls: Infinity,   cuota: 1414947.85,tasa: 0.3500 },
 ];
@@ -1598,203 +1638,815 @@ function calcISR(base, year) {
 
 
 export const DeterminacionSection = ({ sections, summary, year }) => {
+  const [extraDeduction, setExtraDeduction] = useState(0);
+  const [activeTabRegimen, setActiveTabRegimen] = useState('resumen');
+
   if (!sections || !summary) return null;
 
   const sueldos = sections.sueldos;
   const honorarios = sections.honorarios;
   const intereses = sections.intereses;
 
-  // Ingresos acumulables
-  // Sueldos: solo el ingreso GRAVADO (Art. 94 LISR — exento no acumula)
+  // 1. Ingresos acumulables por régimen
   const ingSueldos = sueldos?.gravado || 0;
-
-  // AEyP: suma de subtotales del detalle — MISMA fuente que Info Global AEyP
-  // (honorarios.ingresos solo incluye PUE, pero ambos deben cuadrar)
   const aeypSubtotalTotal = (honorarios?.detalle || []).reduce((s, r) => s + (r.subtotal || 0), 0);
-  const aeypDeducciones   = honorarios?.deducciones_autorizadas || 0;
+  const aeypDeducciones = honorarios?.deducciones_autorizadas || 0;
   const ingHonorarios = Math.max(0, aeypSubtotalTotal - aeypDeducciones);
-
   const ingIntereses = intereses?.real || 0;
   const totalAcumulables = ingSueldos + ingHonorarios + ingIntereses;
 
-  // Deducciones personales (placeholder — SAT precarga)
-  const dedPersonales = sections.deducciones_personales?.total || 0;
+  // 2. Deducciones personales
+  const dedPersonalesReal = sections.deducciones_personales?.total || 0;
+  const dedPersonalesSimuladas = Math.max(0, dedPersonalesReal + Number(extraDeduction || 0));
 
-  const baseGravable = Math.max(0, totalAcumulables - dedPersonales);
-  const { isr, cuota, marginal, excedente, tasa, limiteInferior } = calcISR(baseGravable, year);
+  // 3. Base gravable y cálculo de ISR real
+  const baseGravableReal = Math.max(0, totalAcumulables - dedPersonalesReal);
+  const calcReal = calcISR(baseGravableReal, year);
 
-  // Acreditables
+  // 4. Cálculo simulado con deducción extra
+  const baseGravableSimulada = Math.max(0, totalAcumulables - dedPersonalesSimuladas);
+  const calcSimulado = calcISR(baseGravableSimulada, year);
+
+  // 5. Acreditables (Retenciones ya pagadas durante el año)
   const isrSueldos = sueldos?.isr_retenido || 0;
   const isrHonorarios = honorarios?.isr_retenido || 0;
   const isrIntereses = intereses?.isr_retenido || 0;
   const totalAcreditables = isrSueldos + isrHonorarios + isrIntereses;
 
-  const resultado = isr - totalAcreditables;
-  const isACargo = resultado > 0;
+  // 6. Resultados
+  const resultadoReal = calcReal.isr - totalAcreditables;
+  const isACargo = resultadoReal > 0;
+  const saldoNeto = Math.abs(resultadoReal);
+
+  const resultadoSimulado = calcSimulado.isr - totalAcreditables;
+  const ahorroSimulado = Math.max(0, calcReal.isr - calcSimulado.isr);
+
+  // 7. Métricas de eficiencia fiscal
+  const tasaEfectiva = totalAcumulables > 0 ? (calcReal.isr / totalAcumulables) * 100 : 0;
+  const tasaMarginal = calcReal.tasa * 100;
+
+  let tarifaActual = ISR_TARIFA_2024;
+  if (year === '2022') tarifaActual = ISR_TARIFA_2022;
+  if (year === '2025' || year === '2026') tarifaActual = ISR_TARIFA_2025;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <SectionCard icon="🧮" title="Ingresos acumulables">
-        <p className="sec-note">Suma de todos los ingresos del ejercicio que forman la base gravable del ISR.
-          Los valores coinciden con los módulos <strong>Sueldos y Nómina</strong> y <strong>AEyP / Honorarios</strong>.
-        </p>
-        <div className="calc-block">
-          <CalcStep label={`Sueldos y salarios — gravado (de ${fmt(sueldos?.total_ingresos || 0)} total, exento no acumula)`} value={ingSueldos} op="+" />
-          <CalcStep
-            label={ingHonorarios >= 0
-              ? `Utilidad fiscal AEyP (${fmt(aeypSubtotalTotal)} subtotal − ${fmt(aeypDeducciones)} egresos negocio)`
-              : 'Pérdida fiscal AEyP (no acumula — Art. 109 LISR)'}
-            value={ingHonorarios} op="+" />
-          <CalcStep label="Intereses reales acumulables" value={ingIntereses} op="+" />
-          <CalcStep label="Total de ingresos acumulables" value={totalAcumulables} op="=" highlight />
-        </div>
-      </SectionCard>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
-      <SectionCard icon="📋" title="Base gravable del ISR">
-        <p className="sec-note">Se restan las deducciones personales autorizadas (Art. 151 LISR) al total acumulable.</p>
-        <div className="calc-block">
-          <CalcStep label="Total ingresos acumulables" value={totalAcumulables} op=" " />
-          <CalcStep label="Deducciones personales" value={dedPersonales} op="−" />
-          <CalcStep label="Base gravable" value={baseGravable} op="=" highlight />
+      {/* ── 1. HERO BANNER DE LIQUIDACIÓN ANUAL (SALDO A FAVOR / CARGO) ── */}
+      <div style={{
+        background: isACargo
+          ? 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #991b1b 100%)'
+          : 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #047857 100%)',
+        borderRadius: '24px',
+        padding: '2.5rem 2rem',
+        color: 'white',
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+        border: '1px solid rgba(255,255,255,0.15)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: '-20px', right: '-20px', fontSize: '9rem', opacity: 0.08, pointerEvents: 'none' }}>
+          {isACargo ? '⚠️' : '🌮'}
         </div>
-      </SectionCard>
 
-      <SectionCard icon="📊" title={`Cálculo del ISR (Tarifa Art. 152 LISR ${year})`}>
-        <p className="sec-note">Se aplica la tarifa anual del ISR a la base gravable para determinar el impuesto del ejercicio.</p>
-        <div className="calc-block">
-          <CalcStep label="Base gravable" value={baseGravable} op=" " />
-          <CalcStep label={`Límite inferior (renglón tarifa)`} value={limiteInferior} op="−" />
-          <CalcStep label="Excedente del límite inferior" value={excedente} op="=" />
-          <CalcStep label={`× Tasa marginal (${(tasa * 100).toFixed(2)}%)`} value={marginal} op="×" />
-          <CalcStep label="+ Cuota fija del renglón" value={cuota} op="+" />
-          <CalcStep label="ISR del ejercicio (Art. 152)" value={isr} op="=" highlight />
-        </div>
-      </SectionCard>
-
-      <SectionCard icon="🧾" title="Pagos acreditables (retenciones y pagos provisionales)">
-        <p className="sec-note">ISR ya pagado durante el año, ya sea por retención de patrones/clientes o pagos provisionales propios.</p>
-        <div className="calc-block">
-          <CalcStep label="ISR retenido por sueldos (patrones)" value={isrSueldos} op=" " />
-          <CalcStep label="ISR retenido por clientes (honorarios)" value={isrHonorarios} op="+" />
-          <CalcStep label="ISR retenido por intereses (bancos)" value={isrIntereses} op="+" />
-          <CalcStep label="Total de pagos acreditables" value={totalAcreditables} op="=" highlight />
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        icon={isACargo ? "⚠️" : "✅"}
-        title={isACargo ? "ISR a cargo del ejercicio" : "Saldo a favor del ejercicio"}
-        accent={isACargo ? 'card-danger' : 'card-success'}
-      >
-        <div className="calc-block">
-          <CalcStep label="ISR del ejercicio" value={isr} op=" " />
-          <CalcStep label="Total acreditables" value={totalAcreditables} op="−" />
-          <CalcStep
-            label={isACargo ? "ISR A CARGO — debes pagar al SAT" : "SALDO A FAVOR — SAT te debe devolver"}
-            value={Math.abs(resultado)}
-            op="="
-            highlight
-          />
-        </div>
-        <div className={`resultado-banner ${isACargo ? 'banner-danger' : 'banner-success'}`}>
-          {isACargo
-            ? `⚠️ Pagarás ${fmt(resultado)} al SAT al presentar tu declaración anual`
-            : `✅ Tienes un saldo a favor de ${fmt(Math.abs(resultado))} — puedes solicitar devolución o compensación`}
-        </div>
-        <div className="sec-note" style={{ marginTop: '0.75rem' }}>
-          * Cálculo estimado. El SAT puede ajustar las cifras al presentar la declaración anual.
-          La tarifa aplicada es la del Artículo 152 LISR vigente para {year}.
-        </div>
-      </SectionCard>
-    </div>
-  );
-};
-
-// ─── SECCIÓN 5: Deducciones Personales ───────────────────────────────────────
-
-export const DeduccionesPersonalesSection = ({ data, year }) => {
-  if (!data) return null;
-  return (
-    <SectionCard icon="🏥" title="Deducciones personales (Art. 151 LISR)">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
-        <p className="sec-note" style={{ margin: 0 }}>
-          Gastos personales deducibles que reducen tu base gravable del ISR. 
-          El SAT los precarga automáticamente de tus CFDIs recibidos.
-          Se aplica el límite del 15% del ingreso total o 5 UMAs anuales.
-        </p>
-        {data.detalle && data.detalle.length > 0 && (
-          <CsvExportButton
-            onClick={() => exportDeduccionesPersonales(data.detalle, year)}
-            label="Exportar Deducciones"
-            count={data.detalle.length}
-          />
-        )}
-      </div>
-      <div className="ded-grid">
-        {[
-          ['🏥 Honorarios médicos, dentales y hospitalarios', 'D01'],
-          ['👓 Gastos médicos por incapacidad / ópticos', 'D02'],
-          ['⚰️ Gastos funerales', 'D03'],
-          ['🎗️ Donativos', 'D04'],
-          ['🏠 Intereses reales de crédito hipotecario', 'D05'],
-          ['🎓 Aportaciones voluntarias SAR', 'D06'],
-          ['💊 Primas de seguro de gastos médicos', 'D07'],
-          ['🚌 Gastos de transportación escolar', 'D08'],
-          ['🏦 Cuentas para el ahorro / pensiones', 'D09'],
-          ['🏫 Colegiaturas', 'D10'],
-        ].map(([label, codigo]) => {
-          const val = data.por_uso?.[codigo];
-          // If the API detected it, or if it is exactly 0, render the value rather than "SAT precarga"
-          const hasValue = val !== undefined && val !== null;
-          return (
-            <div key={codigo} className="ded-item">
-              <span className="ded-label">{label} <small className="text-muted">({codigo})</small></span>
-              <span className="ded-value">{hasValue ? fmt(val) : <span className="text-muted">SAT precarga</span>}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
+          <div>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: isACargo ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)',
+              color: isACargo ? '#fca5a5' : '#6ee7b7',
+              padding: '6px 14px', borderRadius: '30px', fontSize: '0.8rem', fontWeight: 800,
+              textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px'
+            }}>
+              <span>{isACargo ? '🔴 Liquidación Anual' : '🟢 Devolución SAT Estimada'}</span>
+              <span>•</span>
+              <span>Ejercicio {year}</span>
             </div>
-          );
-        })}
+
+            <h2 style={{ margin: 0, fontSize: '2.2rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'white' }}>
+              {isACargo ? 'ISR a Cargo del Ejercicio' : 'Saldo a Favor del Contribuyente'}
+            </h2>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.95rem', color: isACargo ? '#fecaca' : '#a7f3d0', maxWidth: '640px' }}>
+              {isACargo
+                ? `Tus pagos provisionales y retenciones no cubrieron la totalidad del impuesto causado. Debes pagar ${fmt(saldoNeto)} al presentar tu declaración anual.`
+                : `Tus retenciones de nómina y clientes superaron el ISR causado por tus ingresos. El SAT te debe devolver ${fmt(saldoNeto)} en depósito directo.`}
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'right', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', padding: '1.5rem 2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: isACargo ? '#fca5a5' : '#a7f3d0', letterSpacing: '0.08em' }}>
+              {isACargo ? 'Monto a Pagar' : 'Monto a Devolver'}
+            </span>
+            <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1.1, color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
+              {fmt(saldoNeto)}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: isACargo ? '#fca5a5' : '#a7f3d0', marginTop: '6px', fontWeight: 600 }}>
+              {isACargo ? 'Generar línea de captura SAT' : 'Devolución automática en 5-10 días'}
+            </div>
+          </div>
+        </div>
+
+        {/* KPIs de Eficiencia Fiscal */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '1rem', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '1.5rem' }}>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase' }}>Ingresos Acumulables</span>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', marginTop: '2px' }}>{fmt(totalAcumulables)}</div>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase' }}>ISR Causado (Art. 152)</span>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fbbf24', marginTop: '2px' }}>{fmt(calcReal.isr)}</div>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase' }}>Retenciones Pagadas</span>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#60a5fa', marginTop: '2px' }}>{fmt(totalAcreditables)}</div>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase' }}>Tasa Efectiva Real</span>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#a7f3d0', marginTop: '2px' }}>{tasaEfectiva.toFixed(2)}%</div>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase' }}>Tasa Marginal SAT</span>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fbcfe8', marginTop: '2px' }}>{tasaMarginal.toFixed(2)}%</div>
+          </div>
+        </div>
       </div>
-      <InfoField
-        label="Total de deducciones personales declaradas"
-        value={data.total}
-        help="Monto que reduce tu base gravable"
-        accent="field-accent"
-      />
-      
-      {data.detalle && data.detalle.length > 0 && (
-        <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
-          <h4 style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#1a365d', fontWeight: '600' }}>
-            📄 Desglose de Comprobantes (CFDI)
-          </h4>
+
+      {/* ── 2. FLUJO EN CASCADA DEL CÁLCULO (WATERFALL FISCAL) ── */}
+      <SectionCard icon="🧮" title="Cascada de Determinación del Impuesto" badge="Paso a paso">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', alignItems: 'stretch' }}>
+          
+          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase' }}>1. Ingresos Totales</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1e293b', marginTop: '4px' }}>{fmt(totalAcumulables)}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '8px' }}>Sueldos + AEyP + Intereses</div>
+          </div>
+
+          <div style={{ background: '#fffbeb', borderRadius: '14px', padding: '1.25rem', border: '1px solid #fde68a', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#d97706', textTransform: 'uppercase' }}>2. (−) Deducciones</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#b45309', marginTop: '4px' }}>{fmt(dedPersonalesReal)}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#92400e', marginTop: '8px' }}>Art. 151 LISR aplicadas</div>
+          </div>
+
+          <div style={{ background: '#eff6ff', borderRadius: '14px', padding: '1.25rem', border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase' }}>3. (=) Base Gravable</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#1d4ed8', marginTop: '4px' }}>{fmt(baseGravableReal)}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#1e40af', marginTop: '8px' }}>Monto sobre el que aplica tarifa</div>
+          </div>
+
+          <div style={{ background: '#fdf2f8', borderRadius: '14px', padding: '1.25rem', border: '1px solid #fbcfe8', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#db2777', textTransform: 'uppercase' }}>4. ISR Causado</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#be185d', marginTop: '4px' }}>{fmt(calcReal.isr)}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#9d174d', marginTop: '8px' }}>Tarifa Art. 152 aplicada</div>
+          </div>
+
+          <div style={{ background: '#f0fdf4', borderRadius: '14px', padding: '1.25rem', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase' }}>5. (−) Retenciones</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#15803d', marginTop: '4px' }}>{fmt(totalAcreditables)}</div>
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#166534', marginTop: '8px' }}>ISR retenido por terceros</div>
+          </div>
+
+        </div>
+      </SectionCard>
+
+      {/* ── 3. SIMULADOR INTERACTIVO DE DEDUCCIONES Y AHORRO FISCAL ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%)',
+        borderRadius: '20px',
+        padding: '1.75rem 2rem',
+        border: '1.5px solid #93c5fd',
+        boxShadow: '0 4px 15px rgba(59, 130, 246, 0.08)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '1.4rem' }}>💡</span>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#1e3a8a' }}>
+                Optimizador Fiscal: ¿Qué pasa si agregas deducciones personales?
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#334155' }}>
+              Por cada peso que deduces en gastos médicos, colegiaturas, Afore o seguros, recuperas directamente el <strong>{tasaMarginal.toFixed(0)}%</strong> de tu dinero en efectivo gracias a tu tasa marginal del SAT.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', alignItems: 'center', background: 'white', padding: '1.25rem 1.5rem', borderRadius: '14px', border: '1px solid #bfdbfe' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+              Simular Deducción Extra (Médicos, Seguros, SAR, etc.):
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontWeight: 800, color: '#64748b' }}>$</span>
+              <input
+                type="number"
+                min="0"
+                step="5000"
+                placeholder="Ej. 10000"
+                value={extraDeduction || ''}
+                onChange={(e) => setExtraDeduction(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px',
+                  border: '1.5px solid #3b82f6', fontSize: '1rem', fontWeight: 700, color: '#1e293b'
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Ahorro / Devolución Extra:</span>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#059669', lineHeight: 1.2 }}>
+                +{fmt(ahorroSimulado)}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>Nuevo Saldo Fiscal:</span>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: resultadoSimulado <= 0 ? '#059669' : '#dc2626', lineHeight: 1.2 }}>
+                {resultadoSimulado <= 0 ? `+${fmt(Math.abs(resultadoSimulado))} a favor` : `${fmt(resultadoSimulado)} a cargo`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. AUDITORÍA DE REGÍMENES FISCALES & TARIFA ART. 152 ── */}
+      <SectionCard icon="📊" title="Auditoría de Tarifa SAT y Regímenes">
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveTabRegimen('resumen')}
+            style={{
+              padding: '0.55rem 1.1rem', borderRadius: '8px', cursor: 'pointer', border: 'none',
+              background: activeTabRegimen === 'resumen' ? '#1e293b' : '#f1f5f9',
+              color: activeTabRegimen === 'resumen' ? 'white' : '#475569',
+              fontWeight: 700, fontSize: '0.85rem'
+            }}
+          >
+            📋 Resumen por Régimen Fiscal
+          </button>
+          <button
+            onClick={() => setActiveTabRegimen('tarifa')}
+            style={{
+              padding: '0.55rem 1.1rem', borderRadius: '8px', cursor: 'pointer', border: 'none',
+              background: activeTabRegimen === 'tarifa' ? '#1e293b' : '#f1f5f9',
+              color: activeTabRegimen === 'tarifa' ? 'white' : '#475569',
+              fontWeight: 700, fontSize: '0.85rem'
+            }}
+          >
+            ⚖️ Tarifa Oficial SAT (Art. 152 LISR)
+          </button>
+        </div>
+
+        {activeTabRegimen === 'resumen' && (
           <div className="table-responsive">
             <table className="sat-table">
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Emisor</th>
-                  <th>Uso CFDI</th>
-                  <th>UUID</th>
-                  <th className="text-right">Monto Deducible</th>
+                  <th>Régimen / Origen del Ingreso</th>
+                  <th className="text-right">Ingreso Bruto</th>
+                  <th className="text-right">Exento / Deducciones</th>
+                  <th className="text-right">Ingreso Acumulable</th>
+                  <th className="text-right">ISR Retenido</th>
                 </tr>
               </thead>
               <tbody>
-                {data.detalle.map((cfdi, idx) => (
-                  <tr key={idx}>
-                    <td>{cfdi.fecha}</td>
-                    <td style={{ fontSize: '0.8rem' }}>{cfdi.emisor}</td>
-                    <td><span className="sat-badge sat-badge-blue">{cfdi.uso_cfdi}</span></td>
-                    <td style={{ fontSize: '0.7rem', color: '#64748b' }}>{cfdi.uuid?.slice(0, 13)}...</td>
-                    <td className="text-right font-medium">{fmt(cfdi.monto)}</td>
-                  </tr>
-                ))}
+                <tr>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>👥 Sueldos, Salarios y Asimilados (Cap. I)</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Art. 94 LISR — Empleadores y patrones</div>
+                  </td>
+                  <td className="text-right">{fmt(sueldos?.total_ingresos || 0)}</td>
+                  <td className="text-right text-muted">{fmt(sueldos?.exento || 0)}</td>
+                  <td className="text-right font-medium" style={{ color: '#3b82f6', fontWeight: 800 }}>{fmt(ingSueldos)}</td>
+                  <td className="text-right" style={{ color: '#059669', fontWeight: 800 }}>{fmt(isrSueldos)}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>💼 Actividad Empresarial y Profesional (Cap. II)</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Art. 100 LISR — Honorarios y facturación PUE</div>
+                  </td>
+                  <td className="text-right">{fmt(aeypSubtotalTotal)}</td>
+                  <td className="text-right text-muted">−{fmt(aeypDeducciones)}</td>
+                  <td className="text-right font-medium" style={{ color: '#3b82f6', fontWeight: 800 }}>{fmt(ingHonorarios)}</td>
+                  <td className="text-right" style={{ color: '#059669', fontWeight: 800 }}>{fmt(isrHonorarios)}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>🏦 Ingresos por Intereses (Cap. VI)</div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Art. 133 LISR — Instituciones financieras y Cetes</div>
+                  </td>
+                  <td className="text-right">{fmt(intereses?.nominal || 0)}</td>
+                  <td className="text-right text-muted">Ajuste inflación</td>
+                  <td className="text-right font-medium" style={{ color: '#3b82f6', fontWeight: 800 }}>{fmt(ingIntereses)}</td>
+                  <td className="text-right" style={{ color: '#059669', fontWeight: 800 }}>{fmt(isrIntereses)}</td>
+                </tr>
               </tbody>
+              <tfoot>
+                <tr style={{ background: '#f8fafc', fontWeight: 900 }}>
+                  <td>TOTALES CONSOLIDADOS</td>
+                  <td className="text-right">{fmt((sueldos?.total_ingresos || 0) + aeypSubtotalTotal + (intereses?.nominal || 0))}</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right" style={{ color: '#1e3a8a', fontSize: '1rem' }}>{fmt(totalAcumulables)}</td>
+                  <td className="text-right" style={{ color: '#059669', fontSize: '1rem' }}>{fmt(totalAcreditables)}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-        </div>
-      )}
-    </SectionCard>
+        )}
+
+        {activeTabRegimen === 'tarifa' && (
+          <div>
+            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0 0 1rem 0' }}>
+              Tarifa anual progresiva del <strong>Artículo 152 LISR vigente para {year}</strong>. El renglón aplicable a tu base gravable ({fmt(baseGravableReal)}) está resaltado:
+            </p>
+            <div className="table-responsive">
+              <table className="sat-table" style={{ fontSize: '0.82rem' }}>
+                <thead>
+                  <tr>
+                    <th>Límite Inferior</th>
+                    <th>Límite Superior</th>
+                    <th>Cuota Fija</th>
+                    <th className="text-right">% Sobre Excedente</th>
+                    <th className="text-right">Estatus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tarifaActual.map((row, idx) => {
+                    const isMyRow = baseGravableReal >= row.li && baseGravableReal <= row.ls;
+                    return (
+                      <tr key={idx} style={{
+                        background: isMyRow ? '#ecfdf5' : idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                        borderLeft: isMyRow ? '4px solid #10b981' : 'none',
+                        fontWeight: isMyRow ? 800 : 400
+                      }}>
+                        <td>{fmt(row.li)}</td>
+                        <td>{row.ls === Infinity ? 'En adelante' : fmt(row.ls)}</td>
+                        <td>{fmt(row.cuota)}</td>
+                        <td className="text-right">{(row.tasa * 100).toFixed(2)}%</td>
+                        <td className="text-right">
+                          {isMyRow ? (
+                            <span style={{ background: '#10b981', color: 'white', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>
+                              📍 Tu Tramo
+                            </span>
+                          ) : (
+                            <span style={{ color: '#94a3b8' }}>—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+    </div>
   );
 };
+
+
+export const DeduccionesPersonalesSection = ({ data, year }) => {
+  const [activeSubTab, setActiveSubTab] = useState('validas');
+  const [selectedCfdi, setSelectedCfdi] = useState(null);
+  const [viewingXml, setViewingXml] = useState(null);
+
+  if (!data) return null;
+
+  const tope = data.tope || {
+    limite_15_pct: 0,
+    limite_5_umas: 198031.8,
+    tope_aplicable: 198031.8,
+    monto_aplicado: 0,
+    remanente_disponible: 198031.8,
+    porcentaje_aprovechado: 0
+  };
+
+  const validas = data.detalle || [];
+  const observadas = data.observadas || [];
+  const posibles = data.posibles_no_clasificadas || [];
+
+  const CAT_DEDUCCIONES_INFO = [
+    { code: 'D01', name: 'Honorarios médicos, dentales y hospitalarios', icon: '🏥', desc: 'Consultas médicas, dentistas, psicólogos y nutriólogos titulados' },
+    { code: 'D02', name: 'Gastos médicos por incapacidad / ópticos', icon: '👓', desc: 'Lentes graduados (hasta $2,500) y aparatos de rehabilitación' },
+    { code: 'D03', name: 'Gastos funerales', icon: '⚰️', desc: 'Gastos de sepelio para cónyuge, padres, abuelos o hijos' },
+    { code: 'D04', name: 'Donativos no onerosos', icon: '🎗️', desc: 'Donaciones a donatarias autorizadas por el SAT (tope 7% ingresos)' },
+    { code: 'D05', name: 'Intereses reales crédito hipotecario', icon: '🏠', desc: 'Intereses reales pagados en créditos Infonavit, Fovissste o bancarios' },
+    { code: 'D06', name: 'Aportaciones voluntarias al SAR / Afore', icon: '🎓', desc: 'Aportaciones para el retiro (tope 10% ingresos o 5 UMAs)' },
+    { code: 'D07', name: 'Primas por seguros de gastos médicos', icon: '💊', desc: 'Pólizas de seguro médico para ti o familiares directos' },
+    { code: 'D08', name: 'Gastos de transportación escolar obligatoria', icon: '🚌', desc: 'Transporte escolar obligatorio para hijos' },
+    { code: 'D09', name: 'Cuentas especiales para el ahorro', icon: '🏦', desc: 'Planes de ahorro a largo plazo (hasta $152,000 anuales)' },
+    { code: 'D10', name: 'Colegiaturas', icon: '🏫', desc: 'Preescolar a Bachillerato con topes específicos por nivel escolar' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* ── 1. TERMÓMETRO DEL TOPE LEGAL DEL SAT (Art. 151 LISR) ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        borderRadius: '20px',
+        padding: '2rem',
+        color: 'white',
+        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position: 'absolute', top: '-40px', right: '-40px', fontSize: '10rem', opacity: 0.05, pointerEvents: 'none' }}>
+          🏥
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              <span>⚖️ Art. 151 LISR</span>
+              <span>•</span>
+              <span>Tope Anual SAT {year}</span>
+            </div>
+            <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'white' }}>
+              Control de Deducciones Personales
+            </h3>
+            <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#94a3b8', maxWidth: '600px' }}>
+              Reduce directamente tu base gravable anual. El límite del SAT es el menor entre el <strong>15% de tus ingresos totales</strong> y <strong>5 UMAs anuales ({fmt(tope.limite_5_umas)})</strong>.
+            </p>
+          </div>
+
+          {validas.length > 0 && (
+            <CsvExportButton
+              onClick={() => exportDeduccionesPersonales(validas, year)}
+              label="Exportar Deducciones"
+              count={validas.length}
+            />
+          )}
+        </div>
+
+        {/* KPIs de Aprovechamiento */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Monto Deducible Aplicado</span>
+            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#34d399', lineHeight: 1.2, marginTop: '4px' }}>
+              {fmt(data.total)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#a7f3d0', marginTop: '4px' }}>
+              {validas.length} comprobante(s) válido(s)
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tope Legal Máximo SAT</span>
+            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#60a5fa', lineHeight: 1.2, marginTop: '4px' }}>
+              {fmt(tope.tope_aplicable)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#93c5fd', marginTop: '4px' }}>
+              5 UMAs: {fmt(tope.limite_5_umas)}
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Espacio Fiscal Disponible</span>
+            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1.2, marginTop: '4px' }}>
+              {fmt(tope.remanente_disponible)}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: '#fde68a', marginTop: '4px' }}>
+              Margen aún deducible
+            </div>
+          </div>
+        </div>
+
+        {/* Barra de Progreso */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>
+            <span style={{ color: '#cbd5e1' }}>Aprovechamiento del Tope Anual</span>
+            <span style={{ color: '#34d399' }}>{tope.porcentaje_aprovechado}% utilizado</span>
+          </div>
+          <div style={{ height: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.min(100, Math.max(0, tope.porcentaje_aprovechado))}%`,
+              background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+              borderRadius: '6px',
+              transition: 'width 0.8s ease'
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. CATÁLOGO VISUAL DE RUBROS DEDUCIBLES ── */}
+      <SectionCard icon="🗂️" title="Desglose por Tipo de Deducción Personal" badge={`${validas.length} comprobantes`}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+          {CAT_DEDUCCIONES_INFO.map(cat => {
+            const monto = data.por_uso?.[cat.code] || 0;
+            const hasData = monto > 0;
+            return (
+              <div
+                key={cat.code}
+                style={{
+                  background: hasData ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : '#f8fafc',
+                  border: `1.5px solid ${hasData ? '#86efac' : '#e2e8f0'}`,
+                  borderRadius: '14px',
+                  padding: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  transition: 'all 0.2s ease',
+                  boxShadow: hasData ? '0 4px 10px rgba(16, 185, 129, 0.08)' : 'none'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '1.5rem' }}>{cat.icon}</span>
+                    <span style={{
+                      fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px',
+                      background: hasData ? '#10b981' : '#cbd5e1', color: '#ffffff'
+                    }}>
+                      {cat.code}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: hasData ? '#065f46' : '#334155', lineHeight: 1.3 }}>
+                    {cat.name}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px', lineHeight: 1.3 }}>
+                    {cat.desc}
+                  </div>
+                </div>
+
+                <div style={{ borderTop: `1px solid ${hasData ? 'rgba(16,185,129,0.2)' : '#e2e8f0'}`, paddingTop: '8px', marginTop: '4px' }}>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 900, color: hasData ? '#047857' : '#94a3b8' }}>
+                    {hasData ? fmt(monto) : '$0'}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </SectionCard>
+
+      {/* ── 3. EXPLORADOR DE COMPROBANTES Y SEMÁFORO FISCAL ── */}
+      <SectionCard icon="🧾" title="Comprobantes y Validación Fiscal">
+        {/* Selector de Pestañas */}
+        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveSubTab('validas')}
+            style={{
+              padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
+              background: activeSubTab === 'validas' ? 'linear-gradient(135deg, #10b981, #059669)' : '#f1f5f9',
+              color: activeSubTab === 'validas' ? 'white' : '#475569',
+              fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
+              boxShadow: activeSubTab === 'validas' ? '0 4px 10px rgba(16, 185, 129, 0.3)' : 'none'
+            }}
+          >
+            <span>✅ Válidas y Deducibles</span>
+            <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
+              {validas.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('observadas')}
+            style={{
+              padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
+              background: activeSubTab === 'observadas' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#f1f5f9',
+              color: activeSubTab === 'observadas' ? 'white' : '#475569',
+              fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
+              boxShadow: activeSubTab === 'observadas' ? '0 4px 10px rgba(245, 158, 11, 0.3)' : 'none'
+            }}
+          >
+            <span>⚠️ Observadas / En Riesgo SAT</span>
+            <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
+              {observadas.length}
+            </span>
+          </button>
+
+          {posibles.length > 0 && (
+            <button
+              onClick={() => setActiveSubTab('posibles')}
+              style={{
+                padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
+                background: activeSubTab === 'posibles' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : '#f1f5f9',
+                color: activeSubTab === 'posibles' ? 'white' : '#475569',
+                fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
+                boxShadow: activeSubTab === 'posibles' ? '0 4px 10px rgba(59, 130, 246, 0.3)' : 'none'
+              }}
+            >
+              <span>💡 Salud con Uso General (G03)</span>
+              <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
+                {posibles.length}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Tab 1: Válidas */}
+        {activeSubTab === 'validas' && (
+          <div>
+            {validas.length > 0 ? (
+              <div className="table-responsive">
+                <table className="sat-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Emisor / Proveedor</th>
+                      <th>Rubro Deducible</th>
+                      <th>Forma de Pago</th>
+                      <th>UUID / Acciones</th>
+                      <th className="text-right">Monto Deducible</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {validas.map((cfdi, idx) => (
+                      <tr key={idx}>
+                        <td style={{ fontWeight: 600, color: '#334155' }}>{cfdi.fecha}</td>
+                        <td>
+                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{cfdi.emisor}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{cfdi.rfc_emisor}</div>
+                        </td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>
+                            <span>{cfdi.uso_icon || '🏥'}</span>
+                            <span>{cfdi.uso_cfdi} - {cfdi.uso_nombre}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
+                            {cfdi.forma_pago === '03' ? '03 Transferencia' : cfdi.forma_pago === '04' ? '04 Tarjeta Crédito' : cfdi.forma_pago === '28' ? '28 Tarjeta Débito' : `Forma ${cfdi.forma_pago}`}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              onClick={() => setSelectedCfdi(cfdi.raw_cfdi)}
+                              style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 700 }}
+                            >
+                              {cfdi.uuid?.slice(0, 8)}...
+                            </button>
+                            <button
+                              onClick={() => setSelectedCfdi(cfdi.raw_cfdi)}
+                              style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#475569', cursor: 'pointer' }}
+                              title="Ver JSON estructurado"
+                            >
+                              💻
+                            </button>
+                            {cfdi.raw_cfdi?.filename && (
+                              <button
+                                onClick={() => window.open(`http://${window.location.hostname}:8010/api/download_xml?filename=${cfdi.raw_cfdi.filename}`, '_blank')}
+                                style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#475569', cursor: 'pointer' }}
+                                title="Descargar XML original"
+                              >
+                                ⬇️ XML
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="text-right font-medium" style={{ fontSize: '0.95rem', color: '#047857', fontWeight: 800 }}>
+                          {fmt(cfdi.monto)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
+                      <td colSpan="5">TOTAL DEDUCCIONES VÁLIDAS</td>
+                      <td className="text-right" style={{ color: '#047857', fontSize: '1.05rem', fontWeight: 900 }}>
+                        {fmt(data.total_valido_bruto || data.total)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            ) : (
+              <div style={{
+                background: '#f8fafc', borderRadius: '16px', padding: '3rem 2rem', textAlign: 'center',
+                border: '1.5px dashed #cbd5e1', color: '#64748b'
+              }}>
+                <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🏥✨</div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
+                  No se encontraron comprobantes de deducciones personales en el ejercicio {year}
+                </div>
+                <p style={{ maxWidth: '520px', margin: '8px auto 16px auto', fontSize: '0.85rem' }}>
+                  Si tuviste gastos médicos, dentales, hospitalarios, colegiaturas o seguros, asegúrate de pedir las facturas con <strong>Uso CFDI D01 a D10</strong> y pagar siempre con tarjeta, transferencia o cheque.
+                </p>
+                <div style={{
+                  display: 'inline-flex', gap: '8px', background: '#eff6ff', color: '#1d4ed8',
+                  padding: '8px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700
+                }}>
+                  💡 Recuerda: Puedes deducir hasta {fmt(tope.tope_aplicable)} este año para obtener saldo a favor.
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 2: Observadas / En Riesgo */}
+        {activeSubTab === 'observadas' && (
+          <div>
+            {observadas.length > 0 ? (
+              <div>
+                <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e', padding: '1rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+                  <strong>⚠️ ¿Por qué están observadas?</strong> El SAT rechaza automáticamente deducciones personales si fueron pagadas en efectivo (Forma 01), si se dejaron "Por definir" (99) sin complemento, o si son medicamentos de farmacia comercial no hospitalaria.
+                </div>
+                <div className="table-responsive">
+                  <table className="sat-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Emisor / Proveedor</th>
+                        <th>Uso Reportado</th>
+                        <th>Forma de Pago</th>
+                        <th>Motivo de Observación SAT</th>
+                        <th className="text-right">Monto</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {observadas.map((cfdi, idx) => (
+                        <tr key={idx} style={{ background: '#fffbeb' }}>
+                          <td>{cfdi.fecha}</td>
+                          <td>
+                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{cfdi.emisor}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{cfdi.rfc_emisor}</div>
+                          </td>
+                          <td><span className="sat-badge sat-badge-blue">{cfdi.uso_cfdi}</span></td>
+                          <td>
+                            <span style={{ background: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              Forma {cfdi.forma_pago}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '0.78rem', color: '#b45309', maxWidth: '300px' }}>
+                            {(cfdi.motivos_rechazo || []).map((m, mi) => (
+                              <div key={mi} style={{ marginBottom: '2px' }}>• {m}</div>
+                            ))}
+                          </td>
+                          <td className="text-right font-medium" style={{ color: '#b45309', fontWeight: 700 }}>
+                            {fmt(cfdi.monto)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#16a34a', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #86efac' }}>
+                ✅ No tienes comprobantes observados ni en riesgo de rechazo para el ejercicio {year}.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: Posibles no clasificadas */}
+        {activeSubTab === 'posibles' && (
+          <div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '1rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
+              <strong>💡 Oportunidad Fiscal:</strong> Detectamos comprobantes relacionados con salud o laboratorios que tu proveedor emitió con Uso General (G03). Podrías solicitar refacturación con uso D01/D02 para que el SAT los reconozca como deducción personal en tu declaración anual.
+            </div>
+            <div className="table-responsive">
+              <table className="sat-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor / Emisor</th>
+                    <th>Uso Actual</th>
+                    <th>Conceptos Facturados</th>
+                    <th className="text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {posibles.map((cfdi, idx) => (
+                    <tr key={idx}>
+                      <td>{cfdi.fecha}</td>
+                      <td style={{ fontWeight: 700 }}>{cfdi.emisor}</td>
+                      <td><span className="sat-badge" style={{ background: '#e2e8f0', color: '#334155' }}>{cfdi.uso_cfdi}</span></td>
+                      <td style={{ fontSize: '0.78rem', color: '#475569' }}>
+                        {(cfdi.conceptos || []).map(c => c.desc).join(' • ')}
+                      </td>
+                      <td className="text-right font-medium">{fmt(cfdi.monto)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Modales */}
+      {selectedCfdi && <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />}
+      {viewingXml && <XmlViewerModal data={viewingXml} onClose={() => setViewingXml(null)} />}
+    </div>
+  );
+};
+
 
 // ─── Componente Modal para Visualizador CFDI (PDF Stylized) ──────────────────
 
@@ -2233,8 +2885,18 @@ export function EgresosMensualesSection({ data, year }) {
       const mIdx = parts.length > 1 ? parseInt(parts[1], 10) - 1 : -1;
 
       if (mIdx >= 0 && mIdx < 12) {
+        const isDed = item.es_deducible_fiscal !== false;
+        const subDed = isDed ? (item.subtotal || 0) : 0;
+        const subNoDed = isDed ? 0 : (item.subtotal || 0);
+        const ivaAcred = isDed ? (item.iva || 0) : 0;
+        const ivaNoAcred = isDed ? 0 : (item.iva || 0);
+
         meses[mIdx].subtotal += item.subtotal || 0;
+        meses[mIdx].subtotalDeducible = (meses[mIdx].subtotalDeducible || 0) + subDed;
+        meses[mIdx].subtotalNoDeducible = (meses[mIdx].subtotalNoDeducible || 0) + subNoDed;
         meses[mIdx].iva += item.iva || 0;
+        meses[mIdx].ivaAcreditableFiscal = (meses[mIdx].ivaAcreditableFiscal || 0) + ivaAcred;
+        meses[mIdx].ivaNoAcreditable = (meses[mIdx].ivaNoAcreditable || 0) + ivaNoAcred;
         meses[mIdx].total += item.total || 0;
         meses[mIdx].count += 1;
         meses[mIdx].items.push(item);
@@ -2244,6 +2906,7 @@ export function EgresosMensualesSection({ data, year }) {
         meses[mIdx].proveedoresMap[prov] = (meses[mIdx].proveedoresMap[prov] || 0) + (item.subtotal || 0);
       }
 
+      const isDed = item.es_deducible_fiscal !== false;
       sumSubtotal += item.subtotal || 0;
       sumIva += item.iva || 0;
       sumTotal += item.total || 0;
@@ -2717,20 +3380,23 @@ export function EgresosMensualesSection({ data, year }) {
           <table className="sat-table" style={{ margin: 0 }}>
             <thead>
               <tr>
-                <th style={{ width: '140px' }}>Mes</th>
-                <th style={{ width: '110px' }} className="text-center">Comprobantes</th>
-                <th className="text-right" style={{ width: '140px' }}>Subtotal Base</th>
-                <th className="text-right" style={{ width: '120px' }}>IVA Acreditable</th>
-                <th className="text-right" style={{ width: '140px' }}>Total Pagado</th>
-                <th style={{ width: '140px' }}>% del Anual</th>
+                <th style={{ width: '130px' }}>Mes</th>
+                <th style={{ width: '90px' }} className="text-center">Comprobantes</th>
+                <th className="text-right" style={{ width: '130px' }}>Deducible Fiscal</th>
+                <th className="text-right" style={{ width: '110px' }}>No Deducible</th>
+                <th className="text-right" style={{ width: '120px' }}>Subtotal Disco</th>
+                <th className="text-right" style={{ width: '110px' }}>IVA Acreditable</th>
+                <th className="text-right" style={{ width: '120px' }}>Total Pagado</th>
                 <th>Proveedor Principal</th>
-                <th style={{ width: '110px' }} className="text-center">Acción</th>
+                <th style={{ width: '100px' }} className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
               {mesesData.map((m) => {
-                const pctAnual = totalesAnuales.total > 0 ? (m.total / totalesAnuales.total) * 100 : 0;
                 const isCurrentActive = selectedMonth === m.mes;
+                const subDed = m.subtotalDeducible || 0;
+                const subNoDed = m.subtotalNoDeducible || 0;
+
                 return (
                   <tr
                     key={m.mes}
@@ -2752,22 +3418,22 @@ export function EgresosMensualesSection({ data, year }) {
                         <span style={{ color: '#94a3b8' }}>0</span>
                       )}
                     </td>
-                    <td className="text-right mono">{fmt(m.subtotal)}</td>
-                    <td className="text-right mono">{fmt(m.iva)}</td>
+                    <td className="text-right mono font-bold" style={{ color: subDed > 0 ? '#059669' : '#94a3b8' }}>
+                      {fmt(subDed)}
+                    </td>
+                    <td className="text-right mono" style={{ color: subNoDed > 0 ? '#dc2626' : '#94a3b8', fontSize: '0.8rem' }}>
+                      {subNoDed > 0 ? `⚠️ ${fmt(subNoDed)}` : '—'}
+                    </td>
+                    <td className="text-right mono font-medium" style={{ color: m.subtotal > 0 ? '#1e293b' : '#94a3b8' }}>
+                      {fmt(m.subtotal)}
+                    </td>
+                    <td className="text-right mono" style={{ color: (m.ivaAcreditableFiscal || m.iva) > 0 ? '#2563eb' : '#94a3b8' }}>
+                      {fmt(m.ivaAcreditableFiscal || m.iva)}
+                    </td>
                     <td className="text-right mono font-medium" style={{ color: m.total > 0 ? '#0f172a' : '#94a3b8' }}>
                       {fmt(m.total)}
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ width: `${Math.min(pctAnual, 100)}%`, height: '100%', background: '#3b82f6', borderRadius: '4px' }} />
-                        </div>
-                        <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', width: '38px', color: '#64748b' }}>
-                          {pctAnual.toFixed(1)}%
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ fontSize: '0.82rem', color: '#475569', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ fontSize: '0.82rem', color: '#475569', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {m.topProvider}
                     </td>
                     <td className="text-center">
@@ -2798,11 +3464,19 @@ export function EgresosMensualesSection({ data, year }) {
               <tr style={{ background: '#f8fafc', fontWeight: 800, borderTop: '2px solid #cbd5e1' }}>
                 <td>TOTAL ANUAL</td>
                 <td className="text-center">{totalesAnuales.count} facturas</td>
-                <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(totalesAnuales.subtotal)}</td>
-                <td className="text-right mono" style={{ color: '#d97706' }}>{fmt(totalesAnuales.iva)}</td>
+                <td className="text-right mono font-bold" style={{ color: '#059669' }}>
+                  {fmt(mesesData.reduce((s, m) => s + (m.subtotalDeducible || 0), 0))}
+                </td>
+                <td className="text-right mono" style={{ color: '#dc2626' }}>
+                  {fmt(mesesData.reduce((s, m) => s + (m.subtotalNoDeducible || 0), 0))}
+                </td>
+                <td className="text-right mono" style={{ color: '#1e293b' }}>{fmt(totalesAnuales.subtotal)}</td>
+                <td className="text-right mono" style={{ color: '#2563eb' }}>
+                  {fmt(mesesData.reduce((s, m) => s + (m.ivaAcreditableFiscal || m.iva || 0), 0))}
+                </td>
                 <td className="text-right mono font-medium" style={{ color: '#0f172a', fontSize: '1rem' }}>{fmt(totalesAnuales.total)}</td>
-                <td colSpan={3} style={{ textAlign: 'right', color: '#64748b', fontSize: '0.85rem' }}>
-                  100% Gasto Acumulado
+                <td colSpan={2} style={{ textAlign: 'right', color: '#64748b', fontSize: '0.85rem' }}>
+                  Total Egresos
                 </td>
               </tr>
             </tfoot>
@@ -2912,7 +3586,7 @@ export function EgresosMensualesSection({ data, year }) {
                         {isExpanded ? '▼' : '▶'}
                       </span>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
                             {item.fecha}
                           </span>
@@ -2922,6 +3596,36 @@ export function EgresosMensualesSection({ data, year }) {
                           <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 600 }}>
                             {item.uso_cfdi}
                           </span>
+                          {item.es_deducible_fiscal === false ? (
+                            <span
+                              title={item.motivo_no_deducible || 'Pagado en Efectivo: El SAT exige pago electrónico para deducir'}
+                              style={{
+                                fontSize: '0.7rem',
+                                background: '#fef2f2',
+                                color: '#dc2626',
+                                border: '1px solid #fecaca',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontWeight: 800
+                              }}
+                            >
+                              ⚠️ Efectivo (No Deducible)
+                            </span>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                background: '#ecfdf5',
+                                color: '#065f46',
+                                border: '1px solid #a7f3d0',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontWeight: 800
+                              }}
+                            >
+                              ✓ Deducible SAT
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
                           {item.emisor}
