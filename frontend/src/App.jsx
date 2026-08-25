@@ -123,7 +123,6 @@ const App = () => {
         { id: 'nomina_detalle',label: 'Detalle de Recibos',     icon: '🧾' },
         { id: 'aeyp',          label: 'Honorarios Emitidos',    icon: '💼' },
         { id: 'facturas_aeyp', label: 'Facturas Clientes',      icon: '📄' },
-        { id: 'notas_credito', label: 'Notas de Crédito',       icon: '💵' },
       ]
     },
     {
@@ -314,7 +313,11 @@ const App = () => {
           {/* ── 4. Egresos y Deducciones ── */}
           {activeTab === 'egresos_mes' && (
             <ErrorBoundary>
-              <EgresosMensualesSection data={sections?.reporte_gastos} year={year} />
+              <EgresosMensualesSection 
+                data={sections?.reporte_gastos} 
+                notasCreditoData={sections?.otros_ingresos}
+                year={year} 
+              />
             </ErrorBoundary>
           )}
           {activeTab === 'deducciones' && (
@@ -335,18 +338,6 @@ const App = () => {
           )}
           {activeTab === 'facturas_aeyp' && (
             <ErrorBoundary><FacturasAeypSection data={sections?.honorarios} year={year} /></ErrorBoundary>
-          )}
-          {activeTab === 'notas_credito' && (
-            <ErrorBoundary>
-              <>
-                <NotasCreditoSection data={sections?.otros_ingresos} />
-                {sections?.intereses && (sections.intereses.nominal > 0 || sections.intereses.real > 0) && (
-                  <div style={{ marginTop: '1.5rem' }}>
-                    <InteresesSection data={sections.intereses} />
-                  </div>
-                )}
-              </>
-            </ErrorBoundary>
           )}
 
           {/* ── 6. Auditoría & Conciliación Oficial SAT (PDFs) ── */}

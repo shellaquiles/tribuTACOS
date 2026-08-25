@@ -3,7 +3,7 @@ import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine
 } from 'recharts';
-import { exportEgresos, exportHonorarios, exportNomina, exportDeduccionesPersonales, exportIngresos } from './csvExport';
+import { exportEgresos, exportHonorarios, exportNomina, exportDeduccionesPersonales } from './csvExport';
 
 const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
 
@@ -340,11 +340,6 @@ export const SueldosSection = ({ data, year }) => {
              </button>
            ))}
           </div>
-          <CsvExportButton
-            onClick={() => exportNomina(data.detalle, year)}
-            label="Exportar Nómina"
-            count={data.detalle.reduce((s, e) => s + (e.recibos?.length || 0), 0)}
-          />
         </div>
       )}
 
@@ -704,7 +699,23 @@ export const NominaDetalleSection = ({ data, year }) => {
   
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'white', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🧾</span> Detalle de Recibos de Nómina ({year})
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Radiografía de todos los comprobantes timbrados por tus patrones con desglose de percepciones y deducciones.
+            </p>
+          </div>
+          <CsvExportButton
+            onClick={() => exportNomina(data.detalle, year)}
+            label="Exportar Recibos (CSV)"
+            count={data.detalle.reduce((s, e) => s + (e.recibos?.length || 0), 0)}
+          />
+        </div>
+
         {data.detalle.map((emp, i) => (
           <SectionCard 
              key={`emp-${i}`} 
@@ -1033,50 +1044,6 @@ export function DashboardSection({ sections, year, data }) {
         );
       })()}
 
-      {/* ── Panel de Exportación CSV ──────────────────────────────────────────── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-        border: '1.5px solid #86efac',
-        borderRadius: '14px',
-        padding: '1.25rem 1.5rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1.25rem',
-        flexWrap: 'wrap',
-      }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '1.2rem' }}>⬇️</span>
-            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#14532d' }}>Exportar Ingresos a CSV</span>
-          </div>
-          <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>
-            Descarga tus ingresos en formato Excel-compatible para análisis externo.
-            Genera hasta 3 archivos: resumen mensual, nómina detallada y facturas AEyP.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <CsvExportButton
-            onClick={() => exportIngresos(mensualData, nomina?.detalle, aeyp?.detalle, year)}
-            label="Resumen Mensual"
-            count={mensualData.filter(m => m.Total > 0).length + ' meses'}
-          />
-          {nomina?.detalle?.length > 0 && (
-            <CsvExportButton
-              onClick={() => exportNomina(nomina.detalle, year)}
-              label="Nómina Detallada"
-              count={nomina.detalle.reduce((s, e) => s + (e.recibos?.length || 0), 0)}
-            />
-          )}
-          {aeyp?.detalle?.length > 0 && (
-            <CsvExportButton
-              onClick={() => exportHonorarios(aeyp.detalle, year)}
-              label="Facturas AEyP"
-              count={aeyp.detalle.length}
-            />
-          )}
-        </div>
-      </div>
-
     </div>
   );
 }
@@ -1103,10 +1070,10 @@ export function HonorariosSection({ data, year }) {
   }, [data.detalle, selectedClient]);
 
   // Calculamos montos totales puros (solo INGRESO EMITIDO) filtrados
-  const sumSubtotal = targetRecibos.reduce((acc, curr) => acc + curr.subtotal, 0);
-  const sumIva = targetRecibos.reduce((acc, curr) => acc + curr.iva, 0);
-  const sumIsrRet = targetRecibos.reduce((acc, curr) => acc + curr.isr_ret, 0);
-  const sumIvaRet = targetRecibos.reduce((acc, curr) => acc + curr.iva_ret, 0);
+  const sumSubtotal = targetRecibos.reduce((acc, curr) => acc + (Number(curr.subtotal) || 0), 0);
+  const sumIva = targetRecibos.reduce((acc, curr) => acc + (Number(curr.iva) || 0), 0);
+  const sumIsrRet = targetRecibos.reduce((acc, curr) => acc + (Number(curr.ret_isr ?? curr.isr_ret) || 0), 0);
+  const sumIvaRet = targetRecibos.reduce((acc, curr) => acc + (Number(curr.ret_iva ?? curr.iva_ret) || 0), 0);
   const cobradoBruto = sumSubtotal + sumIva;
   const sumRetenciones = sumIsrRet + sumIvaRet;
   const totalPagadoEfectivo = cobradoBruto - sumRetenciones;
@@ -1141,16 +1108,11 @@ export function HonorariosSection({ data, year }) {
 
   return (
     <SectionCard icon="💼" title="Facturación Emitida (AEyP)">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
+      <div style={{ marginBottom: '1.25rem' }}>
         <p className="sec-note" style={{ margin: 0 }}>
           Base de cálculo: <strong>Facturas PUE (Pagadas en una exhibición)</strong>. 
           Muestra la radiografía cruda de tus cobros a lo largo del <strong>ejercicio {year}</strong>.
         </p>
-        <CsvExportButton
-          onClick={() => exportHonorarios(targetRecibos, year)}
-          label="Exportar Honorarios"
-          count={targetRecibos.length}
-        />
       </div>
 
       {clients.length > 0 && (
@@ -1604,7 +1566,23 @@ export function FacturasAeypSection({ data, year }) {
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'white', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>📄</span> Facturas Emitidas a Clientes ({year})
+            </h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+              Comprobantes fiscales de ingresos emitidos por servicios profesionales agrupados por cliente.
+            </p>
+          </div>
+          <CsvExportButton
+            onClick={() => exportHonorarios(data.detalle, year)}
+            label="Exportar Facturas (CSV)"
+            count={data.detalle.length}
+          />
+        </div>
+
         {clientGroups.map((grp, i) => (
           <SectionCard 
              key={`cli-${i}`} 
@@ -3011,10 +2989,46 @@ export const GastosReport = ({ data, year }) => {
   );
 };
 
+export function getGastoCat(item) {
+  if (item?.categoria_gasto && item.categoria_gasto.id) return item.categoria_gasto;
+  const text = `${item?.emisor || ''} ${item?.rfc_emisor || item?.raw_cfdi?.emisor_rfc || ''} ${(item?.conceptos || []).map(c => (c.desc || '') + ' ' + (c.clave || '')).join(' ')}`.toUpperCase();
+  
+  if (/TIP AUTO|TAU130219AD5|ARRENDAMIENTO|VEHICUL|AUTO|UBER|DIDI|GASOLINA|COMBUSTIBLE|15101514|15101515|ESTACIONAMIENTO|CASETA|TAG|TELEVIA|AUTOPISTA|SEGURO DE AUTO|REFACCION/.test(text)) {
+    return { id: 'vehiculos', nombre: 'Vehículos y Arrendamiento', icono: '🚗', color: '#3b82f6' };
+  }
+  if (/BBVA|BBA830831LJ2|NU MEXICO|AKA060427QP2|BANCO|BANORTE|SANTANDER|BANAMEX|CITIBANAMEX|HEY BANCO|COMISION BANCARIA|INTERESES|MANEJO DE CUENTA|ANUALIDAD/.test(text)) {
+    return { id: 'financiero', nombre: 'Servicios Bancarios y Financieros', icono: '🏦', color: '#6366f1' };
+  }
+  if (/QPS ADMINISTRATION|CONSULTOR|ASESOR|ADMINISTRAC|CONTAB|LEGAL|AUDITOR|HONORARIOS ASESOR/.test(text)) {
+    return { id: 'asesoria', nombre: 'Servicios Administrativos y Asesoría', icono: '🏢', color: '#059669' };
+  }
+  if (/AG ELECTRONICA|AEL920315L68|STEREN|COMPUT|LAPTOP|ELECTRONIC|SYSCOM|HARDWARE|PANTALLA|DISCO DURO|MEMORIA|CABLE|ADAPTADOR|APPLE|DELL|LENOVO/.test(text)) {
+    return { id: 'hardware', nombre: 'Hardware y Electrónica', icono: '💻', color: '#0ea5e9' };
+  }
+  if (/TELMEX|TELCEL|AT&T|IZZI|TOTALPLAY|AWS|AMAZON WEB SERVICES|GOOGLE CLOUD|MICROSOFT|ADOBE|HOSTING|DOMINIO|SOFTWARE|LICENCIA|INTERNET|TELEFON/.test(text)) {
+    return { id: 'software_nube', nombre: 'Software, Nube y Telecomunicaciones', icono: '🌐', color: '#8b5cf6' };
+  }
+  if (/AMAZON MEXICO|MERCADO LIBRE|DHL|FEDEX|ESTAFETA|PAQUETERIA|ENVIO|LOGISTICA|REDPACK/.test(text)) {
+    return { id: 'ecommerce', nombre: 'E-Commerce y Envíos', icono: '📦', color: '#f59e0b' };
+  }
+  if (/OFFICE DEPOT|OFFICEMAX|LUMEN|PAPELERIA|TONER|TINTA|HOJAS|ARCHIVERO|SILLA|ESCRITORIO|MUEBLES/.test(text)) {
+    return { id: 'papeleria', nombre: 'Papelería e Insumos de Oficina', icono: '📎', color: '#14b8a6' };
+  }
+  if (/RESTAURANT|CAFE|STARBUCKS|ALIMENT|COMIDA|CONSUMO DE ALIMENTOS|HOTEL|HOSPEDAJE/.test(text)) {
+    return { id: 'viaticos', nombre: 'Viáticos y Alimentos', icono: '☕', color: '#d97706' };
+  }
+  return { id: 'otros', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
+}
+
 // ─── SECCIÓN 5: Vista de Egresos por Mes (Analítica y Desglose Mensual) ──────
 
-export function EgresosMensualesSection({ data, year }) {
+export function EgresosMensualesSection({ data, notasCreditoData, year }) {
+  const [activeSubTab, setActiveSubTab] = useState('gastos'); // 'gastos' | 'notas_credito'
   const [selectedMonth, setSelectedMonth] = useState('Global'); // 'Global' | 1..12
+  const [selectedCategory, setSelectedCategory] = useState('ALL'); // 'ALL' | cat_id
+  const [viewMode, setViewMode] = useState('categoria'); // 'categoria' | 'proveedor' | 'lista'
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const [expandedProviders, setExpandedProviders] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('fecha_desc'); // 'fecha_desc' | 'monto_desc' | 'monto_asc' | 'emisor_asc'
   const [selectedCfdi, setSelectedCfdi] = useState(null);
@@ -3025,6 +3039,14 @@ export function EgresosMensualesSection({ data, year }) {
     setExpandedRows(prev => ({ ...prev, [uuid]: !prev[uuid] }));
   };
 
+  const toggleCategory = (catId) => {
+    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
+  };
+
+  const toggleProvider = (provKey) => {
+    setExpandedProviders(prev => ({ ...prev, [provKey]: !prev[provKey] }));
+  };
+
   const rawList = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   // Cálculos agrupados por los 12 meses
@@ -3033,7 +3055,10 @@ export function EgresosMensualesSection({ data, year }) {
     totalesAnuales,
     promedioMensual,
     mesPico,
-    distribucionUso,
+    deduciblesSubtotal,
+    noDeduciblesSubtotal,
+    ivaAcreditable,
+    mixDeducibilidad,
     topProveedoresPeriodo
   } = useMemo(() => {
     const meses = MONTH_NAMES.map((name, idx) => ({
@@ -3111,15 +3136,29 @@ export function EgresosMensualesSection({ data, year }) {
       ? rawList 
       : (meses[selectedMonth - 1]?.items || []);
 
-    // Mix por Uso CFDI
-    const usoMap = {};
+    // Deducibilidad e IVA del periodo seleccionado
+    let deduciblesSubtotal = 0;
+    let noDeduciblesSubtotal = 0;
+    let ivaAcreditable = 0;
+    let ivaNoAcreditable = 0;
+
     targetItems.forEach(item => {
-      const k = item.uso_cfdi || 'Sin Uso';
-      usoMap[k] = (usoMap[k] || 0) + (item.subtotal || 0);
+      const isDed = item.es_deducible_fiscal !== false;
+      const sub = Number(item.subtotal) || 0;
+      const iva = Number(item.iva) || 0;
+      if (isDed) {
+        deduciblesSubtotal += sub;
+        ivaAcreditable += iva;
+      } else {
+        noDeduciblesSubtotal += sub;
+        ivaNoAcreditable += iva;
+      }
     });
-    const distribucionUso = Object.entries(usoMap)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value);
+
+    const mixDeducibilidad = [
+      { name: '100% Deducible Fiscal', value: deduciblesSubtotal, color: '#10b981' },
+      ...(noDeduciblesSubtotal > 0 ? [{ name: 'No Deducible / Observado', value: noDeduciblesSubtotal, color: '#ef4444' }] : [])
+    ];
 
     // Top Proveedores del periodo
     const provMap = {};
@@ -3146,16 +3185,64 @@ export function EgresosMensualesSection({ data, year }) {
         activeMonths: activeCount
       },
       mesPico: pico,
-      distribucionUso,
+      deduciblesSubtotal,
+      noDeduciblesSubtotal,
+      ivaAcreditable,
+      mixDeducibilidad,
       topProveedoresPeriodo
     };
   }, [rawList, selectedMonth]);
 
-  // Filtrar y ordenar facturas del mes seleccionado
+  // Resumen y agrupación por categorías del periodo actual
+  const categorySummary = useMemo(() => {
+    const base = selectedMonth === 'Global' ? rawList : (mesesData[selectedMonth - 1]?.items || []);
+    const map = {};
+    base.forEach(it => {
+      const cat = getGastoCat(it);
+      if (!map[cat.id]) {
+        map[cat.id] = { ...cat, total: 0, subtotal: 0, iva: 0, count: 0, items: [] };
+      }
+      map[cat.id].total += (it.total || 0);
+      map[cat.id].subtotal += (it.subtotal || 0);
+      map[cat.id].iva += (it.iva || 0);
+      map[cat.id].count += 1;
+      map[cat.id].items.push(it);
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [rawList, selectedMonth, mesesData]);
+
+  // Resumen y agrupación por proveedores del periodo actual
+  const providerSummary = useMemo(() => {
+    const base = selectedMonth === 'Global' ? rawList : (mesesData[selectedMonth - 1]?.items || []);
+    const map = {};
+    base.forEach(it => {
+      const key = it.emisor || 'Desconocido';
+      if (!map[key]) {
+        map[key] = { name: key, rfc: it.rfc_emisor || it.raw_cfdi?.emisor_rfc || '', total: 0, subtotal: 0, iva: 0, count: 0, items: [] };
+      }
+      map[key].total += (it.total || 0);
+      map[key].subtotal += (it.subtotal || 0);
+      map[key].iva += (it.iva || 0);
+      map[key].count += 1;
+      map[key].items.push(it);
+    });
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }, [rawList, selectedMonth, mesesData]);
+
+  // Filtrar y ordenar facturas del mes y categoría seleccionados
   const displayItems = useMemo(() => {
     let items = selectedMonth === 'Global' 
       ? [...rawList] 
       : [...(mesesData[selectedMonth - 1]?.items || [])];
+
+    // Filtro por categoría seleccionada
+    if (selectedCategory !== 'ALL') {
+      if (selectedCategory === 'no_deducible') {
+        items = items.filter(it => it.es_deducible_fiscal === false);
+      } else {
+        items = items.filter(it => getGastoCat(it).id === selectedCategory);
+      }
+    }
 
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase().trim();
@@ -3164,12 +3251,13 @@ export function EgresosMensualesSection({ data, year }) {
         const rfc = ((it.raw_cfdi?.emisor_rfc) || '').toLowerCase();
         const uuid = (it.uuid || '').toLowerCase();
         const uso = (it.uso_cfdi || '').toLowerCase();
+        const catName = (getGastoCat(it).nombre || '').toLowerCase();
         const conceptos = (it.conceptos || []).some(c => 
           (c.desc || '').toLowerCase().includes(q) || 
           (c.desc_sat || '').toLowerCase().includes(q) ||
           (c.clave || '').includes(q)
         );
-        return emisor.includes(q) || rfc.includes(q) || uuid.includes(q) || uso.includes(q) || conceptos;
+        return emisor.includes(q) || rfc.includes(q) || uuid.includes(q) || uso.includes(q) || catName.includes(q) || conceptos;
       });
     }
 
@@ -3183,7 +3271,7 @@ export function EgresosMensualesSection({ data, year }) {
     });
 
     return items;
-  }, [rawList, selectedMonth, mesesData, searchTerm, sortBy]);
+  }, [rawList, selectedMonth, selectedCategory, mesesData, searchTerm, sortBy]);
 
   const activeMonthName = selectedMonth === 'Global' 
     ? 'Todo el Ejercicio' 
@@ -3204,18 +3292,136 @@ export function EgresosMensualesSection({ data, year }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       
-      {/* ── 1. SELECTOR DE MESES TIPO PILLS ── */}
-      <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
-            📅 Seleccionar Periodo Mensual:
+      {/* ── 0. SELECTOR PRINCIPAL: GASTOS VS NOTAS DE CRÉDITO ── */}
+      {notasCreditoData && (notasCreditoData.total > 0 || (notasCreditoData.detalle && notasCreditoData.detalle.length > 0)) && (
+        <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '14px', width: 'fit-content' }}>
+          <button
+            onClick={() => setActiveSubTab('gastos')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '10px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              transition: 'all 0.2s ease',
+              background: activeSubTab === 'gastos' ? '#0f172a' : 'transparent',
+              color: activeSubTab === 'gastos' ? '#ffffff' : '#64748b',
+              boxShadow: activeSubTab === 'gastos' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+            }}
+          >
+            📉 Compras y Gastos ({rawList.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('notas_credito')}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '10px',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              transition: 'all 0.2s ease',
+              background: activeSubTab === 'notas_credito' ? '#0f172a' : 'transparent',
+              color: activeSubTab === 'notas_credito' ? '#ffffff' : '#64748b',
+              boxShadow: activeSubTab === 'notas_credito' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
+            }}
+          >
+            💵 Devoluciones y Reembolsos ({notasCreditoData.detalle?.length || 0}) • {fmt(notasCreditoData.total || 0)}
+          </button>
+        </div>
+      )}
+
+      {activeSubTab === 'notas_credito' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ fontSize: '2.25rem' }}>💵</span>
+            <div>
+              <h4 style={{ margin: 0, color: '#166534', fontSize: '1.05rem', fontWeight: 800 }}>Notas de Crédito y Devoluciones de Proveedores</h4>
+              <p style={{ margin: '4px 0 0 0', color: '#15803d', fontSize: '0.85rem' }}>
+                CFDIs de tipo <strong>Egreso (E)</strong> recibidos. Representan reembolsos de compras a tus tarjetas o descuentos otorgados por proveedores que disminuyen tus compras acumuladas del ejercicio {year}.
+              </p>
+            </div>
           </div>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-            Periodo Activo: <strong style={{ color: '#0f172a' }}>{activeMonthName}</strong> ({displayItems.length} comprobantes)
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+            <div style={{ background: 'white', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Reembolsos / Bonificaciones</div>
+              <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#059669', marginTop: '4px', fontFamily: 'monospace' }}>
+                {fmt(notasCreditoData.total || 0)}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>{notasCreditoData.detalle?.length || 0} comprobantes recibidos</div>
+            </div>
+          </div>
+
+          {/* Conceptos */}
+          {(notasCreditoData.resumen_conceptos || []).length > 0 && (
+            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', color: '#334155', fontWeight: 800, textTransform: 'uppercase' }}>
+                Conceptos Reembolsados
+              </h4>
+              <div className="concept-grid">
+                {(notasCreditoData.resumen_conceptos || []).map((it, idx) => (
+                  <ConceptCard
+                    key={idx}
+                    title={it.concepto}
+                    value={it.importe}
+                    accent="amber"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tabla Detallada */}
+          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', fontWeight: 800, color: '#0f172a' }}>
+              Comprobantes Fiscales de Reembolso / Descuento ({year})
+            </div>
+            <table className="sat-table" style={{ margin: 0 }}>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Proveedor / Emisor</th>
+                  <th>Concepto Principal</th>
+                  <th style={{ textAlign: 'right' }}>Subtotal</th>
+                  <th style={{ textAlign: 'right' }}>IVA</th>
+                  <th style={{ textAlign: 'right' }}>Total Devuelto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(notasCreditoData.detalle || []).map((item, idx) => (
+                  <tr key={idx}>
+                    <td style={{ fontFamily: 'monospace' }}>{item.fecha}</td>
+                    <td><strong style={{ color: '#0f172a' }}>{item.emisor}</strong></td>
+                    <td style={{ color: '#475569', fontSize: '0.85rem' }}>
+                      {item.conceptos?.[0]?.desc || 'Devolución / Descuento'}
+                    </td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(item.subtotal)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>{fmt(item.iva)}</td>
+                    <td style={{ textAlign: 'right', fontFamily: 'monospace', fontWeight: 800, color: '#059669' }}>
+                      {fmt(item.total)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
+      ) : (
+        <>
+          {/* ── 1. SELECTOR DE MESES TIPO PILLS ── */}
+          <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
+                📅 Seleccionar Periodo Mensual:
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                Periodo Activo: <strong style={{ color: '#0f172a' }}>{activeMonthName}</strong> ({displayItems.length} comprobantes)
+              </div>
+            </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button
@@ -3491,50 +3697,67 @@ export function EgresosMensualesSection({ data, year }) {
           )}
         </div>
 
-        {/* Mix Uso CFDI */}
+        {/* Deducibilidad Fiscal e IVA */}
         <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'center' }}>
-            🏷️ Mix por Uso CFDI / Categoría ({activeMonthName})
+            🛡️ Deducibilidad e IVA Acreditable ({activeMonthName})
           </h4>
-          {distribucionUso.length > 0 ? (
+          {mixDeducibilidad.length > 0 ? (
             <>
               <div style={{ width: '100%', height: 210 }}>
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie
-                      data={distribucionUso}
+                      data={mixDeducibilidad}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
                       outerRadius={80}
-                      paddingAngle={3}
+                      paddingAngle={mixDeducibilidad.length > 1 ? 4 : 0}
                       dataKey="value"
                       stroke="none"
                     >
-                      {distribucionUso.map((_, idx) => (
-                        <Cell key={`uso-cell-${idx}`} fill={CHART_COLORS[(idx + 3) % CHART_COLORS.length]} />
+                      {mixDeducibilidad.map((entry, idx) => (
+                        <Cell key={`ded-cell-${idx}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(v) => fmt(v)} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '0.75rem' }}>
-                {distribucionUso.slice(0, 6).map((u, idx) => {
-                  const pct = currentSubtotal > 0 ? ((u.value / currentSubtotal) * 100).toFixed(1) : 0;
-                  return (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: CHART_COLORS[(idx + 3) % CHART_COLORS.length], flexShrink: 0 }} />
-                        <span style={{ color: '#334155', fontWeight: 600 }}>{u.name}</span>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', fontFamily: 'monospace' }}>
-                        <span style={{ color: '#64748b' }}>{fmt(u.value)}</span>
-                        <span style={{ color: '#0f172a', fontWeight: 700, width: '45px', textAlign: 'right' }}>{pct}%</span>
-                      </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
+                    <span style={{ color: '#166534', fontWeight: 700 }}>Deducible Fiscal (Art. 27):</span>
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 800, color: '#15803d' }}>
+                    {fmt(deduciblesSubtotal)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                    <span style={{ color: '#1e40af', fontWeight: 700 }}>IVA Acreditable al SAT:</span>
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 800, color: '#2563eb' }}>
+                    {fmt(ivaAcreditable)}
+                  </div>
+                </div>
+
+                {noDeduciblesSubtotal > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.82rem', padding: '6px 10px', background: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                      <span style={{ color: '#991b1b', fontWeight: 700 }}>No Deducible / Efectivo:</span>
                     </div>
-                  );
-                })}
+                    <div style={{ fontFamily: 'monospace', fontWeight: 800, color: '#dc2626' }}>
+                      {fmt(noDeduciblesSubtotal)}
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -3555,15 +3778,14 @@ export function EgresosMensualesSection({ data, year }) {
           <table className="sat-table" style={{ margin: 0 }}>
             <thead>
               <tr>
-                <th style={{ width: '130px' }}>Mes</th>
-                <th style={{ width: '90px' }} className="text-center">Comprobantes</th>
-                <th className="text-right" style={{ width: '130px' }}>Deducible Fiscal</th>
-                <th className="text-right" style={{ width: '110px' }}>No Deducible</th>
-                <th className="text-right" style={{ width: '120px' }}>Subtotal Disco</th>
-                <th className="text-right" style={{ width: '110px' }}>IVA Acreditable</th>
-                <th className="text-right" style={{ width: '120px' }}>Total Pagado</th>
-                <th>Proveedor Principal</th>
-                <th style={{ width: '100px' }} className="text-center">Acción</th>
+                <th style={{ width: '140px' }}>Mes</th>
+                <th style={{ width: '110px' }} className="text-center">Comprobantes</th>
+                <th className="text-right" style={{ width: '140px' }}>Deducible Fiscal</th>
+                <th className="text-right" style={{ width: '120px' }}>No Deducible</th>
+                <th className="text-right" style={{ width: '130px' }}>Subtotal Disco</th>
+                <th className="text-right" style={{ width: '120px' }}>IVA Acreditable</th>
+                <th className="text-right" style={{ width: '130px' }}>Total Pagado</th>
+                <th style={{ width: '110px' }} className="text-center">Acción</th>
               </tr>
             </thead>
             <tbody>
@@ -3608,9 +3830,6 @@ export function EgresosMensualesSection({ data, year }) {
                     <td className="text-right mono font-medium" style={{ color: m.total > 0 ? '#0f172a' : '#94a3b8' }}>
                       {fmt(m.total)}
                     </td>
-                    <td style={{ fontSize: '0.82rem', color: '#475569', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {m.topProvider}
-                    </td>
                     <td className="text-center">
                       {m.count > 0 && (
                         <button
@@ -3650,7 +3869,7 @@ export function EgresosMensualesSection({ data, year }) {
                   {fmt(mesesData.reduce((s, m) => s + (m.ivaAcreditableFiscal || m.iva || 0), 0))}
                 </td>
                 <td className="text-right mono font-medium" style={{ color: '#0f172a', fontSize: '1rem' }}>{fmt(totalesAnuales.total)}</td>
-                <td colSpan={2} style={{ textAlign: 'right', color: '#64748b', fontSize: '0.85rem' }}>
+                <td style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>
                   Total Egresos
                 </td>
               </tr>
@@ -3659,72 +3878,453 @@ export function EgresosMensualesSection({ data, year }) {
         </div>
       </SectionCard>
 
-      {/* ── 6. LISTADO DETALLADO DE FACTURAS DEL MES SELECCIONADO ── */}
+      {/* ── 6. VISTAS Y AGRUPACIÓN DE GASTOS ── */}
       <SectionCard
-        icon="🧾"
-        title={`Comprobantes de Egresos: ${activeMonthName}`}
-        badge={`${displayItems.length} comprobantes`}
+        icon="📊"
+        title={`Explorador y Agrupación de Gastos: ${activeMonthName}`}
+        badge={`${displayItems.length} comprobantes filtrados • ${fmt(currentTotal)}`}
       >
-        {/* Controles de Búsqueda y Ordenamiento */}
+        {/* Barra superior de Modos de Visualización y Búsqueda */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px', maxWidth: '480px' }}>
-            <input
-              type="text"
-              placeholder="🔍 Buscar por proveedor, concepto, RFC o UUID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.6rem 1rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.85rem',
-                outline: 'none',
-                transition: 'border 0.2s'
-              }}
-            />
-            {searchTerm && (
+          
+          {/* Selector de Modo de Vista */}
+          <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '12px', gap: '4px' }}>
+            {[
+              { id: 'categoria', label: '📁 Por Rubro / Categoría', desc: 'Agrupado por tipo de gasto' },
+              { id: 'proveedor', label: '🏢 Por Proveedor', desc: 'Agrupado por emisor / RFC' },
+              { id: 'lista', label: '📋 Lista Cronológica', desc: 'Tabla plana con todas las facturas' }
+            ].map(vm => (
               <button
-                onClick={() => setSearchTerm('')}
-                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0 12px', cursor: 'pointer', color: '#64748b' }}
+                key={vm.id}
+                onClick={() => setViewMode(vm.id)}
+                title={vm.desc}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '0.82rem',
+                  fontWeight: viewMode === vm.id ? 800 : 600,
+                  cursor: 'pointer',
+                  background: viewMode === vm.id ? '#0f172a' : 'transparent',
+                  color: viewMode === vm.id ? '#ffffff' : '#64748b',
+                  transition: 'all 0.15s ease',
+                  boxShadow: viewMode === vm.id ? '0 2px 6px rgba(0,0,0,0.12)' : 'none'
+                }}
               >
-                ✖
+                {vm.label}
               </button>
-            )}
+            ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Ordenar por:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              style={{
-                padding: '0.55rem 0.9rem',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                fontSize: '0.85rem',
-                color: '#1e293b',
-                background: '#ffffff',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="fecha_desc">Fecha (más reciente primero)</option>
-              <option value="fecha_asc">Fecha (más antigua primero)</option>
-              <option value="monto_desc">Monto Mayor a Menor</option>
-              <option value="monto_asc">Monto Menor a Mayor</option>
-              <option value="emisor_asc">Proveedor (A - Z)</option>
-            </select>
+          {/* Buscador y Exportación */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, justifyContent: 'flex-end', minWidth: '280px' }}>
+            <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '380px' }}>
+              <input
+                type="text"
+                placeholder="🔍 Filtrar por proveedor, concepto, RFC..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.55rem 0.9rem',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', fontWeight: 800 }}
+                >
+                  ✖
+                </button>
+              )}
+            </div>
+
             <CsvExportButton
               onClick={() => exportEgresos(displayItems, year, activeMonthName)}
-              label={`Exportar ${activeMonthName}`}
+              label={`Exportar (${displayItems.length})`}
               count={displayItems.length}
             />
           </div>
-
         </div>
 
-        {/* Tabla de Facturas de Egresos */}
-        {displayItems.length > 0 ? (
+        {/* ── Chips / Filtros Rápidos por Categoría ── */}
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+          <button
+            onClick={() => setSelectedCategory('ALL')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '20px',
+              border: selectedCategory === 'ALL' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+              background: selectedCategory === 'ALL' ? '#0f172a' : '#ffffff',
+              color: selectedCategory === 'ALL' ? '#ffffff' : '#475569',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>✨ Todos</span>
+            <span style={{ opacity: 0.8, fontSize: '0.72rem' }}>({rawList.length})</span>
+          </button>
+
+          {categorySummary.map(cat => {
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat.id)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  border: isSelected ? `1.5px solid ${cat.color}` : '1px solid #e2e8f0',
+                  background: isSelected ? cat.color : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#334155',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span>{cat.icono} {cat.nombre}</span>
+                <span style={{ opacity: 0.85, fontSize: '0.72rem' }}>({cat.count})</span>
+                <span style={{ fontWeight: 800, fontSize: '0.72rem', opacity: isSelected ? 1 : 0.7 }}>• {fmt(cat.total)}</span>
+              </button>
+            );
+          })}
+
+          {noDeduciblesSubtotal > 0 && (
+            <button
+              onClick={() => setSelectedCategory(selectedCategory === 'no_deducible' ? 'ALL' : 'no_deducible')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '20px',
+                border: selectedCategory === 'no_deducible' ? '1.5px solid #dc2626' : '1px solid #fecaca',
+                background: selectedCategory === 'no_deducible' ? '#dc2626' : '#fef2f2',
+                color: selectedCategory === 'no_deducible' ? '#ffffff' : '#dc2626',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>⚠️ No Deducibles</span>
+              <span>• {fmt(noDeduciblesSubtotal)}</span>
+            </button>
+          )}
+        </div>
+
+        {/* ── MODO 1: AGRUPADO POR RUBRO / CATEGORÍA ── */}
+        {viewMode === 'categoria' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {categorySummary
+              .filter(cat => selectedCategory === 'ALL' || selectedCategory === cat.id)
+              .map(cat => {
+                const catItems = displayItems.filter(it => getGastoCat(it).id === cat.id);
+                if (catItems.length === 0) return null;
+                const isExpanded = expandedCategories[cat.id] !== false; // Default expanded
+                const pctGasto = currentTotal > 0 ? ((cat.total / currentTotal) * 100).toFixed(1) : 0;
+
+                return (
+                  <div key={cat.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                    {/* Header de la Categoría */}
+                    <div
+                      onClick={() => toggleCategory(cat.id)}
+                      style={{
+                        padding: '1rem 1.25rem',
+                        background: '#f8fafc',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none',
+                        flexWrap: 'wrap',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.4rem' }}>{cat.icono}</span>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{cat.nombre}</strong>
+                            <span style={{ fontSize: '0.72rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
+                              {catItems.length} facturas
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                              ({pctGasto}% del gasto)
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                            Subtotal: <strong style={{ color: '#334155' }}>{fmt(cat.subtotal)}</strong> • IVA Acreditable: <strong style={{ color: '#2563eb' }}>{fmt(cat.iva)}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Categoría</div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                            {fmt(cat.total)}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{isExpanded ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
+
+                    {/* Tabla de comprobantes de esta categoría */}
+                    {isExpanded && (
+                      <div className="table-responsive">
+                        <table className="sat-table" style={{ margin: 0, fontSize: '0.82rem' }}>
+                          <thead>
+                            <tr style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                              <th style={{ width: '30px' }}></th>
+                              <th style={{ width: '100px' }}>Fecha</th>
+                              <th>Proveedor</th>
+                              <th style={{ width: '100px' }}>Método</th>
+                              <th style={{ width: '130px' }}>Estatus Fiscal</th>
+                              <th className="text-right" style={{ width: '110px' }}>Subtotal</th>
+                              <th className="text-right" style={{ width: '90px' }}>IVA</th>
+                              <th className="text-right" style={{ width: '110px' }}>Total</th>
+                              <th className="text-center" style={{ width: '80px' }}>Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {catItems.map((item, idx) => {
+                              const rowId = item.uuid || `${cat.id}-${idx}`;
+                              const isRowExp = expandedRows[rowId];
+                              const isDed = item.es_deducible_fiscal !== false;
+
+                              return (
+                                <React.Fragment key={rowId}>
+                                  <tr
+                                    onClick={() => toggleRow(rowId)}
+                                    style={{
+                                      cursor: 'pointer',
+                                      backgroundColor: isRowExp ? '#f8fafc' : (isDed ? '#ffffff' : '#fffbeb'),
+                                      borderBottom: isRowExp ? 'none' : '1px solid #f1f5f9'
+                                    }}
+                                  >
+                                    <td style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.7rem' }}>
+                                      {isRowExp ? '▼' : '▶'}
+                                    </td>
+                                    <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{item.fecha}</td>
+                                    <td>
+                                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.emisor}</div>
+                                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>
+                                        {item.conceptos?.[0]?.desc ? `${item.conceptos[0].desc.slice(0, 45)}...` : (item.raw_cfdi?.emisor_rfc || '')}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.68rem' }}>
+                                        {item.metodo}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      {isDed ? (
+                                        <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>✓ Deducible</span>
+                                      ) : (
+                                        <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 800 }}>⚠️ Efectivo 01</span>
+                                      )}
+                                    </td>
+                                    <td className="text-right mono">{fmt(item.subtotal)}</td>
+                                    <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(item.iva)}</td>
+                                    <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(item.total)}</td>
+                                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                        style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                                      >
+                                        🔍 CFDI
+                                      </button>
+                                    </td>
+                                  </tr>
+
+                                  {isRowExp && (
+                                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                                      <td colSpan={9} style={{ padding: '0.85rem 1.25rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                                          <div style={{ fontSize: '0.78rem', color: '#475569' }}>
+                                            <b>UUID:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid}</span> • <b>Uso:</b> {item.uso_cfdi} • <b>Forma de Pago:</b> {item.forma_pago}
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '6px' }}>
+                                            <button
+                                              onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                              style={{ padding: '3px 8px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                              Detalle
+                                            </button>
+                                            <button
+                                              onClick={() => item.raw_cfdi && setViewingXml(item.raw_cfdi)}
+                                              style={{ padding: '3px 8px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                            >
+                                              XML
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {(item.conceptos || []).length > 0 && (
+                                          <table style={{ width: '100%', fontSize: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                            <tbody>
+                                              {item.conceptos.map((c, ci) => (
+                                                <tr key={ci} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                                  <td style={{ padding: '4px 8px', color: '#64748b', fontFamily: 'monospace' }}>{c.clave || '—'}</td>
+                                                  <td style={{ padding: '4px 8px', color: '#0f172a' }}>{c.desc}</td>
+                                                  <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(c.imp)}</td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        )}
+
+        {/* ── MODO 2: AGRUPADO POR PROVEEDOR ── */}
+        {viewMode === 'proveedor' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {providerSummary
+              .filter(prov => {
+                if (!searchTerm) return true;
+                const q = searchTerm.toLowerCase();
+                return prov.name.toLowerCase().includes(q) || prov.rfc.toLowerCase().includes(q);
+              })
+              .map((prov, pIdx) => {
+                const isProvExp = expandedProviders[prov.name] !== false; // Default expanded
+                const pctGasto = currentTotal > 0 ? ((prov.total / currentTotal) * 100).toFixed(1) : 0;
+
+                return (
+                  <div key={pIdx} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                    <div
+                      onClick={() => toggleProvider(prov.name)}
+                      style={{
+                        padding: '1rem 1.25rem',
+                        background: '#f8fafc',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        borderBottom: isProvExp ? '1px solid #e2e8f0' : 'none',
+                        flexWrap: 'wrap',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '1.3rem' }}>🏢</span>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{prov.name}</strong>
+                            <span style={{ fontSize: '0.72rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
+                              {prov.count} facturas
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>({pctGasto}% del gasto)</span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
+                            RFC: {prov.rfc || 'N/A'} • Subtotal: {fmt(prov.subtotal)} • IVA: {fmt(prov.iva)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Facturado</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                            {fmt(prov.total)}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{isProvExp ? '▲' : '▼'}</span>
+                      </div>
+                    </div>
+
+                    {isProvExp && (
+                      <div className="table-responsive">
+                        <table className="sat-table" style={{ margin: 0, fontSize: '0.82rem' }}>
+                          <thead>
+                            <tr style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                              <th style={{ width: '100px' }}>Fecha</th>
+                              <th>Rubro / Concepto Principal</th>
+                              <th style={{ width: '100px' }}>Método</th>
+                              <th style={{ width: '120px' }}>Estatus</th>
+                              <th className="text-right" style={{ width: '110px' }}>Subtotal</th>
+                              <th className="text-right" style={{ width: '90px' }}>IVA</th>
+                              <th className="text-right" style={{ width: '110px' }}>Total</th>
+                              <th className="text-center" style={{ width: '80px' }}>Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {prov.items.map((item, idx) => {
+                              const cat = getGastoCat(item);
+                              return (
+                                <tr key={idx}>
+                                  <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{item.fecha}</td>
+                                  <td>
+                                    <span style={{ fontSize: '0.72rem', background: '#f1f5f9', color: cat.color, padding: '2px 6px', borderRadius: '4px', fontWeight: 700, marginRight: '6px' }}>
+                                      {cat.icono} {cat.nombre}
+                                    </span>
+                                    <span style={{ color: '#475569', fontSize: '0.8rem' }}>
+                                      {item.conceptos?.[0]?.desc || 'Gasto operativo'}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.68rem' }}>
+                                      {item.metodo}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    {item.es_deducible_fiscal !== false ? (
+                                      <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>✓ Deducible</span>
+                                    ) : (
+                                      <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 800 }}>⚠️ No Deducible</span>
+                                    )}
+                                  </td>
+                                  <td className="text-right mono">{fmt(item.subtotal)}</td>
+                                  <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(item.iva)}</td>
+                                  <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(item.total)}</td>
+                                  <td className="text-center">
+                                    <button
+                                      onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                      style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
+                                    >
+                                      🔍 CFDI
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        )}
+
+        {/* ── MODO 3: LISTA CRONOLÓGICA PLANA ── */}
+        {viewMode === 'lista' && (
           <div className="table-responsive">
             <table className="sat-table" style={{ margin: 0, fontSize: '0.85rem' }}>
               <thead>
@@ -3732,12 +4332,12 @@ export function EgresosMensualesSection({ data, year }) {
                   <th style={{ width: '30px' }}></th>
                   <th style={{ width: '105px' }}>Fecha</th>
                   <th>Proveedor / Emisor</th>
-                  <th style={{ width: '110px' }}>Uso / Método</th>
-                  <th style={{ width: '150px' }}>Estatus Fiscal</th>
-                  <th className="text-right" style={{ width: '120px' }}>Subtotal Base</th>
-                  <th className="text-right" style={{ width: '100px' }}>IVA</th>
-                  <th className="text-right" style={{ width: '120px' }}>Total Pagado</th>
-                  <th className="text-center" style={{ width: '100px' }}>Acción</th>
+                  <th style={{ width: '170px' }}>Rubro / Categoría</th>
+                  <th style={{ width: '130px' }}>Estatus Fiscal</th>
+                  <th className="text-right" style={{ width: '110px' }}>Subtotal Base</th>
+                  <th className="text-right" style={{ width: '95px' }}>IVA</th>
+                  <th className="text-right" style={{ width: '115px' }}>Total Pagado</th>
+                  <th className="text-center" style={{ width: '80px' }}>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -3745,6 +4345,7 @@ export function EgresosMensualesSection({ data, year }) {
                   const rowId = item.uuid || `egr-${idx}`;
                   const isExpanded = expandedRows[rowId];
                   const isDed = item.es_deducible_fiscal !== false;
+                  const cat = getGastoCat(item);
 
                   return (
                     <React.Fragment key={rowId}>
@@ -3764,30 +4365,28 @@ export function EgresosMensualesSection({ data, year }) {
                           {item.fecha}
                         </td>
                         <td>
-                          <div style={{ fontWeight: 700, color: '#0f172a', maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {item.emisor}
                           </div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>
                             {item.raw_cfdi?.emisor_rfc || ''}
                           </div>
                         </td>
                         <td>
-                          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 600, marginRight: '4px' }}>
-                            {item.uso_cfdi}
-                          </span>
-                          <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.7rem' }}>
-                            {item.metodo}
+                          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', color: cat.color, border: `1px solid ${cat.color}33`, padding: '3px 8px', borderRadius: '6px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <span>{cat.icono}</span>
+                            <span>{cat.nombre}</span>
                           </span>
                         </td>
                         <td>
                           {isDed ? (
-                            <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                              ✓ Deducible SAT
+                            <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                              ✓ Deducible
                             </span>
                           ) : (
                             <span
                               title={item.motivo_no_deducible || 'Pago en Efectivo'}
-                              style={{ fontSize: '0.72rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                              style={{ fontSize: '0.72rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}
                             >
                               ⚠️ Efectivo 01
                             </span>
@@ -3823,7 +4422,7 @@ export function EgresosMensualesSection({ data, year }) {
                         </td>
                       </tr>
 
-                      {/* Fila expandible con detalle de conceptos */}
+                      {/* Fila expandible */}
                       {isExpanded && (
                         <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                           <td colSpan={9} style={{ padding: '1rem 1.5rem' }}>
@@ -3832,6 +4431,7 @@ export function EgresosMensualesSection({ data, year }) {
                                 <div style={{ fontSize: '0.8rem', color: '#475569' }}>
                                   <b>UUID Fiscal:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid || 'N/A'}</span>
                                   {item.forma_pago && <span style={{ marginLeft: '12px' }}><b>Forma de Pago:</b> {item.forma_pago}</span>}
+                                  {item.uso_cfdi && <span style={{ marginLeft: '12px' }}><b>Uso CFDI:</b> {item.uso_cfdi}</span>}
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                   <button
@@ -3849,7 +4449,6 @@ export function EgresosMensualesSection({ data, year }) {
                                 </div>
                               </div>
 
-                              {/* Conceptos de la factura */}
                               {item.conceptos && item.conceptos.length > 0 ? (
                                 <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', margin: 0 }}>
@@ -3886,12 +4485,16 @@ export function EgresosMensualesSection({ data, year }) {
               </tbody>
             </table>
           </div>
-        ) : (
-          <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
-            No se encontraron comprobantes que coincidan con el criterio de búsqueda "{searchTerm}".
+        )}
+
+        {displayItems.length === 0 && (
+          <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '12px' }}>
+            No se encontraron comprobantes que coincidan con los filtros seleccionados.
           </div>
         )}
       </SectionCard>
+        </>
+      )}
 
       {/* Modales */}
       {selectedCfdi && <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />}

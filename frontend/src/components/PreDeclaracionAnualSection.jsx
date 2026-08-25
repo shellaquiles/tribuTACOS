@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { exportPapelTrabajoAnual } from '../csvExport';
 
 const formatMoney = (val) => {
   if (val === undefined || val === null || isNaN(val)) return '$0.00';
@@ -61,19 +62,43 @@ export default function PreDeclaracionAnualSection({ data, year }) {
               SIMULACIÓN ANUAL TRIBUTACOS (100% CFDIs) • EJERCICIO {year}
             </div>
 
-            {oficial && (
-              <span style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                backdropFilter: 'blur(8px)',
-                padding: '6px 14px',
-                borderRadius: '10px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                color: '#cbd5e1'
-              }}>
-                🏛️ Acuse Oficial SAT Registrado (Op. {oficial.num_operacion})
-              </span>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => exportPapelTrabajoAnual(data, year)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '6px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <span>📊</span>
+                <span>Exportar Papel de Trabajo (CSV)</span>
+              </button>
+
+              {oficial && (
+                <span style={{
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  backdropFilter: 'blur(8px)',
+                  padding: '6px 14px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#cbd5e1'
+                }}>
+                  🏛️ Acuse Oficial SAT (Op. {oficial.num_operacion})
+                </span>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>

@@ -70,6 +70,44 @@ def resolver_emisor(emisor_original: str, conceptos: List[Dict]) -> str:
     return emisor_original or 'Emisor Desconocido'
 
 
+def clasificar_gasto(emisor_str: str, rfc_str: str, conceptos: List[Dict], uso_cfdi: str = "") -> Dict[str, str]:
+    text = f"{emisor_str or ''} {rfc_str or ''} {' '.join([c.get('desc','') + ' ' + c.get('clave','') for c in (conceptos or [])])}".upper()
+    
+    # 1. Arrendamiento, Vehículos y Movilidad
+    if any(k in text for k in ['TIP AUTO', 'TAU130219AD5', 'ARRENDAMIENTO', 'VEHICUL', 'AUTO', 'UBER', 'DIDI', 'GASOLINA', 'COMBUSTIBLE', '15101514', '15101515', 'ESTACIONAMIENTO', 'CASETA', 'TAG', 'TELEVIA', 'AUTOPISTA', 'SEGURO DE AUTO', 'REFACCION']):
+        return {'id': 'vehiculos', 'nombre': 'Vehículos y Arrendamiento', 'icono': '🚗', 'color': '#3b82f6'}
+    
+    # 2. Servicios Financieros, Bancarios e Intereses
+    if any(k in text for k in ['BBVA', 'BBA830831LJ2', 'NU MEXICO', 'AKA060427QP2', 'BANCO', 'BANORTE', 'SANTANDER', 'BANAMEX', 'CITIBANAMEX', 'HEY BANCO', 'COMISION BANCARIA', 'INTERESES', 'MANEJO DE CUENTA', 'ANUALIDAD']):
+        return {'id': 'financiero', 'nombre': 'Servicios Bancarios y Financieros', 'icono': '🏦', 'color': '#6366f1'}
+        
+    # 3. Servicios Administrativos, Contables y Asesoría
+    if any(k in text for k in ['QPS ADMINISTRATION', 'CONSULTOR', 'ASESOR', 'ADMINISTRAC', 'CONTAB', 'LEGAL', 'AUDITOR', 'HONORARIOS ASESOR']):
+        return {'id': 'asesoria', 'nombre': 'Servicios Administrativos y Asesoría', 'icono': '🏢', 'color': '#059669'}
+        
+    # 4. Hardware, Electrónica y Cómputo
+    if any(k in text for k in ['AG ELECTRONICA', 'AEL920315L68', 'STEREN', 'COMPUT', 'LAPTOP', 'ELECTRONIC', 'SYSCOM', 'HARDWARE', 'PANTALLA', 'DISCO DURO', 'MEMORIA', 'CABLE', 'ADAPTADOR', 'APPLE', 'DELL', 'LENOVO']):
+        return {'id': 'hardware', 'nombre': 'Hardware y Electrónica', 'icono': '💻', 'color': '#0ea5e9'}
+        
+    # 5. Telecomunicaciones, Software y Nube
+    if any(k in text for k in ['TELMEX', 'TELCEL', 'AT&T', 'IZZI', 'TOTALPLAY', 'AWS', 'AMAZON WEB SERVICES', 'GOOGLE CLOUD', 'MICROSOFT', 'ADOBE', 'HOSTING', 'DOMINIO', 'SOFTWARE', 'LICENCIA', 'INTERNET', 'TELEFON']):
+        return {'id': 'software_nube', 'nombre': 'Software, Nube y Telecomunicaciones', 'icono': '🌐', 'color': '#8b5cf6'}
+        
+    # 6. E-Commerce, Compras en Línea y Logística
+    if any(k in text for k in ['AMAZON MEXICO', 'MERCADO LIBRE', 'DHL', 'FEDEX', 'ESTAFETA', 'PAQUETERIA', 'ENVIO', 'LOGISTICA', 'REDPACK']):
+        return {'id': 'ecommerce', 'nombre': 'E-Commerce y Envíos', 'icono': '📦', 'color': '#f59e0b'}
+        
+    # 7. Papelería e Insumos de Oficina
+    if any(k in text for k in ['OFFICE DEPOT', 'OFFICEMAX', 'LUMEN', 'PAPELERIA', 'TONER', 'TINTA', 'HOJAS', 'ARCHIVERO', 'SILLA', 'ESCRITORIO', 'MUEBLES']):
+        return {'id': 'papeleria', 'nombre': 'Papelería e Insumos de Oficina', 'icono': '📎', 'color': '#14b8a6'}
+        
+    # 8. Viáticos, Alimentos y Consumos
+    if any(k in text for k in ['RESTAURANT', 'CAFE', 'STARBUCKS', 'ALIMENT', 'COMIDA', 'CONSUMO DE ALIMENTOS', 'HOTEL', 'HOSPEDAJE']):
+        return {'id': 'viaticos', 'nombre': 'Viáticos y Alimentos', 'icono': '☕', 'color': '#d97706'}
+        
+    return {'id': 'otros', 'nombre': 'Otros Gastos Operativos', 'icono': '📋', 'color': '#64748b'}
+
+
 def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool = True) -> Dict[str, Any]:
     if use_cache:
         cached = db.query(SummaryCache).filter(
@@ -117,10 +155,14 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             lista_honorarios.append({
                 'fecha': i['fecha'][:10],
                 'receptor': i.get('receptor_nombre') or i.get('receptor_rfc'),
+                'cliente': i.get('receptor_nombre') or i.get('receptor_rfc'),
+                'rfc': i.get('receptor_rfc'),
                 'subtotal': sub,
                 'iva': i.get('iva', 0.0),
                 'ret_isr': i.get('retencion_isr', 0.0),
+                'isr_ret': i.get('retencion_isr', 0.0),
                 'ret_iva': i.get('retencion_iva', 0.0),
+                'iva_ret': i.get('retencion_iva', 0.0),
                 'total': i.get('total', 0.0),
                 'uuid': i.get('uuid'),
                 'conceptos': i.get('conceptos', [])
@@ -193,9 +235,12 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 else:
                     mensual_pfae[m]['egresos_no_deducibles'] += base_calc
                 
+                cat_info = clasificar_gasto(i.get('emisor_nombre') or '', i.get('emisor_rfc') or '', conceptos, i.get('uso_cfdi') or '')
                 lista_gastos.append({
                     'fecha': i['fecha'][:10],
                     'emisor': resolver_emisor(i.get('emisor_nombre') or i.get('emisor_rfc'), conceptos),
+                    'rfc_emisor': i.get('emisor_rfc') or '',
+                    'categoria_gasto': cat_info,
                     'uso_cfdi': i.get('uso_cfdi') or 'N/A',
                     'metodo': 'PUE',
                     'subtotal': base_calc,
@@ -236,10 +281,13 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 conceptos_to_show = orig.get('conceptos', []) if orig else p.get('conceptos', [])
                 cfdi_to_show = orig if orig else p
                 fp_pago = orig.get('forma_pago', p.get('forma_pago', 'N/A')) if orig else p.get('forma_pago', 'N/A')
+                cat_pago_info = clasificar_gasto(p.get('emisor_nombre') or (orig.get('emisor_nombre') if orig else ''), p.get('emisor_rfc') or '', conceptos_to_show)
                 
                 lista_gastos.append({
                     'fecha': det['fecha_pago'][:10],
                     'emisor': resolver_emisor(p.get('emisor_nombre') or p.get('emisor_rfc'), conceptos_to_show),
+                    'rfc_emisor': p.get('emisor_rfc') or '',
+                    'categoria_gasto': cat_pago_info,
                     'uso_cfdi': orig.get('uso_cfdi', 'Pago a Plazos (PPD)') if orig else 'Pago a Plazos (PPD)', 
                     'metodo': 'Pagos 2.0',
                     'subtotal': round(base, 2),

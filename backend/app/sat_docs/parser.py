@@ -18,7 +18,7 @@ MES_NAMES_BY_NUM = {
 
 def extract_text_from_pdf(pdf_path: str) -> str:
     try:
-        res = subprocess.run(['pdftotext', pdf_path, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        res = subprocess.run(['pdftotext', '-layout', pdf_path, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return res.stdout
     except Exception as e:
         print(f"Error extrayendo texto de {pdf_path}: {e}")
