@@ -245,6 +245,100 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
         </div>
       )}
 
+      {/* ── 2. DESGLOSE DE INGRESOS DECLARADOS Y NÓMINA DE PATRONES ── */}
+      {anual && (
+        <div style={{ background: 'white', borderRadius: '20px', padding: '1.75rem 2rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>👔</span> ¿De dónde salen los {formatMoney(anual.ingresos_acumulables_totales)} declarados al SAT?
+              </h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                Integración de Sueldos y Salarios por empleador vs Actividad Empresarial e Intereses.
+              </p>
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', background: '#dbeafe', padding: '4px 12px', borderRadius: '8px' }}>
+              Base Acumulable Oficial
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
+            {/* Sueldos */}
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase' }}>👔 Sueldos y Salarios</span>
+                <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                  {(data.sections?.sueldos?.detalle || []).length} Empleador{(data.sections?.sueldos?.detalle || []).length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+                {formatMoney(data.sections?.sueldos?.gravado || anual.ingresos_acumulables_totales)}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
+                ISR Retenido por Patrones: <strong style={{ color: '#059669' }}>{formatMoney(anual.isr_retenido_total)}</strong>
+              </div>
+            </div>
+
+            {/* Honorarios */}
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>💼 Honorarios / Actividad</span>
+                <span style={{ fontSize: '0.75rem', background: '#d1fae5', color: '#065f46', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                  Facturado: {formatMoney(data.sections?.honorarios?.ingresos || 0)}
+                </span>
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+                {formatMoney(Math.max(0, (data.sections?.honorarios?.ingresos || 0) - (data.sections?.honorarios?.deducciones_autorizadas || 0)))}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
+                Utilidad Gravable Acumulable (Absorbida por gastos deducibles)
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de Empleadores */}
+          {(data.sections?.sueldos?.detalle || []).length > 0 && (
+            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '1.25rem' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#475569', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Desglose de Recibos y Retenciones de Nómina por Empleador ({year})
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {data.sections.sueldos.detalle.map((p, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.75rem 1rem',
+                    background: '#f8fafc',
+                    borderRadius: '10px',
+                    border: '1px solid #e2e8f0',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem'
+                  }}>
+                    <div>
+                      <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>🏢 {p.nombre}</strong>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
+                        RFC: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.rfc}</span> • {p.recibos?.length || 0} recibos de nómina timbrados
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ingreso Gravado</span>
+                        <strong style={{ color: '#0f172a', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.gravado)}</strong>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>ISR Retenido</span>
+                        <strong style={{ color: '#059669', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.isr)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── 2. CUADRO RESUMEN DE PAGOS PROVISIONALES ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
         <div style={{ background: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>

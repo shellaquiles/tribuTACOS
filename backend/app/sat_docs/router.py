@@ -169,7 +169,8 @@ def get_sat_docs_summary(
         'meses_presentados_count': sum(1 for m in matriz_mensual if m['estatus'] == 'Presentada'),
         'total_isr_declarado_anual': sum(m['isr_a_cargo_sat'] for m in matriz_mensual),
         'total_iva_declarado_anual': sum(m['iva_a_cargo_sat'] for m in matriz_mensual),
-        'anios_con_anual_disponible': sorted(anios_db)
+        'anios_con_anual_disponible': sorted(anios_db),
+        'sections': summary_data.get('sections', {})
     }
 
 
