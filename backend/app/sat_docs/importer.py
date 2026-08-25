@@ -1,15 +1,28 @@
+"""
+Importador y sincronizador de documentos oficiales SAT (Declaraciones Anuales,
+Pagos Provisionales y Acuses de Recibo en PDF) hacia SQLite/PostgreSQL.
+"""
+
 import os
 import re
 import json
 import glob
-import subprocess
-from datetime import datetime
 from typing import Dict, List, Any, Optional
+from pathlib import Path
 from sqlalchemy.orm import Session
-from app.models import Client, DeclaracionAnualSAT, PagoProvisionalSAT, AcusePagoSAT
-from app.sat_docs.parser import parse_declaracion_anual, parse_pago_provisional, extract_text_from_pdf, MES_NAMES_BY_NUM, MESES_MAP
 
-def parse_acuse_pago(pdf_path: str) -> Dict[str, Any]:
+from app.config import DESCARGADOS_DIR
+from app.models import Client, DeclaracionAnualSAT, PagoProvisionalSAT, AcusePagoSAT
+from app.sat_docs.parser import (
+    parse_declaracion_anual,
+    parse_pago_provisional,
+    extract_text_from_pdf,
+    MES_NAMES_BY_NUM,
+    MESES_MAP
+)
+
+
+def parse_acuse_pago(pdf_path: str, default_rfc: str = "") -> Dict[str, Any]:
     """Parsea un Acuse de Recibo de Pago de Contribuciones Federales del SAT."""
     txt = extract_text_from_pdf(pdf_path)
     fn = os.path.basename(pdf_path)
@@ -17,7 +30,7 @@ def parse_acuse_pago(pdf_path: str) -> Dict[str, Any]:
     data = {
         'archivo': fn,
         'tipo': 'Acuse_Pago',
-        'rfc': 'HECA850101XYZ',
+        'rfc': default_rfc or '',
         'year': '',
         'mes_numero': 0,
         'periodo': '',
@@ -29,13 +42,16 @@ def parse_acuse_pago(pdf_path: str) -> Dict[str, Any]:
     }
 
     m_rfc = re.search(r'RFC:\s*([A-Z0-9]+)', txt)
-    if m_rfc: data['rfc'] = m_rfc.group(1)
+    if m_rfc:
+        data['rfc'] = m_rfc.group(1)
 
     m_ej = re.search(r'Ejercicio:?\s*(\d{4})', txt)
-    if m_ej: data['year'] = m_ej.group(1)
+    if m_ej:
+        data['year'] = m_ej.group(1)
     else:
         fn_ej = re.search(r'202\d', fn)
-        if fn_ej: data['year'] = fn_ej.group(0)
+        if fn_ej:
+            data['year'] = fn_ej.group(0)
 
     m_per = re.search(r'Per[íi]odo(?: de la declaraci[oó]n)?:?\s*([A-Za-záéíóúÁÉÍÓÚ]+)', txt)
     if m_per:
@@ -55,38 +71,49 @@ def parse_acuse_pago(pdf_path: str) -> Dict[str, Any]:
                 break
 
     m_op = re.search(r'N[uú]mero de operaci[oó]n:?\s*(\d+)', txt, re.IGNORECASE) or re.search(r'Op(\d+)', fn)
-    if m_op: data['num_operacion'] = m_op.group(1) if hasattr(m_op, 'group') else str(m_op)
+    if m_op:
+        data['num_operacion'] = m_op.group(1) if hasattr(m_op, 'group') else str(m_op)
 
     m_fp = re.search(r'Fecha y hora de presentaci[oó]n:?\s*([^\n]+)', txt, re.IGNORECASE)
-    if m_fp: data['fecha_presentacion'] = m_fp.group(1).strip()
+    if m_fp:
+        data['fecha_presentacion'] = m_fp.group(1).strip()
 
     # Extraer montos de conceptos
-    # Concepto 1: ISR
     m_isr = re.search(r'ISR PERSONAS FÍSICAS[^\n]*\n.*?Cantidad a pagar:\s*([\d,]+)', txt, re.DOTALL)
-    if m_isr: data['monto_isr_pagado'] = float(m_isr.group(1).replace(',', ''))
+    if m_isr:
+        data['monto_isr_pagado'] = float(m_isr.group(1).replace(',', ''))
 
-    # Concepto 2: IVA
     m_iva = re.search(r'IMPUESTO AL VALOR AGREGADO[^\n]*\n.*?Cantidad a pagar:\s*([\d,]+)', txt, re.DOTALL)
-    if m_iva: data['monto_iva_pagado'] = float(m_iva.group(1).replace(',', ''))
+    if m_iva:
+        data['monto_iva_pagado'] = float(m_iva.group(1).replace(',', ''))
 
     data['total_pagado'] = data['monto_isr_pagado'] + data['monto_iva_pagado']
 
     return data
 
 
-def sync_all_sat_documents_to_db(db: Session, client: Client, descargados_path: str = "/home/kubrick/www/declara/descargados") -> Dict[str, int]:
+def sync_all_sat_documents_to_db(
+    db: Session,
+    client: Client,
+    descargados_path: Optional[str] = None
+) -> Dict[str, int]:
     """
     Ingesta transaccional: parsea todos los PDFs oficiales y los persiste en la BD relacional.
     """
+    target_path = str(descargados_path or DESCARGADOS_DIR)
     stats = {'anuales': 0, 'provisionales': 0, 'acuses': 0}
 
+    if not os.path.exists(target_path):
+        return stats
+
     # 1. Ingestar Declaraciones Anuales
-    anuales_files = glob.glob(os.path.join(descargados_path, "Declaraciones_Anuales", "*.pdf"))
+    anuales_files = glob.glob(os.path.join(target_path, "Declaraciones_Anuales", "*.pdf"))
     for f in anuales_files:
         try:
             parsed = parse_declaracion_anual(f)
             yr = parsed.get('ejercicio')
-            if not yr: continue
+            if not yr:
+                continue
 
             pk_id = f"{client.rfc}_{yr}_{parsed.get('num_operacion') or 'anual'}"
             rec = db.query(DeclaracionAnualSAT).filter(DeclaracionAnualSAT.id == pk_id).first()
@@ -110,19 +137,20 @@ def sync_all_sat_documents_to_db(db: Session, client: Client, descargados_path: 
             rec.clabe = parsed.get('clabe', '')
             rec.banco = parsed.get('banco', '')
             rec.raw_pdf_path = f
-            rec.parsed_json = json.dumps(parsed)
+            rec.parsed_json = json.dumps(parsed, ensure_ascii=False)
             stats['anuales'] += 1
         except Exception as e:
-            print(f"Error ingestando anual {f}: {e}")
+            print(f"[SAT Docs Importer] Error ingestando anual {f}: {e}")
 
     # 2. Ingestar Pagos Provisionales
-    prov_files = glob.glob(os.path.join(descargados_path, "Pagos_Provisionales", "*", "*.pdf"))
+    prov_files = glob.glob(os.path.join(target_path, "Pagos_Provisionales", "*", "*.pdf"))
     for f in prov_files:
         try:
             parsed = parse_pago_provisional(f)
             yr = parsed.get('ejercicio')
             m_num = parsed.get('mes_numero', 0)
-            if not yr or m_num == 0: continue
+            if not yr or m_num == 0:
+                continue
 
             pk_id = f"{client.rfc}_{yr}_{m_num:02d}_{parsed.get('num_operacion') or 'prov'}"
             rec = db.query(PagoProvisionalSAT).filter(PagoProvisionalSAT.id == pk_id).first()
@@ -148,20 +176,21 @@ def sync_all_sat_documents_to_db(db: Session, client: Client, descargados_path: 
             rec.iva_a_cargo = parsed.get('iva_a_cargo', 0.0)
             rec.total_pagado = parsed.get('total_pagar', 0.0)
             rec.raw_pdf_path = f
-            rec.parsed_json = json.dumps(parsed)
+            rec.parsed_json = json.dumps(parsed, ensure_ascii=False)
             stats['provisionales'] += 1
         except Exception as e:
-            print(f"Error ingestando provisional {f}: {e}")
+            print(f"[SAT Docs Importer] Error ingestando provisional {f}: {e}")
 
     # 3. Ingestar Acuses de Pagos de Contribuciones Federales
-    acuse_files = glob.glob(os.path.join(descargados_path, "Acuses_Pagos", "*", "*.pdf"))
+    acuse_files = glob.glob(os.path.join(target_path, "Acuses_Pagos", "*", "*.pdf"))
     for f in acuse_files:
         try:
-            parsed = parse_acuse_pago(f)
+            parsed = parse_acuse_pago(f, default_rfc=client.rfc)
             yr = parsed.get('year')
             m_num = parsed.get('mes_numero', 0)
             num_op = parsed.get('num_operacion', '')
-            if not yr: continue
+            if not yr:
+                continue
 
             pk_id = f"{client.rfc}_{yr}_{m_num:02d}_Acuse_{num_op}"
             rec = db.query(AcusePagoSAT).filter(AcusePagoSAT.id == pk_id).first()
@@ -189,7 +218,7 @@ def sync_all_sat_documents_to_db(db: Session, client: Client, descargados_path: 
 
             stats['acuses'] += 1
         except Exception as e:
-            print(f"Error ingestando acuse de pago {f}: {e}")
+            print(f"[SAT Docs Importer] Error ingestando acuse de pago {f}: {e}")
 
     db.commit()
     return stats

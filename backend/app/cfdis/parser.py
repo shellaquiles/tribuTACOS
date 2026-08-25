@@ -1,17 +1,12 @@
+"""
+Parser universal de CFDIs (Comprobantes Fiscales Digitales por Internet).
+Soporta CFDI 3.3, CFDI 4.0, Complemento de Nómina 1.2, Complemento de Pagos 2.0 y Retenciones.
+"""
+
 import os
-import sys
-from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict, Any, Optional
 from lxml import etree
 
-# Import cat_sat catalog
-try:
-    import cat_sat
-except ImportError:
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    if backend_dir not in sys.path:
-        sys.path.insert(0, backend_dir)
-    import cat_sat
 
 NS_DEFAULT = {
     'cfdi': 'http://www.sat.gob.mx/cfd/4',
@@ -19,9 +14,10 @@ NS_DEFAULT = {
     'nomina12': 'http://www.sat.gob.mx/nomina12'
 }
 
-def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
+
+def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
-    Parsea un archivo CFDI (3.3 / 4.0 / Nómina / Retenciones) y extrae datos estructurados.
+    Parsea un archivo CFDI XML (3.3 / 4.0 / Nómina / Retenciones / Pagos) y extrae datos estructurados.
     Si se especifica user_rfc, clasifica la categoría de ingreso/egreso respecto a ese RFC.
     """
     try:
@@ -30,14 +26,13 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
 
         # Dynamic CFDI namespace to support both 3.3 and 4.0 files
         ns_cfdi = root.tag.split('}')[0].strip('{') if '}' in root.tag else 'http://www.sat.gob.mx/cfd/4'
-        NS = {
+        ns = {
             'cfdi': ns_cfdi,
             'tfd': 'http://www.sat.gob.mx/TimbreFiscalDigital',
             'nomina12': 'http://www.sat.gob.mx/nomina12'
         }
 
         # Basic attributes
-        version = root.get('Version')
         fecha_str = root.get('Fecha')
         subtotal = float(root.get('SubTotal', 0) or 0)
         descuento = float(root.get('Descuento', 0) or 0)
@@ -46,21 +41,21 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
         tipo_comprobante = root.get('TipoDeComprobante')
 
         # Emisor and Receptor details
-        emisor = root.find('cfdi:Emisor', NS)
+        emisor = root.find('cfdi:Emisor', ns)
         emisor_rfc = emisor.get('Rfc') if emisor is not None else None
         emisor_nombre = emisor.get('Nombre') if emisor is not None else None
         emisor_regimen = emisor.get('RegimenFiscal') if emisor is not None else None
 
-        receptor = root.find('cfdi:Receptor', NS)
+        receptor = root.find('cfdi:Receptor', ns)
         receptor_rfc = receptor.get('Rfc') if receptor is not None else None
         receptor_nombre = receptor.get('Nombre') if receptor is not None else None
         uso_cfdi = receptor.get('UsoCFDI') if receptor is not None else None
 
         # Timbre Fiscal (UUID)
-        complemento = root.find('cfdi:Complemento', NS)
+        complemento = root.find('cfdi:Complemento', ns)
         uuid = None
         if complemento is not None:
-            tfd = complemento.find('tfd:TimbreFiscalDigital', NS)
+            tfd = complemento.find('tfd:TimbreFiscalDigital', ns)
             if tfd is not None:
                 uuid = tfd.get('UUID')
 
@@ -74,9 +69,13 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
         elif tipo_comprobante == 'P':
             category = "pago"
         elif user_rfc:
-            if emisor_rfc and emisor_rfc.upper() == user_rfc.upper():
+            user_rfc_clean = user_rfc.strip().upper()
+            emisor_rfc_clean = (emisor_rfc or '').strip().upper()
+            receptor_rfc_clean = (receptor_rfc or '').strip().upper()
+
+            if emisor_rfc_clean == user_rfc_clean:
                 category = "ingreso" if tipo_comprobante == 'I' else "egreso_ingreso"
-            elif receptor_rfc and receptor_rfc.upper() == user_rfc.upper():
+            elif receptor_rfc_clean == user_rfc_clean:
                 category = "egreso" if tipo_comprobante == 'I' else "egreso_egreso"
             else:
                 category = "ingreso" if tipo_comprobante == 'I' else "egreso"
@@ -84,41 +83,41 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
             category = "ingreso" if tipo_comprobante == 'I' else ("egreso" if tipo_comprobante == 'E' else "otro")
 
         # Taxes: Traslados and Retenciones
-        impuestos_root = root.find('cfdi:Impuestos', NS)
+        impuestos_root = root.find('cfdi:Impuestos', ns)
         iva_trasladado = 0.0
         retencion_iva = 0.0
         retencion_isr = 0.0
 
         if impuestos_root is not None:
-            traslados = impuestos_root.find('cfdi:Traslados', NS)
+            traslados = impuestos_root.find('cfdi:Traslados', ns)
             if traslados is not None:
-                for t in traslados.findall('cfdi:Traslado', NS):
-                    if t.get('Impuesto') == '002': # IVA
+                for t in traslados.findall('cfdi:Traslado', ns):
+                    if t.get('Impuesto') == '002':  # IVA
                         iva_trasladado += float(t.get('Importe', 0) or 0)
 
-            retenciones = impuestos_root.find('cfdi:Retenciones', NS)
+            retenciones = impuestos_root.find('cfdi:Retenciones', ns)
             if retenciones is not None:
-                for r in retenciones.findall('cfdi:Retencion', NS):
+                for r in retenciones.findall('cfdi:Retencion', ns):
                     imp = r.get('Impuesto')
                     val = float(r.get('Importe', 0) or 0)
-                    if imp == '001': # ISR
+                    if imp == '001':  # ISR
                         retencion_isr += val
-                    elif imp == '002': # IVA
+                    elif imp == '002':  # IVA
                         retencion_iva += val
 
-        # Special case: Payments (Complemento de Pago)
+        # Special case: Payments (Complemento de Pago 2.0 / 1.0)
         total_pago = 0.0
         pagos_detalle = []
         if category == "pago" and complemento is not None:
-            pagos = complemento.find('{http://www.sat.gob.mx/Pagos20}Pagos')
+            pagos = complemento.find('{http://www.sat.gob.mx/Pagos20}Pagos') or complemento.find('{http://www.sat.gob.mx/Pagos}Pagos')
             if pagos is not None:
                 totales = pagos.find('{http://www.sat.gob.mx/Pagos20}Totales')
                 if totales is not None:
                     total_pago = float(totales.get('MontoTotalPagos', 0) or 0)
 
-                for p in pagos.findall('{http://www.sat.gob.mx/Pagos20}Pago'):
+                for p in (pagos.findall('{http://www.sat.gob.mx/Pagos20}Pago') or pagos.findall('{http://www.sat.gob.mx/Pagos}Pago')):
                     fecha_p = p.get('FechaPago')
-                    for dr in p.findall('{http://www.sat.gob.mx/Pagos20}DoctoRelacionado'):
+                    for dr in (p.findall('{http://www.sat.gob.mx/Pagos20}DoctoRelacionado') or p.findall('{http://www.sat.gob.mx/Pagos}DoctoRelacionado')):
                         pagos_detalle.append({
                             'uuid_rel': dr.get('IdDocumento'),
                             'monto': float(dr.get('ImpPagado', 0) or 0),
@@ -134,9 +133,9 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
                 total_deducciones = nomina12.find('.//nomina12:Deducciones', namespaces={'nomina12': 'http://www.sat.gob.mx/nomina12'})
                 if total_deducciones is not None:
                     for d in total_deducciones.findall('.//nomina12:Deduccion', namespaces={'nomina12': 'http://www.sat.gob.mx/nomina12'}):
-                        if d.get('TipoDeduccion') == '002': # ISR
+                        if d.get('TipoDeduccion') == '002':  # ISR
                             isr_detalle += float(d.get('Importe', 0) or 0)
-                
+
                 if retencion_isr == 0 and isr_detalle > 0:
                     retencion_isr = isr_detalle
 
@@ -144,7 +143,7 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
         es_interes = False
         int_nom = 0.0
         int_real = 0.0
-        
+
         retenciones_root = root.tag.endswith('Retenciones')
         if retenciones_root or 'Retenciones' in root.tag:
             category = "retencion"
@@ -157,7 +156,7 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
                     int_real = float(int_node.get('MontIntReal', 0) or 0)
 
         # Base data dictionary
-        data = {
+        data: Dict[str, Any] = {
             'uuid': uuid,
             'fecha': fecha_str,
             'emisor_rfc': emisor_rfc,
@@ -201,16 +200,15 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
 
         # Conceptos analysis
         conceptos_list = []
-        conceptos_node = root.find('cfdi:Conceptos', NS)
+        conceptos_node = root.find('cfdi:Conceptos', ns)
         if conceptos_node is not None:
-            for c in conceptos_node.findall('cfdi:Concepto', NS):
+            for c in conceptos_node.findall('cfdi:Concepto', ns):
                 desc = c.get('Descripcion', '')
                 imp = float(c.get('Importe', 0) or 0)
                 clave = c.get('ClaveProdServ', '00000000')
                 no_id = c.get('NoIdentificacion', desc)
-                desc_cat = cat_sat.describe(clave) if hasattr(cat_sat, 'describe') else ''
-                if not desc_cat:
-                    desc_cat = desc.title() if desc else 'Servicio profesional'
+                desc_cat = desc.title() if desc else 'Servicio profesional'
+
                 conceptos_list.append({
                     'desc': desc.upper(),
                     'imp': imp,
@@ -228,32 +226,34 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
 
         # Payroll granular details
         if category == "nomina" and complemento is not None:
-            nomina = complemento.find('nomina12:Nomina', NS)
+            nomina = complemento.find('nomina12:Nomina', ns)
             if nomina is not None:
                 data['fecha_pago_nomina'] = nomina.get('FechaPago')
                 data['fecha_inicial_pago'] = nomina.get('FechaInicialPago')
                 data['fecha_final_pago'] = nomina.get('FechaFinalPago')
-                
-                dias_raw = nomina.get('NumDiasPagados')
-                try: data['num_dias_pagados'] = float(dias_raw) if dias_raw else 0.0
-                except: data['num_dias_pagados'] = 0.0
 
-                receptor_node = nomina.find('nomina12:Receptor', NS)
+                dias_raw = nomina.get('NumDiasPagados')
+                try:
+                    data['num_dias_pagados'] = float(dias_raw) if dias_raw else 0.0
+                except (ValueError, TypeError):
+                    data['num_dias_pagados'] = 0.0
+
+                receptor_node = nomina.find('nomina12:Receptor', ns)
                 if receptor_node is not None:
                     data['salario_diario_integrado'] = float(receptor_node.get('SalarioDiarioIntegrado', 0) or 0)
                     data['salario_base_cot_apor'] = float(receptor_node.get('SalarioBaseCotApor', 0) or 0)
 
-                percepciones = nomina.find('nomina12:Percepciones', NS)
+                percepciones = nomina.find('nomina12:Percepciones', ns)
                 if percepciones is not None:
                     data['nomina_gravado'] = float(percepciones.get('TotalGravado', 0) or 0)
                     data['nomina_exento'] = float(percepciones.get('TotalExento', 0) or 0)
 
-                    for p in percepciones.findall('nomina12:Percepcion', NS):
+                    for p in percepciones.findall('nomina12:Percepcion', ns):
                         tipo = p.get('TipoPercepcion')
                         exento = float(p.get('ImporteExento', 0) or 0)
                         gravado = float(p.get('ImporteGravado', 0) or 0)
                         concepto = p.get('Concepto', 'Otros')
-                        
+
                         data['percepciones_detalle'].append({
                             'tipo': tipo,
                             'concepto': concepto,
@@ -279,18 +279,18 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
                                     'tipo': tipo
                                 })
 
-                deducciones = nomina.find('nomina12:Deducciones', NS)
+                deducciones = nomina.find('nomina12:Deducciones', ns)
                 if deducciones is not None:
-                    for d in deducciones.findall('nomina12:Deduccion', NS):
+                    for d in deducciones.findall('nomina12:Deduccion', ns):
                         data['deducciones_detalle'].append({
                             'tipo': d.get('TipoDeduccion'),
                             'concepto': d.get('Concepto', ''),
                             'importe': float(d.get('Importe', 0) or 0)
                         })
 
-                otros_pagos = nomina.find('nomina12:OtrosPagos', NS)
+                otros_pagos = nomina.find('nomina12:OtrosPagos', ns)
                 if otros_pagos is not None:
-                    for op in otros_pagos.findall('nomina12:OtroPago', NS):
+                    for op in otros_pagos.findall('nomina12:OtroPago', ns):
                         data['percepciones_detalle'].append({
                             'tipo': 'OP-' + op.get('TipoOtroPago', '999'),
                             'concepto': op.get('Concepto', ''),
@@ -311,6 +311,6 @@ def parse_cfdi(xml_path: str, user_rfc: Optional[str] = None) -> Optional[Dict]:
         })
 
         return data
-    except Exception as e:
-        # Silently skip corrupt/non-xml files or log
+    except Exception:
+        # Silently skip corrupt/non-xml files
         return None

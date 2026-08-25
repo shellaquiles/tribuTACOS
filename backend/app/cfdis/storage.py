@@ -8,7 +8,14 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import UploadFile
 
-from app.config import DATA_DIR, LEGACY_EMITIDOS, LEGACY_RECIBIDOS
+from app.config import (
+    DATA_DIR,
+    LEGACY_EMITIDOS,
+    LEGACY_RECIBIDOS,
+    DEFAULT_CLIENT_RFC,
+    DEFAULT_CLIENT_NAME,
+    DEFAULT_CLIENT_EMAIL
+)
 from app.models import Client, Cfdi, UploadBatch, SummaryCache
 from app.cfdis.parser import parse_cfdi
 
@@ -16,12 +23,11 @@ def ensure_default_client(db: Session) -> Client:
     """Crea o retorna el cliente por defecto para uso inmediato con los datos existentes."""
     client = db.query(Client).filter(Client.id == "default").first()
     if not client:
-        # Check if there is a known RFC in existing files or fallback
         client = Client(
             id="default",
-            name="Contribuyente Principal",
-            rfc="HECA850101XYZ",
-            email="contacto@tributacos.mx",
+            name=DEFAULT_CLIENT_NAME,
+            rfc=DEFAULT_CLIENT_RFC,
+            email=DEFAULT_CLIENT_EMAIL,
             plan="pro",
             local_path_emitidos=str(LEGACY_EMITIDOS) if LEGACY_EMITIDOS.exists() else None,
             local_path_recibidos=str(LEGACY_RECIBIDOS) if LEGACY_RECIBIDOS.exists() else None,

@@ -1,14 +1,17 @@
+"""
+Router de FastAPI para CFDIs, Ingesta y Resumen Fiscal.
+"""
+
 import os
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
 from app.database import get_db
 from app.models import Client, Cfdi
-from app.auth.service import get_current_client
 from app.cfdis.engine import build_fiscal_summary
+from app.cfdis.schemas import ClientCreate, SyncResponse, UploadResponse, CacheClearResponse
 from app.cfdis.storage import (
     ensure_default_client,
     scan_local_paths,
@@ -18,16 +21,10 @@ from app.cfdis.storage import (
 
 router = APIRouter(prefix="/api", tags=["CFDIs & Fiscal"])
 
-class ClientCreate(BaseModel):
-    id: str
-    name: str
-    rfc: str
-    email: Optional[str] = None
-    local_path_emitidos: Optional[str] = None
-    local_path_recibidos: Optional[str] = None
 
 @router.get("/clients")
 def list_clients(db: Session = Depends(get_db)):
+    """Lista todos los contribuyentes registrados en la base de datos."""
     ensure_default_client(db)
     clients = db.query(Client).all()
     return [{
@@ -39,12 +36,19 @@ def list_clients(db: Session = Depends(get_db)):
         "cfdis_count": len(c.cfdis)
     } for c in clients]
 
-@router.post("/clients")
+
+@router.post("/clients", status_code=status.HTTP_201_CREATED)
 def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
-    existing = db.query(Client).filter((Client.id == payload.id) | (Client.rfc == payload.rfc.upper())).first()
+    """Registra un nuevo contribuyente para análisis fiscal."""
+    existing = db.query(Client).filter(
+        (Client.id == payload.id) | (Client.rfc == payload.rfc.upper())
+    ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="El ID o RFC ya se encuentra registrado.")
-    
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El ID o RFC ya se encuentra registrado."
+        )
+
     new_c = Client(
         id=payload.id,
         name=payload.name,
@@ -58,11 +62,12 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
     db.refresh(new_c)
     return {"id": new_c.id, "name": new_c.name, "rfc": new_c.rfc}
 
+
 @router.get("/summary")
 def get_summary(
-    year: str = "2024",
-    client_id: Optional[str] = None,
-    force_refresh: bool = False,
+    year: str = Query("2024", description="Ejercicio fiscal a calcular (ej. 2024)"),
+    client_id: Optional[str] = Query(None, description="ID del cliente/contribuyente"),
+    force_refresh: bool = Query(False, description="Forzar re-cálculo e invalidar caché"),
     db: Session = Depends(get_db)
 ):
     """
@@ -71,7 +76,7 @@ def get_summary(
     if client_id:
         client = db.query(Client).filter(Client.id == client_id).first()
         if not client:
-            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
     else:
         client = ensure_default_client(db)
 
@@ -85,10 +90,11 @@ def get_summary(
 
     return build_fiscal_summary(client, year, db, use_cache=not force_refresh)
 
+
 @router.post("/upload")
 def upload_cfdis(
-    files: List[UploadFile] = File(...),
-    client_id: Optional[str] = None,
+    files: List[UploadFile] = File(..., description="Archivos XML o ZIP de CFDIs"),
+    client_id: Optional[str] = Query(None, description="ID del cliente"),
     db: Session = Depends(get_db)
 ):
     """
@@ -97,7 +103,7 @@ def upload_cfdis(
     if client_id:
         client = db.query(Client).filter(Client.id == client_id).first()
         if not client:
-            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
     else:
         client = ensure_default_client(db)
 
@@ -108,9 +114,10 @@ def upload_cfdis(
         "result": res
     }
 
+
 @router.post("/sync")
 def sync_local_cfdis(
-    client_id: Optional[str] = None,
+    client_id: Optional[str] = Query(None, description="ID del cliente"),
     db: Session = Depends(get_db)
 ):
     """
@@ -119,7 +126,7 @@ def sync_local_cfdis(
     if client_id:
         client = db.query(Client).filter(Client.id == client_id).first()
         if not client:
-            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente no encontrado")
     else:
         client = ensure_default_client(db)
 
@@ -132,10 +139,11 @@ def sync_local_cfdis(
         "ingested": res["ingested"]
     }
 
+
 @router.get("/download_xml")
 def download_xml(
-    filename: str,
-    client_id: Optional[str] = None,
+    filename: str = Query(..., description="Nombre del archivo XML"),
+    client_id: Optional[str] = Query(None, description="ID del cliente"),
     db: Session = Depends(get_db)
 ):
     """
@@ -149,7 +157,7 @@ def download_xml(
     if cfdi_obj and cfdi_obj.filepath and os.path.exists(cfdi_obj.filepath):
         return FileResponse(cfdi_obj.filepath, media_type='application/xml', filename=filename)
 
-    # Fallback to scanning legacy folders
+    # Fallback to scanning configured folders
     from app.config import LEGACY_EMITIDOS, LEGACY_RECIBIDOS, DATA_DIR
     for directory in [LEGACY_EMITIDOS, LEGACY_RECIBIDOS, DATA_DIR]:
         if directory and os.path.exists(directory):
@@ -158,19 +166,21 @@ def download_xml(
                     file_path = os.path.join(root, filename)
                     return FileResponse(file_path, media_type='application/xml', filename=filename)
 
-    raise HTTPException(status_code=404, detail="Archivo XML no original encontrado")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Archivo XML no original encontrado")
+
 
 @router.delete("/cache")
 def clear_cache(
-    year: Optional[str] = None,
-    client_id: Optional[str] = None,
+    year: Optional[str] = Query(None, description="Ejercicio fiscal específico o todos"),
+    client_id: Optional[str] = Query(None, description="ID del cliente"),
     db: Session = Depends(get_db)
 ):
+    """Limpia la caché de cálculos fiscales en memoria y base de datos."""
     if client_id:
         client = db.query(Client).filter(Client.id == client_id).first()
     else:
         client = ensure_default_client(db)
-    
+
     if client:
         invalidate_client_cache(client.id, db, year)
     return {"status": "cache_cleared", "year": year or "all"}
