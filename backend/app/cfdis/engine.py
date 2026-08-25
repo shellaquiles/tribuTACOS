@@ -378,12 +378,13 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
     tope_legal = min(limite_15_pct, limite_5_umas) if total_ingresos_ejercicio > 0 else limite_5_umas
     monto_deducible_efectivo = min(pers_d_total_valido, tope_legal)
 
-    # ── 7. SIMULADOR DE PAGOS PROVISIONALES MENSUALES (ART. 106 LISR Y ART. 5 LIVA) ──
+    # ── 7. SIMULADOR DE PAGOS PROVISIONALES MENSUALES (ART. 106 LISR Y ART. 5/6 LIVA) ──
     simulacion_provisionales = []
     acum_ingresos_pfae = 0.0
     acum_gastos_pfae = 0.0
     acum_isr_ret_pfae = 0.0
     acum_pagos_prov_isr = 0.0
+    acum_iva_favor_anterior = 0.0
 
     MES_NAMES = {
         1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
@@ -404,25 +405,30 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
         base_prov = max(0.0, acum_ingresos_pfae - acum_gastos_pfae)
         
         # Tarifa mensual acumulada aproximada
-        # Para personas físicas, el ISR provisional acumulado se calcula con la tarifa del periodo m
         isr_causado_acum = 0.0
         if base_prov > 0:
-            # Escala anualizada proporcional al mes m/12
             base_anualizada = base_prov * (12.0 / m)
             isr_anual_est = calcular_isr_tarifa_anual(base_anualizada)
             isr_causado_acum = round(isr_anual_est * (m / 12.0), 2)
         
-        # Acreditamientos provisionales
+        # Acreditamientos provisionales de ISR
         isr_cargo_mes = max(0.0, isr_causado_acum - acum_pagos_prov_isr - acum_isr_ret_pfae)
         acum_pagos_prov_isr += isr_cargo_mes
         
-        # IVA del mes (Definitivo Art. 5 LIVA)
+        # IVA del mes (Definitivo Art. 5 y Arrastre de Saldo a Favor Art. 6 LIVA)
         iva_cobrado = m_datos['iva_tras']
         iva_acred = m_datos['iva_acred_fiscal']
         iva_ret = m_datos['iva_ret']
         
-        iva_cargo_mes = max(0.0, round(iva_cobrado - iva_acred - iva_ret, 2))
-        iva_favor_mes = max(0.0, round((iva_acred + iva_ret) - iva_cobrado, 2)) if iva_cobrado < (iva_acred + iva_ret) else 0.0
+        iva_bruto_cargo = max(0.0, round(iva_cobrado - iva_acred - iva_ret, 2))
+        iva_favor_generado_mes = max(0.0, round((iva_acred + iva_ret) - iva_cobrado, 2)) if (iva_acred + iva_ret) > iva_cobrado else 0.0
+        
+        # Acreditamiento de IVA a favor de meses anteriores
+        iva_acreditamiento_favor_ant = min(iva_bruto_cargo, acum_iva_favor_anterior)
+        iva_cargo_mes = max(0.0, round(iva_bruto_cargo - iva_acreditamiento_favor_ant, 2))
+        
+        # Actualizar remanente de IVA a favor disponible para meses futuros
+        acum_iva_favor_anterior = round(acum_iva_favor_anterior - iva_acreditamiento_favor_ant + iva_favor_generado_mes, 2)
         
         total_pagar_mes = round(isr_cargo_mes + iva_cargo_mes, 2)
         
@@ -443,7 +449,9 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             'iva_acreditable_gastos': round(iva_acred, 2),
             'iva_retenido': round(iva_ret, 2),
             'iva_a_cargo_mes': round(iva_cargo_mes, 2),
-            'iva_a_favor_mes': round(iva_favor_mes, 2),
+            'iva_a_favor_mes': round(iva_favor_generado_mes, 2),
+            'iva_a_favor_acreditado_periodos_ant': round(iva_acreditamiento_favor_ant, 2),
+            'iva_a_favor_remanente_acumulado': round(acum_iva_favor_anterior, 2),
             'total_a_pagar_mes': total_pagar_mes
         })
 

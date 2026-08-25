@@ -305,8 +305,10 @@ export default function PreDeclaracionMensualSection({ data, year, onSelectMonth
                     ['IVA Cobrado del Periodo (16%)', selectedMonthModal.iva_cobrado_16],
                     ['IVA Acreditable del Periodo (Gastos)', selectedMonthModal.iva_acreditable_gastos],
                     ['IVA Retenido por Terceros', selectedMonthModal.iva_retenido],
+                    ['Acreditamiento de Saldo a Favor de Meses Anteriores (Art. 6 LIVA)', selectedMonthModal.iva_a_favor_acreditado_periodos_ant],
                     ['IVA a Cargo del Mes', selectedMonthModal.iva_a_cargo_mes],
-                    ['IVA a Favor del Mes (Remanente)', selectedMonthModal.iva_a_favor_mes]
+                    ['IVA a Favor del Mes (Generado)', selectedMonthModal.iva_a_favor_mes],
+                    ['Remanente de IVA a Favor Acumulado (para meses futuros)', selectedMonthModal.iva_a_favor_remanente_acumulado]
                   ].map(([label, val], idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', background: idx % 2 === 0 ? 'white' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
                       <span style={{ color: '#475569' }}>{label}</span>

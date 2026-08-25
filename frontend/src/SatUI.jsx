@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, Fragment } from 'react';
 import {
   ComposedChart, BarChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine
@@ -654,8 +654,9 @@ export function DashboardSection({ sections, year, data }) {
     const month = parseInt((r.fecha || '').split('-')[1]);
     if (isNaN(month) || month < 1 || month > 12) return;
     const m = mLabels[month-1];
-    const percsTotal = (r.percepciones || []).filter(p => !p.es_otro_pago && p.tipo !== '029').reduce((s,p) => s + (p.total || (p.gravado + p.exento) || 0), 0);
-    const montoRecibo = percsTotal > 0 ? percsTotal : (r.total_bruto || 0);
+    const montoRecibo = ((r.gravado || 0) + (r.exento || 0)) > 0 
+      ? ((r.gravado || 0) + (r.exento || 0)) 
+      : (r.total || 0);
     nominaMaps[m] = (nominaMaps[m] || 0) + montoRecibo;
   });
 
@@ -3621,228 +3622,168 @@ export function EgresosMensualesSection({ data, year }) {
 
         </div>
 
-        {/* Listado de Facturas */}
+        {/* Tabla de Facturas de Egresos */}
         {displayItems.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {displayItems.map((item, idx) => {
-              const rowId = item.uuid || `egr-${idx}`;
-              const isExpanded = expandedRows[rowId];
-              return (
-                <div
-                  key={rowId}
-                  style={{
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    background: '#ffffff',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                    overflow: 'hidden',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {/* Header de la tarjeta de factura */}
-                  <div
-                    onClick={() => toggleRow(rowId)}
-                    style={{
-                      padding: '1rem 1.25rem',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      background: isExpanded ? '#f8fafc' : '#ffffff',
-                      borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none',
-                      flexWrap: 'wrap',
-                      gap: '1rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '240px' }}>
-                      <span style={{ color: '#94a3b8', fontSize: '0.8rem', width: '12px' }}>
-                        {isExpanded ? '▼' : '▶'}
-                      </span>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
-                            {item.fecha}
+          <div className="table-responsive">
+            <table className="sat-table" style={{ margin: 0, fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <th style={{ width: '30px' }}></th>
+                  <th style={{ width: '105px' }}>Fecha</th>
+                  <th>Proveedor / Emisor</th>
+                  <th style={{ width: '110px' }}>Uso / Método</th>
+                  <th style={{ width: '150px' }}>Estatus Fiscal</th>
+                  <th className="text-right" style={{ width: '120px' }}>Subtotal Base</th>
+                  <th className="text-right" style={{ width: '100px' }}>IVA</th>
+                  <th className="text-right" style={{ width: '120px' }}>Total Pagado</th>
+                  <th className="text-center" style={{ width: '100px' }}>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayItems.map((item, idx) => {
+                  const rowId = item.uuid || `egr-${idx}`;
+                  const isExpanded = expandedRows[rowId];
+                  const isDed = item.es_deducible_fiscal !== false;
+
+                  return (
+                    <React.Fragment key={rowId}>
+                      <tr
+                        onClick={() => toggleRow(rowId)}
+                        style={{
+                          cursor: 'pointer',
+                          backgroundColor: isExpanded ? '#f8fafc' : (isDed ? '#ffffff' : '#fffbeb'),
+                          borderBottom: isExpanded ? 'none' : '1px solid #f1f5f9',
+                          transition: 'background 0.15s ease'
+                        }}
+                      >
+                        <td style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem' }}>
+                          {isExpanded ? '▼' : '▶'}
+                        </td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>
+                          {item.fecha}
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 700, color: '#0f172a', maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.emisor}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
+                            {item.raw_cfdi?.emisor_rfc || ''}
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 600, marginRight: '4px' }}>
+                            {item.uso_cfdi}
                           </span>
                           <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.7rem' }}>
                             {item.metodo}
                           </span>
-                          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#475569', fontWeight: 600 }}>
-                            {item.uso_cfdi}
-                          </span>
-                          {item.es_deducible_fiscal === false ? (
-                            <span
-                              title={item.motivo_no_deducible || 'Pagado en Efectivo: El SAT exige pago electrónico para deducir'}
-                              style={{
-                                fontSize: '0.7rem',
-                                background: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                fontWeight: 800
-                              }}
-                            >
-                              ⚠️ Efectivo (No Deducible)
+                        </td>
+                        <td>
+                          {isDed ? (
+                            <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                              ✓ Deducible SAT
                             </span>
                           ) : (
                             <span
-                              style={{
-                                fontSize: '0.7rem',
-                                background: '#ecfdf5',
-                                color: '#065f46',
-                                border: '1px solid #a7f3d0',
-                                padding: '2px 8px',
-                                borderRadius: '6px',
-                                fontWeight: 800
-                              }}
+                              title={item.motivo_no_deducible || 'Pago en Efectivo'}
+                              style={{ fontSize: '0.72rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: '6px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}
                             >
-                              ✓ Deducible SAT
+                              ⚠️ Efectivo 01
                             </span>
                           )}
-                        </div>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
-                          {item.emisor}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Base: <span className="mono">{fmt(item.subtotal)}</span></div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>IVA: <span className="mono">{fmt(item.iva)}</span></div>
-                      </div>
-                      <div style={{ textAlign: 'right', minWidth: '120px' }}>
-                        <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Pagado</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
+                        </td>
+                        <td className="text-right mono font-medium" style={{ color: isDed ? '#1e293b' : '#94a3b8' }}>
+                          {fmt(item.subtotal)}
+                        </td>
+                        <td className="text-right mono" style={{ color: isDed ? '#2563eb' : '#94a3b8' }}>
+                          {fmt(item.iva)}
+                        </td>
+                        <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>
                           {fmt(item.total)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cuerpo expandible: conceptos y botones de acción SAT */}
-                  {isExpanded && (
-                    <div style={{ padding: '1.25rem 1.5rem', background: '#fafbfc' }}>
-                      
-                      {/* Metadatos y 3 Botones de Acción SAT */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>UUID / Folio:</span>
+                        </td>
+                        <td className="text-center" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={() => {
                               if (item.raw_cfdi) setSelectedCfdi(item.raw_cfdi);
                             }}
                             style={{
-                              background: '#e0f2fe',
-                              border: 'none',
-                              padding: '4px 10px',
-                              borderRadius: '6px',
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
                               color: '#1d4ed8',
-                              fontFamily: 'monospace',
-                              fontSize: '0.8rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              textDecoration: 'underline'
-                            }}
-                            title="Ver Comprobante Fiscal Digital en alta fidelidad"
-                          >
-                            🔍 {item.uuid || 'N/D'}
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (item.raw_cfdi) setViewingXml(item.raw_cfdi);
-                            }}
-                            style={{
-                              background: '#ffffff',
-                              border: '1px solid #cbd5e1',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
                               padding: '3px 8px',
                               borderRadius: '6px',
-                              color: '#475569',
-                              fontSize: '0.75rem',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontWeight: 600
+                              cursor: 'pointer'
                             }}
-                            title="Ver estructura JSON del comprobante"
                           >
-                            💻 JSON
+                            🔍 CFDI
                           </button>
+                        </td>
+                      </tr>
 
-                          {item.raw_cfdi?.filename && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(`http://localhost:8010/api/download_xml?filename=${item.raw_cfdi.filename}`, '_blank');
-                              }}
-                              style={{
-                                background: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                color: '#475569',
-                                fontSize: '0.75rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontWeight: 600
-                              }}
-                              title="Descargar archivo original (.xml)"
-                            >
-                              ⬇️ XML
-                            </button>
-                          )}
-                        </div>
+                      {/* Fila expandible con detalle de conceptos */}
+                      {isExpanded && (
+                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                          <td colSpan={9} style={{ padding: '1rem 1.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#475569' }}>
+                                  <b>UUID Fiscal:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid || 'N/A'}</span>
+                                  {item.forma_pago && <span style={{ marginLeft: '12px' }}><b>Forma de Pago:</b> {item.forma_pago}</span>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                    style={{ padding: '4px 10px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    Ver Detalle Fiscal
+                                  </button>
+                                  <button
+                                    onClick={() => item.raw_cfdi && setViewingXml(item.raw_cfdi)}
+                                    style={{ padding: '4px 10px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    Ver XML Original
+                                  </button>
+                                </div>
+                              </div>
 
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                          <strong>Forma de Pago:</strong> <span style={{ background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', marginLeft: '4px' }}>{item.forma_pago || 'N/D'}</span>
-                        </div>
-                      </div>
-
-                      {/* Tabla de Conceptos */}
-                      {item.conceptos && item.conceptos.length > 0 ? (
-                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                          <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse', margin: 0 }}>
-                            <thead style={{ backgroundColor: '#f1f5f9' }}>
-                              <tr>
-                                <th style={{ textAlign: 'left', padding: '0.6rem 1rem', fontWeight: 700, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>Clave SAT & Descripción del Concepto</th>
-                                <th style={{ textAlign: 'right', padding: '0.6rem 1rem', fontWeight: 700, color: '#475569', width: '160px', borderBottom: '1px solid #e2e8f0' }}>Subtotal Base</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {item.conceptos.map((c, cIdx) => (
-                                <tr key={cIdx}>
-                                  <td style={{ padding: '0.75rem 1rem', color: '#1e293b', borderBottom: cIdx !== item.conceptos.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                                    <div style={{ fontWeight: 600 }}>{c.desc}</div>
-                                    {c.clave && (
-                                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
-                                        Clave SAT: <span style={{ fontFamily: 'monospace', color: '#2563eb' }}>{c.clave}</span> {c.desc_sat ? `(${c.desc_sat})` : ''}
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td style={{ textAlign: 'right', padding: '0.75rem 1rem', fontFamily: 'monospace', color: '#334155', fontWeight: 600, borderBottom: cIdx !== item.conceptos.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                                    {fmt(parseFloat(c.imp || 0))}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                          No hay desglose de conceptos detallado en el comprobante.
-                        </div>
+                              {/* Conceptos de la factura */}
+                              {item.conceptos && item.conceptos.length > 0 ? (
+                                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', margin: 0 }}>
+                                    <thead>
+                                      <tr style={{ background: '#f1f5f9', color: '#475569', fontWeight: 700 }}>
+                                        <th style={{ padding: '6px 12px', textAlign: 'left' }}>Clave SAT</th>
+                                        <th style={{ padding: '6px 12px', textAlign: 'left' }}>Descripción del Concepto</th>
+                                        <th style={{ padding: '6px 12px', textAlign: 'right' }}>Importe</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {item.conceptos.map((c, cIdx) => (
+                                        <tr key={cIdx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                          <td style={{ padding: '6px 12px', fontFamily: 'monospace', color: '#64748b' }}>{c.clave || '—'}</td>
+                                          <td style={{ padding: '6px 12px', color: '#0f172a' }}>{c.desc || 'Sin descripción'}</td>
+                                          <td style={{ padding: '6px 12px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(c.imp)}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ) : (
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                                  Sin desglose individual de conceptos en el CFDI.
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '8px' }}>
