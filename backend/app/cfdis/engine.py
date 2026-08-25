@@ -54,58 +54,27 @@ def calcular_isr_tarifa_anual(base_gravable: float) -> float:
     return 0.0
 
 
+from app.catalogos.sat_catalogo import resolver_partida_sat, get_clave_sat_info
+
 def resolver_emisor(emisor_original: str, conceptos: List[Dict]) -> str:
-    texto = " ".join([str(c.get('desc', '')).lower() for c in conceptos])
-    kw_uber = ['cuota de solicitud', 'tarifa', 'ubereats', 'cuota de cancelación', 'mensajería en bicicleta', 'entrega de alimentos']
-    if any(kw in texto for kw in kw_uber):
-        return "UBER (Plataformas de Viaje y Entregas)"
-    if "didi" in texto:
-        return "DIDI (Plataformas de Viaje y Entregas)"
-    kw_super = ['kirkland', 'costco', 'walmart', 'soriana', 'chedraui', 'heb', 'bodega aurrera']
-    if any(kw in texto for kw in kw_super) or any(kw in (emisor_original or '').lower() for kw in kw_super):
-        return "SUPERMERCADOS Y DESPENSA"
-    kw_gas = ['magna', 'premium', 'g premium', 'g super', 'gpremium', 'gasolina', 'combustible']
-    if any(kw in texto for kw in kw_gas) and not any(exc in texto for exc in ['bateria', 'kirkland', 'bouquet', 'spotify']):
-        return "GASOLINERAS (Estaciones de Servicio)"
-    return emisor_original or 'Emisor Desconocido'
+    """Devuelve la razón social limpia del emisor sin sobreescrituras acopladas."""
+    return (emisor_original or 'Emisor Desconocido').strip()
+
+
+def clasificar_concepto_individual(c: Dict, uso_cfdi: str = "") -> Dict[str, str]:
+    """Clasifica un concepto/artículo individual consultando el Catálogo SAT unificado en DB/Memoria."""
+    clave = str(c.get('clave', '')).strip()
+    desc = str(c.get('desc', '')).strip()
+    return resolver_partida_sat(clave_sat=clave, desc_concepto=desc, uso_cfdi=uso_cfdi)
 
 
 def clasificar_gasto(emisor_str: str, rfc_str: str, conceptos: List[Dict], uso_cfdi: str = "") -> Dict[str, str]:
-    text = f"{emisor_str or ''} {rfc_str or ''} {' '.join([c.get('desc','') + ' ' + c.get('clave','') for c in (conceptos or [])])}".upper()
-    
-    # 1. Arrendamiento, Vehículos y Movilidad
-    if any(k in text for k in ['TIP AUTO', 'TAU130219AD5', 'ARRENDAMIENTO', 'VEHICUL', 'AUTO', 'UBER', 'DIDI', 'GASOLINA', 'COMBUSTIBLE', '15101514', '15101515', 'ESTACIONAMIENTO', 'CASETA', 'TAG', 'TELEVIA', 'AUTOPISTA', 'SEGURO DE AUTO', 'REFACCION']):
-        return {'id': 'vehiculos', 'nombre': 'Vehículos y Arrendamiento', 'icono': '🚗', 'color': '#3b82f6'}
-    
-    # 2. Servicios Financieros, Bancarios e Intereses
-    if any(k in text for k in ['BBVA', 'BBA830831LJ2', 'NU MEXICO', 'AKA060427QP2', 'BANCO', 'BANORTE', 'SANTANDER', 'BANAMEX', 'CITIBANAMEX', 'HEY BANCO', 'COMISION BANCARIA', 'INTERESES', 'MANEJO DE CUENTA', 'ANUALIDAD']):
-        return {'id': 'financiero', 'nombre': 'Servicios Bancarios y Financieros', 'icono': '🏦', 'color': '#6366f1'}
-        
-    # 3. Servicios Administrativos, Contables y Asesoría
-    if any(k in text for k in ['QPS ADMINISTRATION', 'CONSULTOR', 'ASESOR', 'ADMINISTRAC', 'CONTAB', 'LEGAL', 'AUDITOR', 'HONORARIOS ASESOR']):
-        return {'id': 'asesoria', 'nombre': 'Servicios Administrativos y Asesoría', 'icono': '🏢', 'color': '#059669'}
-        
-    # 4. Hardware, Electrónica y Cómputo
-    if any(k in text for k in ['AG ELECTRONICA', 'AEL920315L68', 'STEREN', 'COMPUT', 'LAPTOP', 'ELECTRONIC', 'SYSCOM', 'HARDWARE', 'PANTALLA', 'DISCO DURO', 'MEMORIA', 'CABLE', 'ADAPTADOR', 'APPLE', 'DELL', 'LENOVO']):
-        return {'id': 'hardware', 'nombre': 'Hardware y Electrónica', 'icono': '💻', 'color': '#0ea5e9'}
-        
-    # 5. Telecomunicaciones, Software y Nube
-    if any(k in text for k in ['TELMEX', 'TELCEL', 'AT&T', 'IZZI', 'TOTALPLAY', 'AWS', 'AMAZON WEB SERVICES', 'GOOGLE CLOUD', 'MICROSOFT', 'ADOBE', 'HOSTING', 'DOMINIO', 'SOFTWARE', 'LICENCIA', 'INTERNET', 'TELEFON']):
-        return {'id': 'software_nube', 'nombre': 'Software, Nube y Telecomunicaciones', 'icono': '🌐', 'color': '#8b5cf6'}
-        
-    # 6. E-Commerce, Compras en Línea y Logística
-    if any(k in text for k in ['AMAZON MEXICO', 'MERCADO LIBRE', 'DHL', 'FEDEX', 'ESTAFETA', 'PAQUETERIA', 'ENVIO', 'LOGISTICA', 'REDPACK']):
-        return {'id': 'ecommerce', 'nombre': 'E-Commerce y Envíos', 'icono': '📦', 'color': '#f59e0b'}
-        
-    # 7. Papelería e Insumos de Oficina
-    if any(k in text for k in ['OFFICE DEPOT', 'OFFICEMAX', 'LUMEN', 'PAPELERIA', 'TONER', 'TINTA', 'HOJAS', 'ARCHIVERO', 'SILLA', 'ESCRITORIO', 'MUEBLES']):
-        return {'id': 'papeleria', 'nombre': 'Papelería e Insumos de Oficina', 'icono': '📎', 'color': '#14b8a6'}
-        
-    # 8. Viáticos, Alimentos y Consumos
-    if any(k in text for k in ['RESTAURANT', 'CAFE', 'STARBUCKS', 'ALIMENT', 'COMIDA', 'CONSUMO DE ALIMENTOS', 'HOTEL', 'HOSPEDAJE']):
-        return {'id': 'viaticos', 'nombre': 'Viáticos y Alimentos', 'icono': '☕', 'color': '#d97706'}
-        
-    return {'id': 'otros', 'nombre': 'Otros Gastos Operativos', 'icono': '📋', 'color': '#64748b'}
+    """Clasificación global del CFDI basada en la partida de mayor importe."""
+    conceptos_validos = [c for c in (conceptos or []) if c.get('clave') or c.get('desc')]
+    if conceptos_validos:
+        conceptos_ordenados = sorted(conceptos_validos, key=lambda c: float(c.get('imp') or 0.0), reverse=True)
+        return clasificar_concepto_individual(conceptos_ordenados[0], uso_cfdi)
+    return {'id': 'otros_operativos', 'nombre': 'Otros Gastos Operativos', 'icono': '📋', 'color': '#64748b'}
 
 
 def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool = True) -> Dict[str, Any]:
@@ -236,6 +205,19 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                     mensual_pfae[m]['egresos_no_deducibles'] += base_calc
                 
                 cat_info = clasificar_gasto(i.get('emisor_nombre') or '', i.get('emisor_rfc') or '', conceptos, i.get('uso_cfdi') or '')
+                
+                # Desglose proporcional y clasificación individual por partida/artículo
+                factor_iva = (iva_val / base_calc) if base_calc > 0 else 0.16
+                conceptos_enriquecidos = []
+                for c in conceptos:
+                    c_dict = dict(c)
+                    c_imp = float(c_dict.get('imp') or 0.0)
+                    c_dict['subtotal_partida'] = c_imp
+                    c_dict['iva_partida'] = round(c_imp * factor_iva, 2)
+                    c_dict['total_partida'] = round(c_imp + c_dict['iva_partida'], 2)
+                    c_dict['categoria_gasto'] = clasificar_concepto_individual(c_dict, i.get('uso_cfdi') or '')
+                    conceptos_enriquecidos.append(c_dict)
+
                 lista_gastos.append({
                     'fecha': i['fecha'][:10],
                     'emisor': resolver_emisor(i.get('emisor_nombre') or i.get('emisor_rfc'), conceptos),
@@ -247,7 +229,7 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                     'iva': iva_val,
                     'total': base_calc + iva_val,
                     'uuid': i.get('uuid'),
-                    'conceptos': conceptos,
+                    'conceptos': conceptos_enriquecidos,
                     'forma_pago': fp or 'N/A',
                     'es_deducible_fiscal': es_deducible,
                     'motivo_no_deducible': motivo_no_ded,
@@ -283,6 +265,17 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 fp_pago = orig.get('forma_pago', p.get('forma_pago', 'N/A')) if orig else p.get('forma_pago', 'N/A')
                 cat_pago_info = clasificar_gasto(p.get('emisor_nombre') or (orig.get('emisor_nombre') if orig else ''), p.get('emisor_rfc') or '', conceptos_to_show)
                 
+                factor_iva_p = (iva / base) if base > 0 else 0.16
+                conceptos_enriquecidos_p = []
+                for c in conceptos_to_show:
+                    c_dict = dict(c)
+                    c_imp = float(c_dict.get('imp') or 0.0)
+                    c_dict['subtotal_partida'] = c_imp
+                    c_dict['iva_partida'] = round(c_imp * factor_iva_p, 2)
+                    c_dict['total_partida'] = round(c_imp + c_dict['iva_partida'], 2)
+                    c_dict['categoria_gasto'] = clasificar_concepto_individual(c_dict, orig.get('uso_cfdi') if orig else '')
+                    conceptos_enriquecidos_p.append(c_dict)
+
                 lista_gastos.append({
                     'fecha': det['fecha_pago'][:10],
                     'emisor': resolver_emisor(p.get('emisor_nombre') or p.get('emisor_rfc'), conceptos_to_show),
@@ -294,7 +287,7 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                     'iva': round(iva, 2),
                     'total': val,
                     'uuid': uuid_rel,
-                    'conceptos': conceptos_to_show,
+                    'conceptos': conceptos_enriquecidos_p,
                     'forma_pago': fp_pago,
                     'es_deducible_fiscal': True,
                     'motivo_no_deducible': '',

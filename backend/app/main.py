@@ -4,6 +4,7 @@ from app.database import init_db
 from app.cfdis.router import router as cfdis_router
 from app.auth.router import router as auth_router
 from app.sat_docs.router import router as sat_docs_router
+from app.catalogos.router import router as catalogos_router
 
 # Initialize database schema
 init_db()
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(cfdis_router)
 app.include_router(sat_docs_router)
+app.include_router(catalogos_router)
 
 @app.get("/")
 def root():

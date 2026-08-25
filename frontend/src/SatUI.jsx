@@ -2959,25 +2959,25 @@ export const GastosReport = ({ data, year }) => {
             </div>
           </div>
           {expandedGroups[idx] && (
-          <div className="table-responsive">
-            <table className="sat-table" style={{ margin: 0 }}>
-              <thead>
-                <tr>
-                  <th style={{ width: '120px' }}>Fecha</th>
-                  <th>{groupBy === 'emisor' ? 'Uso CFDI' : 'Emisor'}</th>
-                  <th style={{ width: '100px' }}>Método</th>
-                  <th className="text-right" style={{ width: '130px' }}>Base</th>
-                  <th className="text-right" style={{ width: '110px' }}>IVA</th>
-                  <th className="text-right" style={{ width: '130px' }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.items.map((item, i) => (
-                  <InteractableRow key={i} item={item} groupBy={groupBy} onViewCfdi={setSelectedCfdi} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+            <div className="table-responsive">
+              <table className="sat-table" style={{ margin: 0 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '120px' }}>Fecha</th>
+                    <th>{groupBy === 'emisor' ? 'Uso CFDI' : 'Emisor'}</th>
+                    <th style={{ width: '100px' }}>Método</th>
+                    <th className="text-right" style={{ width: '130px' }}>Base</th>
+                    <th className="text-right" style={{ width: '110px' }}>IVA</th>
+                    <th className="text-right" style={{ width: '130px' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.items.map((item, i) => (
+                    <InteractableRow key={i} item={item} groupBy={groupBy} onViewCfdi={setSelectedCfdi} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       ))}
@@ -2989,35 +2989,21 @@ export const GastosReport = ({ data, year }) => {
   );
 };
 
+// ─── CLASIFICACIÓN DINÁMICA DE RUBROS SAT (ALIMENTADA POR BASE DE DATOS) ───
+
+export function getConceptoCat(c, parentItem) {
+  if (c?.categoria_gasto && c.categoria_gasto.id) return c.categoria_gasto;
+  if (parentItem?.categoria_gasto && parentItem.categoria_gasto.id) return parentItem.categoria_gasto;
+  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
+}
+
 export function getGastoCat(item) {
   if (item?.categoria_gasto && item.categoria_gasto.id) return item.categoria_gasto;
-  const text = `${item?.emisor || ''} ${item?.rfc_emisor || item?.raw_cfdi?.emisor_rfc || ''} ${(item?.conceptos || []).map(c => (c.desc || '') + ' ' + (c.clave || '')).join(' ')}`.toUpperCase();
-  
-  if (/TIP AUTO|TAU130219AD5|ARRENDAMIENTO|VEHICUL|AUTO|UBER|DIDI|GASOLINA|COMBUSTIBLE|15101514|15101515|ESTACIONAMIENTO|CASETA|TAG|TELEVIA|AUTOPISTA|SEGURO DE AUTO|REFACCION/.test(text)) {
-    return { id: 'vehiculos', nombre: 'Vehículos y Arrendamiento', icono: '🚗', color: '#3b82f6' };
+  const conceptos = item?.conceptos || [];
+  if (conceptos.length > 0 && conceptos[0]?.categoria_gasto) {
+    return conceptos[0].categoria_gasto;
   }
-  if (/BBVA|BBA830831LJ2|NU MEXICO|AKA060427QP2|BANCO|BANORTE|SANTANDER|BANAMEX|CITIBANAMEX|HEY BANCO|COMISION BANCARIA|INTERESES|MANEJO DE CUENTA|ANUALIDAD/.test(text)) {
-    return { id: 'financiero', nombre: 'Servicios Bancarios y Financieros', icono: '🏦', color: '#6366f1' };
-  }
-  if (/QPS ADMINISTRATION|CONSULTOR|ASESOR|ADMINISTRAC|CONTAB|LEGAL|AUDITOR|HONORARIOS ASESOR/.test(text)) {
-    return { id: 'asesoria', nombre: 'Servicios Administrativos y Asesoría', icono: '🏢', color: '#059669' };
-  }
-  if (/AG ELECTRONICA|AEL920315L68|STEREN|COMPUT|LAPTOP|ELECTRONIC|SYSCOM|HARDWARE|PANTALLA|DISCO DURO|MEMORIA|CABLE|ADAPTADOR|APPLE|DELL|LENOVO/.test(text)) {
-    return { id: 'hardware', nombre: 'Hardware y Electrónica', icono: '💻', color: '#0ea5e9' };
-  }
-  if (/TELMEX|TELCEL|AT&T|IZZI|TOTALPLAY|AWS|AMAZON WEB SERVICES|GOOGLE CLOUD|MICROSOFT|ADOBE|HOSTING|DOMINIO|SOFTWARE|LICENCIA|INTERNET|TELEFON/.test(text)) {
-    return { id: 'software_nube', nombre: 'Software, Nube y Telecomunicaciones', icono: '🌐', color: '#8b5cf6' };
-  }
-  if (/AMAZON MEXICO|MERCADO LIBRE|DHL|FEDEX|ESTAFETA|PAQUETERIA|ENVIO|LOGISTICA|REDPACK/.test(text)) {
-    return { id: 'ecommerce', nombre: 'E-Commerce y Envíos', icono: '📦', color: '#f59e0b' };
-  }
-  if (/OFFICE DEPOT|OFFICEMAX|LUMEN|PAPELERIA|TONER|TINTA|HOJAS|ARCHIVERO|SILLA|ESCRITORIO|MUEBLES/.test(text)) {
-    return { id: 'papeleria', nombre: 'Papelería e Insumos de Oficina', icono: '📎', color: '#14b8a6' };
-  }
-  if (/RESTAURANT|CAFE|STARBUCKS|ALIMENT|COMIDA|CONSUMO DE ALIMENTOS|HOTEL|HOSPEDAJE/.test(text)) {
-    return { id: 'viaticos', nombre: 'Viáticos y Alimentos', icono: '☕', color: '#d97706' };
-  }
-  return { id: 'otros', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
+  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b' };
 }
 
 // ─── SECCIÓN 5: Vista de Egresos por Mes (Analítica y Desglose Mensual) ──────
@@ -3193,20 +3179,50 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
     };
   }, [rawList, selectedMonth]);
 
-  // Resumen y agrupación por categorías del periodo actual
+  // Resumen y agrupación por categorías del periodo actual calculando por PARTIDA / ARTÍCULO
   const categorySummary = useMemo(() => {
     const base = selectedMonth === 'Global' ? rawList : (mesesData[selectedMonth - 1]?.items || []);
     const map = {};
     base.forEach(it => {
-      const cat = getGastoCat(it);
-      if (!map[cat.id]) {
-        map[cat.id] = { ...cat, total: 0, subtotal: 0, iva: 0, count: 0, items: [] };
-      }
-      map[cat.id].total += (it.total || 0);
-      map[cat.id].subtotal += (it.subtotal || 0);
-      map[cat.id].iva += (it.iva || 0);
-      map[cat.id].count += 1;
-      map[cat.id].items.push(it);
+      const conceptos = (it.conceptos && it.conceptos.length > 0)
+        ? it.conceptos
+        : [{ desc: it.emisor, imp: it.subtotal, clave: '' }];
+      
+      const subtotalFactura = Number(it.subtotal) || 1;
+      const ivaFactura = Number(it.iva) || 0;
+      const factorIva = subtotalFactura > 0 ? (ivaFactura / subtotalFactura) : 0.16;
+
+      conceptos.forEach(c => {
+        const cat = getConceptoCat(c, it);
+        if (!map[cat.id]) {
+          map[cat.id] = { ...cat, total: 0, subtotal: 0, iva: 0, count: 0, items: [] };
+        }
+        const impPartida = Number(c.subtotal_partida != null ? c.subtotal_partida : (c.imp != null ? c.imp : it.subtotal)) || 0;
+        const ivaPartida = Number(c.iva_partida != null ? c.iva_partida : (impPartida * factorIva)) || 0;
+        const totalPartida = Number(c.total_partida != null ? c.total_partida : (impPartida + ivaPartida)) || 0;
+
+        map[cat.id].subtotal += impPartida;
+        map[cat.id].iva += ivaPartida;
+        map[cat.id].total += totalPartida;
+        map[cat.id].count += 1;
+
+        // Agregar o acumular la factura en la lista de items de este rubro con su monto específico
+        const existingItem = map[cat.id].items.find(x => x.uuid === it.uuid);
+        if (existingItem) {
+          existingItem.subtotal_rubro += impPartida;
+          existingItem.iva_rubro += ivaPartida;
+          existingItem.total_rubro += totalPartida;
+          existingItem.conceptos_rubro.push(c);
+        } else {
+          map[cat.id].items.push({
+            ...it,
+            subtotal_rubro: impPartida,
+            iva_rubro: ivaPartida,
+            total_rubro: totalPartida,
+            conceptos_rubro: [c]
+          });
+        }
+      });
     });
     return Object.values(map).sort((a, b) => b.total - a.total);
   }, [rawList, selectedMonth, mesesData]);
@@ -3276,6 +3292,16 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
   const activeMonthName = selectedMonth === 'Global' 
     ? 'Todo el Ejercicio' 
     : `${MONTH_NAMES[selectedMonth - 1]} ${year}`;
+
+  const periodItems = useMemo(() => {
+    return selectedMonth === 'Global' 
+      ? rawList 
+      : (mesesData[selectedMonth - 1]?.items || []);
+  }, [rawList, selectedMonth, mesesData]);
+
+  const periodTotal = useMemo(() => periodItems.reduce((acc, it) => acc + (it.total || 0), 0), [periodItems]);
+  const periodSubtotal = useMemo(() => periodItems.reduce((acc, it) => acc + (it.subtotal || 0), 0), [periodItems]);
+  const periodIva = useMemo(() => periodItems.reduce((acc, it) => acc + (it.iva || 0), 0), [periodItems]);
 
   const currentSubtotal = displayItems.reduce((acc, it) => acc + (it.subtotal || 0), 0);
   const currentIva = displayItems.reduce((acc, it) => acc + (it.iva || 0), 0);
@@ -3952,255 +3978,336 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
           </div>
         </div>
 
-        {/* ── Chips / Filtros Rápidos por Categoría ── */}
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-          <button
-            onClick={() => setSelectedCategory('ALL')}
-            style={{
-              padding: '5px 12px',
-              borderRadius: '20px',
-              border: selectedCategory === 'ALL' ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
-              background: selectedCategory === 'ALL' ? '#0f172a' : '#ffffff',
-              color: selectedCategory === 'ALL' ? '#ffffff' : '#475569',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <span>✨ Todos</span>
-            <span style={{ opacity: 0.8, fontSize: '0.72rem' }}>({rawList.length})</span>
-          </button>
+        {/* ── MODO 1: MAESTRO-DETALLE (2 COLUMNAS ESTILO STRIPE / RAMP) ── */}
+        {viewMode === 'categoria' && (() => {
+          const activeCat = selectedCategory === 'ALL'
+            ? { id: 'ALL', nombre: 'Todos los Gastos', icono: '✨', color: '#0f172a', items: displayItems, total: periodTotal, subtotal: periodSubtotal, iva: periodIva, count: periodItems.length }
+            : selectedCategory === 'no_deducible'
+              ? { id: 'no_deducible', nombre: 'Gastos No Deducibles (Efectivo > $2k)', icono: '⚠️', color: '#dc2626', items: displayItems.filter(it => it.es_deducible_fiscal === false), total: noDeduciblesSubtotal, subtotal: noDeduciblesSubtotal, iva: 0, count: displayItems.filter(it => it.es_deducible_fiscal === false).length }
+              : categorySummary.find(c => c.id === selectedCategory) || categorySummary[0] || { id: 'ALL', nombre: 'Todos los Gastos', icono: '✨', color: '#0f172a', items: displayItems, total: periodTotal, subtotal: periodSubtotal, iva: periodIva, count: periodItems.length };
 
-          {categorySummary.map(cat => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat.id)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '20px',
-                  border: isSelected ? `1.5px solid ${cat.color}` : '1px solid #e2e8f0',
-                  background: isSelected ? cat.color : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#334155',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                <span>{cat.icono} {cat.nombre}</span>
-                <span style={{ opacity: 0.85, fontSize: '0.72rem' }}>({cat.count})</span>
-                <span style={{ fontWeight: 800, fontSize: '0.72rem', opacity: isSelected ? 1 : 0.7 }}>• {fmt(cat.total)}</span>
-              </button>
-            );
-          })}
+          const filteredCatItems = (activeCat.items || []).filter(it => {
+            if (!searchTerm) return true;
+            const q = searchTerm.toLowerCase();
+            return (it.emisor || '').toLowerCase().includes(q) ||
+                   (it.raw_cfdi?.emisor_rfc || it.rfc_emisor || '').toLowerCase().includes(q) ||
+                   (it.conceptos || []).some(c => (c.desc || '').toLowerCase().includes(q));
+          });
 
-          {noDeduciblesSubtotal > 0 && (
-            <button
-              onClick={() => setSelectedCategory(selectedCategory === 'no_deducible' ? 'ALL' : 'no_deducible')}
-              style={{
-                padding: '5px 12px',
-                borderRadius: '20px',
-                border: selectedCategory === 'no_deducible' ? '1.5px solid #dc2626' : '1px solid #fecaca',
-                background: selectedCategory === 'no_deducible' ? '#dc2626' : '#fef2f2',
-                color: selectedCategory === 'no_deducible' ? '#ffffff' : '#dc2626',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <span>⚠️ No Deducibles</span>
-              <span>• {fmt(noDeduciblesSubtotal)}</span>
-            </button>
-          )}
-        </div>
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+              
+              {/* ── PANEL IZQUIERDO: LISTA DE RUBROS / CATEGORÍAS (MAESTRO) ── */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+                <div style={{ padding: '0.9rem 1.1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong style={{ fontSize: '0.82rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Rubros SAT</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>{categorySummary.length} categorías</span>
+                </div>
 
-        {/* ── MODO 1: AGRUPADO POR RUBRO / CATEGORÍA ── */}
-        {viewMode === 'categoria' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {categorySummary
-              .filter(cat => selectedCategory === 'ALL' || selectedCategory === cat.id)
-              .map(cat => {
-                const catItems = displayItems.filter(it => getGastoCat(it).id === cat.id);
-                if (catItems.length === 0) return null;
-                const isExpanded = expandedCategories[cat.id] !== false; // Default expanded
-                const pctGasto = currentTotal > 0 ? ((cat.total / currentTotal) * 100).toFixed(1) : 0;
+                <div style={{ padding: '0.5rem', maxHeight: '720px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {/* Opción Todos */}
+                  <div
+                    onClick={() => setSelectedCategory('ALL')}
+                    style={{
+                      padding: '0.75rem 0.9rem',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      background: selectedCategory === 'ALL' ? '#0f172a' : 'transparent',
+                      color: selectedCategory === 'ALL' ? '#ffffff' : '#1e293b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '1.2rem' }}>✨</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>Todos los Gastos</div>
+                        <div style={{ fontSize: '0.72rem', opacity: 0.8 }}>{periodItems.length} comprobantes</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.88rem' }}>{fmt(periodTotal)}</div>
+                      <div style={{ fontSize: '0.68rem', opacity: 0.8 }}>100%</div>
+                    </div>
+                  </div>
 
-                return (
-                  <div key={cat.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                    {/* Header de la Categoría */}
+                  {/* Opción No Deducibles si existen */}
+                  {noDeduciblesSubtotal > 0 && (
                     <div
-                      onClick={() => toggleCategory(cat.id)}
+                      onClick={() => setSelectedCategory('no_deducible')}
                       style={{
-                        padding: '1rem 1.25rem',
-                        background: '#f8fafc',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
+                        padding: '0.75rem 0.9rem',
+                        borderRadius: '10px',
                         cursor: 'pointer',
-                        borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none',
-                        flexWrap: 'wrap',
-                        gap: '0.75rem'
+                        background: selectedCategory === 'no_deducible' ? '#dc2626' : '#fef2f2',
+                        color: selectedCategory === 'no_deducible' ? '#ffffff' : '#dc2626',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        border: '1px solid #fecaca',
+                        transition: 'all 0.15s ease'
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '1.4rem' }}>{cat.icono}</span>
+                        <span style={{ fontSize: '1.1rem' }}>⚠️</span>
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <strong style={{ fontSize: '0.95rem', color: '#0f172a' }}>{cat.nombre}</strong>
-                            <span style={{ fontSize: '0.72rem', background: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
-                              {catItems.length} facturas
-                            </span>
-                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                              ({pctGasto}% del gasto)
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                            Subtotal: <strong style={{ color: '#334155' }}>{fmt(cat.subtotal)}</strong> • IVA Acreditable: <strong style={{ color: '#2563eb' }}>{fmt(cat.iva)}</strong>
-                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '0.82rem' }}>No Deducibles</div>
+                          <div style={{ fontSize: '0.7rem', opacity: 0.85 }}>Efectivo 01 &gt; $2,000</div>
                         </div>
                       </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Categoría</div>
-                          <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
-                            {fmt(cat.total)}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{isExpanded ? '▲' : '▼'}</span>
+                      <div style={{ textAlign: 'right', fontWeight: 800, fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {fmt(noDeduciblesSubtotal)}
                       </div>
                     </div>
+                  )}
 
-                    {/* Tabla de comprobantes de esta categoría */}
-                    {isExpanded && (
-                      <div className="table-responsive">
-                        <table className="sat-table" style={{ margin: 0, fontSize: '0.82rem' }}>
-                          <thead>
-                            <tr style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase' }}>
-                              <th style={{ width: '30px' }}></th>
-                              <th style={{ width: '100px' }}>Fecha</th>
-                              <th>Proveedor</th>
-                              <th style={{ width: '100px' }}>Método</th>
-                              <th style={{ width: '130px' }}>Estatus Fiscal</th>
-                              <th className="text-right" style={{ width: '110px' }}>Subtotal</th>
-                              <th className="text-right" style={{ width: '90px' }}>IVA</th>
-                              <th className="text-right" style={{ width: '110px' }}>Total</th>
-                              <th className="text-center" style={{ width: '80px' }}>Acción</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {catItems.map((item, idx) => {
-                              const rowId = item.uuid || `${cat.id}-${idx}`;
-                              const isRowExp = expandedRows[rowId];
-                              const isDed = item.es_deducible_fiscal !== false;
+                  <div style={{ height: '1px', background: '#f1f5f9', margin: '4px 0' }} />
 
-                              return (
-                                <React.Fragment key={rowId}>
-                                  <tr
-                                    onClick={() => toggleRow(rowId)}
-                                    style={{
-                                      cursor: 'pointer',
-                                      backgroundColor: isRowExp ? '#f8fafc' : (isDed ? '#ffffff' : '#fffbeb'),
-                                      borderBottom: isRowExp ? 'none' : '1px solid #f1f5f9'
-                                    }}
-                                  >
-                                    <td style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.7rem' }}>
-                                      {isRowExp ? '▼' : '▶'}
-                                    </td>
-                                    <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{item.fecha}</td>
-                                    <td>
-                                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.emisor}</div>
-                                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>
-                                        {item.conceptos?.[0]?.desc ? `${item.conceptos[0].desc.slice(0, 45)}...` : (item.raw_cfdi?.emisor_rfc || '')}
-                                      </div>
-                                    </td>
-                                    <td>
-                                      <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.68rem' }}>
-                                        {item.metodo}
-                                      </span>
-                                    </td>
-                                    <td>
-                                      {isDed ? (
-                                        <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>✓ Deducible</span>
-                                      ) : (
-                                        <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 800 }}>⚠️ Efectivo 01</span>
-                                      )}
-                                    </td>
-                                    <td className="text-right mono">{fmt(item.subtotal)}</td>
-                                    <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(item.iva)}</td>
-                                    <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(item.total)}</td>
-                                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                                      <button
-                                        onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
-                                        style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', cursor: 'pointer' }}
-                                      >
-                                        🔍 CFDI
-                                      </button>
-                                    </td>
-                                  </tr>
+                  {/* Lista de Categorías */}
+                  {categorySummary.map(cat => {
+                    const isSelected = selectedCategory === cat.id;
+                    const pctGasto = currentTotal > 0 ? (cat.total / currentTotal) * 100 : 0;
 
-                                  {isRowExp && (
-                                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                                      <td colSpan={9} style={{ padding: '0.85rem 1.25rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                                          <div style={{ fontSize: '0.78rem', color: '#475569' }}>
-                                            <b>UUID:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid}</span> • <b>Uso:</b> {item.uso_cfdi} • <b>Forma de Pago:</b> {item.forma_pago}
-                                          </div>
-                                          <div style={{ display: 'flex', gap: '6px' }}>
-                                            <button
-                                              onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
-                                              style={{ padding: '3px 8px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                            >
-                                              Detalle
-                                            </button>
-                                            <button
-                                              onClick={() => item.raw_cfdi && setViewingXml(item.raw_cfdi)}
-                                              style={{ padding: '3px 8px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
-                                            >
-                                              XML
-                                            </button>
-                                          </div>
-                                        </div>
+                    return (
+                      <div
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        style={{
+                          padding: '0.75rem 0.9rem',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          background: isSelected ? '#eff6ff' : 'transparent',
+                          borderLeft: isSelected ? '4px solid #3b82f6' : '4px solid transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) e.currentTarget.style.background = '#f8fafc';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{cat.icono}</span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: isSelected ? 800 : 600, fontSize: '0.82rem', color: isSelected ? '#1d4ed8' : '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {cat.nombre}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>{cat.count} docs</span>
+                              <span>•</span>
+                              <span>{pctGasto.toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        </div>
 
-                                        {(item.conceptos || []).length > 0 && (
-                                          <table style={{ width: '100%', fontSize: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
-                                            <tbody>
-                                              {item.conceptos.map((c, ci) => (
-                                                <tr key={ci} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                                  <td style={{ padding: '4px 8px', color: '#64748b', fontFamily: 'monospace' }}>{c.clave || '—'}</td>
-                                                  <td style={{ padding: '4px 8px', color: '#0f172a' }}>{c.desc}</td>
-                                                  <td style={{ padding: '4px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700 }}>{fmt(c.imp)}</td>
-                                                </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
-                                        )}
-                                      </td>
-                                    </tr>
-                                  )}
-                                </React.Fragment>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                        <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: '8px' }}>
+                          <div style={{ fontWeight: 800, fontFamily: 'monospace', fontSize: '0.85rem', color: isSelected ? '#1d4ed8' : '#0f172a' }}>
+                            {fmt(cat.total)}
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#2563eb' }}>
+                            IVA: {fmt(cat.iva)}
+                          </div>
+                        </div>
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── PANEL DERECHO: DETALLE DE COMPROBANTES (DETALLE) ── */}
+              <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column' }}>
+                
+                {/* Cabecera del Panel Detalle */}
+                <div style={{ padding: '1.25rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '1.8rem', background: '#ffffff', padding: '6px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>{activeCat.icono}</span>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>{activeCat.nombre}</h3>
+                        <span style={{ background: '#e2e8f0', color: '#475569', fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px' }}>
+                          {filteredCatItems.length} facturas
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px', display: 'flex', gap: '12px' }}>
+                        <span>Subtotal Base: <strong style={{ color: '#1e293b' }}>{fmt(activeCat.subtotal)}</strong></span>
+                        <span>IVA Acreditable: <strong style={{ color: '#2563eb' }}>{fmt(activeCat.iva)}</strong></span>
+                      </div>
+                    </div>
                   </div>
-                );
-              })}
-          </div>
-        )}
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Total Liquidado</div>
+                    <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                      {fmt(activeCat.total)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabla Limpia de Comprobantes */}
+                <div className="table-responsive" style={{ maxHeight: '640px', overflowY: 'auto' }}>
+                  <table className="sat-table" style={{ margin: 0, fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#ffffff', position: 'sticky', top: 0, zIndex: 2, borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '0.72rem', textTransform: 'uppercase' }}>
+                        <th style={{ width: '30px' }}></th>
+                        <th style={{ width: '95px' }}>Fecha</th>
+                        <th>Proveedor / Emisor</th>
+                        <th style={{ width: '90px' }}>Método</th>
+                        <th style={{ width: '120px' }}>Deducibilidad</th>
+                        <th className="text-right" style={{ width: '105px' }}>Subtotal</th>
+                        <th className="text-right" style={{ width: '85px' }}>IVA</th>
+                        <th className="text-right" style={{ width: '105px' }}>Total</th>
+                        <th className="text-center" style={{ width: '75px' }}>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCatItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} style={{ textAlign: 'center', padding: '3rem 1rem', color: '#94a3b8' }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>🔍</div>
+                            <div>No se encontraron comprobantes para este rubro o filtro</div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredCatItems.map((item, idx) => {
+                          const rowId = item.uuid || `det-${idx}`;
+                          const isRowExp = expandedRows[rowId];
+                          const isDed = item.es_deducible_fiscal !== false;
+                          const isCatView = selectedCategory !== 'ALL' && selectedCategory !== 'no_deducible';
+                          const subtotalRow = isCatView && item.subtotal_rubro != null ? item.subtotal_rubro : item.subtotal;
+                          const ivaRow = isCatView && item.iva_rubro != null ? item.iva_rubro : item.iva;
+                          const totalRow = isCatView && item.total_rubro != null ? item.total_rubro : item.total;
+                          const isMultiItem = isCatView && Math.abs((item.total || 0) - totalRow) > 1.0;
+
+                          return (
+                            <React.Fragment key={rowId}>
+                              <tr
+                                onClick={() => toggleRow(rowId)}
+                                style={{
+                                  cursor: 'pointer',
+                                  background: isRowExp ? '#f8fafc' : (isDed ? '#ffffff' : '#fffbeb'),
+                                  borderBottom: isRowExp ? 'none' : '1px solid #f1f5f9'
+                                }}
+                              >
+                                <td style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.65rem' }}>
+                                  {isRowExp ? '▼' : '▶'}
+                                </td>
+                                <td style={{ fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>{item.fecha}</td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.emisor}</span>
+                                    {isMultiItem && (
+                                      <span style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }} title={`Factura total de ${fmt(item.total)} con múltiples rubros`}>
+                                        Partida (Total CFDI: {fmt(item.total)})
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                    {item.conceptos_rubro?.[0]?.desc 
+                                      ? `${item.conceptos_rubro[0].desc.slice(0, 55)}${item.conceptos_rubro[0].desc.length > 55 ? '...' : ''}` 
+                                      : (item.conceptos?.[0]?.desc ? `${item.conceptos[0].desc.slice(0, 55)}...` : (item.raw_cfdi?.emisor_rfc || ''))}
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className={`sat-badge ${item.metodo === 'PUE' ? 'sat-badge-green' : 'sat-badge-blue'}`} style={{ fontSize: '0.68rem' }}>
+                                    {item.metodo}
+                                  </span>
+                                </td>
+                                <td>
+                                  {isDed ? (
+                                    <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 700 }}>✓ Deducible</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.7rem', color: '#dc2626', fontWeight: 800 }}>⚠️ Efectivo 01</span>
+                                  )}
+                                </td>
+                                <td className="text-right mono">{fmt(subtotalRow)}</td>
+                                <td className="text-right mono" style={{ color: '#2563eb' }}>{fmt(ivaRow)}</td>
+                                <td className="text-right mono font-bold" style={{ color: '#0f172a' }}>{fmt(totalRow)}</td>
+                                <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                    style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: '4px', cursor: 'pointer' }}
+                                  >
+                                    🔍 CFDI
+                                  </button>
+                                </td>
+                              </tr>
+
+                              {isRowExp && (
+                                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                                  <td colSpan={9} style={{ padding: '0.85rem 1.25rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                                      <div style={{ fontSize: '0.78rem', color: '#475569' }}>
+                                        <b>UUID:</b> <span style={{ fontFamily: 'monospace', color: '#1d4ed8' }}>{item.uuid}</span> • <b>RFC:</b> {item.raw_cfdi?.emisor_rfc || item.rfc_emisor} • <b>Uso:</b> {item.uso_cfdi} • <b>Pago:</b> {item.forma_pago}
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button
+                                          onClick={() => item.raw_cfdi && setSelectedCfdi(item.raw_cfdi)}
+                                          style={{ padding: '3px 8px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                          Detalle
+                                        </button>
+                                        <button
+                                          onClick={() => item.raw_cfdi && setViewingXml(item.raw_cfdi)}
+                                          style={{ padding: '3px 8px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                                        >
+                                          XML
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {(item.conceptos || []).length > 0 && (
+                                      <table style={{ width: '100%', fontSize: '0.75rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                                        <thead>
+                                          <tr style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.7rem' }}>
+                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Clave SAT</th>
+                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Descripción de la Partida</th>
+                                            <th style={{ padding: '4px 8px', textAlign: 'left' }}>Rubro Asignado</th>
+                                            <th style={{ padding: '4px 8px', textAlign: 'right' }}>Importe Partida</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {item.conceptos.map((c, ci) => {
+                                            const cCat = getConceptoCat(c, item);
+                                            const isThisCat = isCatView && cCat.id === selectedCategory;
+                                            return (
+                                              <tr key={ci} style={{ borderBottom: '1px solid #f1f5f9', background: isThisCat ? '#eff6ff' : 'transparent' }}>
+                                                <td style={{ padding: '5px 8px', color: '#64748b', fontFamily: 'monospace' }}>{c.clave || '—'}</td>
+                                                <td style={{ padding: '5px 8px', color: '#0f172a', fontWeight: isThisCat ? 700 : 400 }}>{c.desc}</td>
+                                                <td style={{ padding: '5px 8px' }}>
+                                                  <span style={{ fontSize: '0.7rem', color: cCat.color || '#475569', fontWeight: 600 }}>
+                                                    {cCat.icono} {cCat.nombre}
+                                                  </span>
+                                                </td>
+                                                <td style={{ padding: '5px 8px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: isThisCat ? '#1d4ed8' : '#334155' }}>
+                                                  {fmt(c.subtotal_partida != null ? c.subtotal_partida : c.imp)}
+                                                </td>
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    )}
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          );
+        })()}
 
         {/* ── MODO 2: AGRUPADO POR PROVEEDOR ── */}
         {viewMode === 'proveedor' && (

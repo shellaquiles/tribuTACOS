@@ -197,3 +197,31 @@ class AcusePagoSAT(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     client = relationship("Client")
+
+
+class CatalogoSatClave(Base):
+    __tablename__ = "catalogo_sat_claves"
+
+    clave = Column(String(20), primary_key=True, index=True) # Clave de 8 dígitos, 4 dígitos o 2 dígitos
+    nivel = Column(String(20), index=True) # 'producto' | 'familia' | 'segmento'
+    categoria_id = Column(String(50), index=True, nullable=False) # ej. 'vuelos_aviones', 'computo_hardware'
+    nombre = Column(String(150), nullable=False) # ej. 'Boletos de Avión y Vuelos'
+    icono = Column(String(10), default="📋")
+    color = Column(String(20), default="#475569")
+    descripcion_sat = Column(String(300), nullable=True)
+    palabras_similares = Column(Text, nullable=True)
+    tipo_gasto = Column(String(50), default="operativo") # 'operativo' | 'inversion' | 'viaticos' | 'financiero'
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "clave": self.clave,
+            "nivel": self.nivel,
+            "id": self.categoria_id,
+            "nombre": self.nombre,
+            "icono": self.icono,
+            "color": self.color,
+            "descripcion_sat": self.descripcion_sat,
+            "palabras_similares": self.palabras_similares,
+            "tipo_gasto": self.tipo_gasto
+        }
