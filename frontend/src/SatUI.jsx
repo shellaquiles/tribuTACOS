@@ -188,7 +188,7 @@ export const TabNavigation = ({ tabs, activeTab, onTabChange }) => (
 export const SueldosSection = ({ data, year }) => {
   const [selectedEmployer, setSelectedEmployer] = useState('Global');
 
-  const { totalBruto, totalDeducciones, totalVales, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries, tiempo } = useMemo(() => {
+  const { totalBruto, totalDeducciones, totalVales, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, latestSalaries, tiempo, nominaMensualData } = useMemo(() => {
     if (!data) return {};
     
     let targetRecibos = [];
@@ -205,18 +205,19 @@ export const SueldosSection = ({ data, year }) => {
          tmpKpi = { ingresos: emp.gravado + emp.exento, gravado: emp.gravado, exento: emp.exento, isr: emp.isr };
          
          let latestRecibo = null;
-         // Buscar el recibo regular más reciente (excluyendo finiquitos y liquidaciones)
-         for (let i = emp.recibos.length - 1; i >= 0; i--) {
-            const r = emp.recibos[i];
-            const isFiniquito = r.percepciones.some(p => p.concepto.toLowerCase().includes('finiquito') || p.concepto.toLowerCase().includes('liquidac'));
-            if (r.dias_pagados > 0 && r.percepciones.some(p => p.tipo === '001') && !isFiniquito) {
+         const rList = emp.recibos || [];
+         for (let i = rList.length - 1; i >= 0; i--) {
+            const r = rList[i];
+            const percs = r.percepciones || [];
+            const isFiniquito = percs.some(p => p && (p.concepto || '').toLowerCase().includes('finiquito') || (p?.concepto || '').toLowerCase().includes('liquidac'));
+            if (r.dias_pagados > 0 && percs.some(p => p && p.tipo === '001') && !isFiniquito) {
                 latestRecibo = r;
                 break;
             }
          }
          // Fallback si todos son irregulares
-         if (!latestRecibo && emp.recibos.length > 0) {
-             latestRecibo = emp.recibos[emp.recibos.length - 1];
+         if (!latestRecibo && rList.length > 0) {
+             latestRecibo = rList[rList.length - 1];
          }
 
          if (latestRecibo && latestRecibo.raw_cfdi) {
@@ -225,21 +226,22 @@ export const SueldosSection = ({ data, year }) => {
             sal.sdi = raw.salario_diario_integrado;
             
             // Calcular SD estimado sumando TODOS los nodos 001 (Sueldo, Vacaciones ordinarias, etc.)
-            const sueldos001 = latestRecibo.percepciones.filter(p => p.tipo === '001');
-            const valSueldo = sueldos001.reduce((acc, p) => acc + (p.total || (p.gravado + p.exento)), 0);
+            const sueldos001 = (latestRecibo.percepciones || []).filter(p => p && p.tipo === '001');
+            const valSueldo = sueldos001.reduce((acc, p) => acc + (p.total || (p.gravado + p.exento) || 0), 0);
             sal.sd = latestRecibo.dias_pagados > 0 ? (valSueldo / latestRecibo.dias_pagados).toFixed(2) : '-';
          }
        }
     }
 
-    const allPercs = targetRecibos.flatMap(r => r.percepciones);
-    const allDeds = targetRecibos.flatMap(r => r.deducciones);
+    const allPercs = (targetRecibos || []).flatMap(r => r.percepciones || []).filter(Boolean);
+    const allDeds = (targetRecibos || []).flatMap(r => r.deducciones || []).filter(Boolean);
 
     const calcPercs = Object.values(
        allPercs.reduce((acc, p) => {
+         if (!p) return acc;
          const tipoClave = p.tipo || 'S/C';
          if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, gravado: 0, exento: 0, items: [] };
-         acc[tipoClave].total += p.total || 0;
+         acc[tipoClave].total += (p.total || (p.gravado + p.exento) || 0);
          acc[tipoClave].gravado += p.gravado || 0;
          acc[tipoClave].exento += p.exento || 0;
          if (p.concepto) acc[tipoClave].items.push(p.concepto.trim());
@@ -249,9 +251,10 @@ export const SueldosSection = ({ data, year }) => {
 
     const calcDeds = Object.values(
        allDeds.reduce((acc, d) => {
+         if (!d) return acc;
          const tipoClave = d.tipo || 'S/C';
          if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, items: [] };
-         acc[tipoClave].total += d.importe || 0;
+         acc[tipoClave].total += (d.importe || d.total || 0);
          if (d.concepto) acc[tipoClave].items.push(d.concepto.trim());
          return acc;
        }, {})
@@ -261,9 +264,29 @@ export const SueldosSection = ({ data, year }) => {
     const tDed = calcDeds.reduce((acc, d) => acc + d.total, 0);
     const tVales = calcPercs.find(p => p.clave === '029')?.total || 0;
 
-    const targetRecibosConSueldo = targetRecibos.filter(r => r.percepciones && r.percepciones.some(p => p.tipo === '001'));
+    const targetRecibosConSueldo = (targetRecibos || []).filter(r => r.percepciones && r.percepciones.some(p => p && p.tipo === '001'));
     const totalDias = targetRecibosConSueldo.reduce((acc, r) => acc + (parseFloat(r.dias_pagados) || 0), 0);
-    const meses = (totalDias / 30).toFixed(1);
+    const meses = totalDias > 0 ? (totalDias / 30).toFixed(1) : ((targetRecibos || []).length > 0 ? ((targetRecibos.length) / 2).toFixed(1) : '1');
+
+    const mLabels = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const nominaMensualData = mLabels.map((m, idx) => {
+      const mesNum = idx + 1;
+      const recibosMes = (targetRecibos || []).filter(r => {
+        const rm = parseInt((r.fecha || '').split('-')[1]);
+        return rm === mesNum;
+      });
+      const brutoMes = recibosMes.reduce((s, r) => s + (r.total_bruto || (r.gravado + r.exento) || 0), 0);
+      const isrMes = recibosMes.reduce((s, r) => s + (r.isr_retenido || 0), 0);
+      const netoMes = recibosMes.reduce((s, r) => s + (r.neto || (r.total_bruto - r.isr_retenido) || 0), 0);
+      const otrasDed = Math.max(0, Math.round((brutoMes - isrMes - netoMes) * 100) / 100);
+      return { 
+        name: m, 
+        'Neto en Cuenta': netoMes, 
+        'ISR Retenido': isrMes, 
+        'Otras Retenciones': otrasDed,
+        'Sueldo Bruto': brutoMes 
+      };
+    });
 
     return { 
       percepcionesPorTipo: calcPercs, 
@@ -271,10 +294,11 @@ export const SueldosSection = ({ data, year }) => {
       kpiData: tmpKpi, 
       totalBruto: tBruto, 
       totalDeducciones: tDed, 
-      totalVales: tVales,
+      totalVales: tVales, 
       neto: tBruto - tDed - tVales, 
       latestSalaries: sal, 
-      tiempo: { totalDias, meses } 
+      tiempo: { totalDias, meses },
+      nominaMensualData
     };
   }, [data, selectedEmployer]);
 
@@ -324,7 +348,7 @@ export const SueldosSection = ({ data, year }) => {
         </div>
       )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem', alignItems: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,1) 100%)', backdropFilter: 'blur(12px)', borderRadius: '24px', padding: '2.5rem 2rem', border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)', marginBottom: '3rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem', alignItems: 'center', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,1) 100%)', backdropFilter: 'blur(12px)', borderRadius: '24px', padding: '2.5rem 2rem', border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)', marginBottom: '2.5rem' }}>
          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Masa Bruta Anual</span>
             <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalBruto)}</span>
@@ -372,6 +396,81 @@ export const SueldosSection = ({ data, year }) => {
         { label: 'Ingreso exento', value: kpiData.exento },
         { label: 'ISR retenido', value: kpiData.isr, accent: 'kpi-danger' },
       ]} />
+
+      {/* ── GRÁFICA DE EVOLUCIÓN MENSUAL DE NÓMINA (APILADA) ── */}
+      {(() => {
+        const mesesConSueldo = (nominaMensualData || []).filter(d => d['Sueldo Bruto'] > 0).length || 1;
+        const promedioSueldoBruto = totalBruto > 0 ? (totalBruto / mesesConSueldo) : 0;
+        const totalNetoCobrado = (nominaMensualData || []).reduce((s, d) => s + (d['Neto en Cuenta'] || 0), 0);
+        const promedioSueldoNeto = totalNetoCobrado > 0 ? (totalNetoCobrado / mesesConSueldo) : 0;
+
+        return (
+          <div style={{ background: 'white', padding: '1.5rem 1.75rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', marginTop: '2rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h4 style={{ margin: '0 0 4px 0', color: '#0f172a', fontSize: '1rem', fontWeight: 800 }}>
+                  📊 Composición Mensual de Nómina — Neto + Retenciones = Sueldo Bruto ({year})
+                </h4>
+                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Barras apiladas por componente con líneas de promedio mensual bruto y neto.</span>
+              </div>
+              <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.85rem' }}>
+                <span style={{ color: '#64748b' }}>
+                  Prom. Bruto: <strong style={{ color: '#6366f1', fontWeight: 800 }}>{fmt(promedioSueldoBruto)}</strong>
+                </span>
+                <span style={{ color: '#64748b' }}>
+                  Prom. Neto: <strong style={{ color: '#10b981', fontWeight: 800 }}>{fmt(promedioSueldoNeto)}</strong>
+                </span>
+                <span style={{ color: '#64748b' }}>
+                  Total Anual: <strong style={{ color: '#0f172a', fontWeight: 800 }}>{fmt(totalBruto)}</strong>
+                </span>
+              </div>
+            </div>
+            <ResponsiveContainer width='100%' height={290}>
+              <ComposedChart data={nominaMensualData} margin={{ top: 15, right: 20, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#e2e8f0' />
+                <XAxis dataKey='name' tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(val, name) => [fmt(val), name]} cursor={{ fill: '#f8fafc' }} />
+                <Legend iconType='circle' wrapperStyle={{ fontSize: '12px', fontWeight: 600, paddingTop: '10px' }} />
+                <Bar dataKey='Neto en Cuenta' stackId='nomina' fill='#10b981' name='Neto en Cuenta' />
+                <Bar dataKey='ISR Retenido' stackId='nomina' fill='#ef4444' name='ISR Retenido' />
+                <Bar dataKey='Otras Retenciones' stackId='nomina' fill='#f59e0b' radius={[4, 4, 0, 0]} name='Otras Retenciones (IMSS/Ahorro)' />
+                <Line type='monotone' dataKey='Sueldo Bruto' stroke='#6366f1' strokeWidth={3} dot={{ r: 4, fill: '#6366f1' }} name='Sueldo Bruto Total' />
+                {promedioSueldoBruto > 0 && (
+                  <ReferenceLine
+                    y={promedioSueldoBruto}
+                    stroke="#6366f1"
+                    strokeDasharray="4 4"
+                    strokeWidth={2}
+                    label={{
+                      position: 'insideTopLeft',
+                      value: `Prom. Bruto: ${fmt(promedioSueldoBruto)}`,
+                      fill: '#4338ca',
+                      fontSize: 11,
+                      fontWeight: 800
+                    }}
+                  />
+                )}
+                {promedioSueldoNeto > 0 && (
+                  <ReferenceLine
+                    y={promedioSueldoNeto}
+                    stroke="#10b981"
+                    strokeDasharray="4 4"
+                    strokeWidth={2}
+                    label={{
+                      position: 'insideBottomLeft',
+                      value: `Prom. Neto: ${fmt(promedioSueldoNeto)}`,
+                      fill: '#065f46',
+                      fontSize: 11,
+                      fontWeight: 800
+                    }}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
       
       {selectedEmployer !== 'Global' && latestSalaries && (latestSalaries.sbc || latestSalaries.sdi || latestSalaries.sd) && (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '1.5rem', marginBottom: '2.5rem' }}>
@@ -463,22 +562,24 @@ const ReciboNomina = ({ recibo, onViewCfdi, onViewXml }) => {
             <strong>{recibo.fecha}</strong>
             <span>Periodo: {recibo.fecha_inicial} - {recibo.fecha_final} ({recibo.dias_pagados} días)</span>
           </div>
-          <div className="nomina-kpis">
-            <div className="nomina-kpi-min">
+          <div className="nomina-kpis" style={{ display: 'flex', gap: '1.75rem', alignItems: 'center' }}>
+            <div className="nomina-kpi-min" style={{ minWidth: '90px', textAlign: 'right' }}>
               <span className="label">Bruto</span>
               <span className="val">{fmt(recibo.total_bruto)}</span>
             </div>
-            {recibo.vales > 0 && (
-              <div className="nomina-kpi-min">
-                <span className="label">Vales (029)</span>
+            <div className="nomina-kpi-min" style={{ minWidth: '95px', textAlign: 'right' }}>
+              <span className="label">Vales (029)</span>
+              {recibo.vales > 0 ? (
                 <span className="val text-danger">-{fmt(recibo.vales)}</span>
-              </div>
-            )}
-            <div className="nomina-kpi-min">
+              ) : (
+                <span className="val" style={{ color: '#cbd5e1', fontWeight: 400 }}>—</span>
+              )}
+            </div>
+            <div className="nomina-kpi-min" style={{ minWidth: '95px', textAlign: 'right' }}>
               <span className="label">Deducciones</span>
               <span className="val text-danger">-{fmt(recibo.total_deducciones)}</span>
             </div>
-            <div className="nomina-kpi-min highlighted">
+            <div className="nomina-kpi-min highlighted" style={{ minWidth: '110px', textAlign: 'right' }}>
               <span className="label">NETO A PAGAR</span>
               <span className="val">{fmt(recibo.neto)}</span>
             </div>
