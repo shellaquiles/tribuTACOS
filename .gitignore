@@ -184,7 +184,6 @@ frontend/node_modules/
 backend/__pycache__/
 *.log
 .agents/
-/docs/
 backend/reports/
 backend/master_scan_report.json
 backend/draytek_config.json
