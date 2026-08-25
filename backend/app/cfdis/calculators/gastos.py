@@ -2,6 +2,7 @@
 Calculadora de Gastos, Compras y Deducciones Autorizadas (LISR Art. 27 / LIVA Art. 5).
 Evalúa deducibilidad fiscal (medios de pago, combustible, límites en efectivo),
 enriquece conceptos con el Catálogo SAT y procesa complementos de Pago 2.0.
+Pre-calcula matriz mensual, resumen de categorías SAT y concentración de proveedores.
 """
 
 from typing import Dict, List, Any, Optional
@@ -50,6 +51,7 @@ def calcular_gastos(
     - Evaluación de deducibilidad Art. 27 LISR
     - Partidas individuales enriquecidas con taxonomía SAT
     - Acreditamiento fiscal de IVA
+    - Pre-cálculo de matriz mensual y resumen por categorías para el frontend
     """
     lista_gastos = []
     user_rfc_upper = user_rfc.upper()
@@ -211,9 +213,97 @@ def calcular_gastos(
             except Exception:
                 pass
 
+    # ─── PRE-CÁLCULO DE RESUMEN POR CATEGORÍAS Y PROVEEDORES ───
+    cat_summary_map: Dict[str, Dict[str, Any]] = {}
+    proveedores_map: Dict[str, Dict[str, Any]] = {}
+
+    for g in lista_gastos:
+        c_info = g.get('categoria_gasto') or {'id': 'otros_operativos', 'nombre': 'Otros Gastos Operativos', 'icono': '📋', 'color': '#64748b'}
+        c_id = c_info.get('id', 'otros_operativos')
+
+        if c_id not in cat_summary_map:
+            cat_summary_map[c_id] = {
+                'id': c_id,
+                'nombre': c_info.get('nombre', 'Otros Gastos'),
+                'icono': c_info.get('icono', '📋'),
+                'color': c_info.get('color', '#64748b'),
+                'subtotal': 0.0,
+                'iva': 0.0,
+                'total': 0.0,
+                'subtotal_deducible': 0.0,
+                'comprobantes_count': 0
+            }
+        cat_summary_map[c_id]['subtotal'] += g.get('subtotal', 0.0)
+        cat_summary_map[c_id]['iva'] += g.get('iva', 0.0)
+        cat_summary_map[c_id]['total'] += g.get('total', 0.0)
+        cat_summary_map[c_id]['subtotal_deducible'] += g.get('subtotal_deducible_fiscal', 0.0)
+        cat_summary_map[c_id]['comprobantes_count'] += 1
+
+        p_rfc = g.get('rfc_emisor') or 'XAXX010101000'
+        p_nom = g.get('emisor') or p_rfc
+        if p_rfc not in proveedores_map:
+            proveedores_map[p_rfc] = {
+                'rfc': p_rfc,
+                'nombre': p_nom,
+                'subtotal': 0.0,
+                'iva': 0.0,
+                'total': 0.0,
+                'comprobantes_count': 0
+            }
+        proveedores_map[p_rfc]['subtotal'] += g.get('subtotal', 0.0)
+        proveedores_map[p_rfc]['iva'] += g.get('iva', 0.0)
+        proveedores_map[p_rfc]['total'] += g.get('total', 0.0)
+        proveedores_map[p_rfc]['comprobantes_count'] += 1
+
+    resumen_categorias = sorted(
+        [
+            {
+                **v,
+                'subtotal': round(v['subtotal'], 2),
+                'iva': round(v['iva'], 2),
+                'total': round(v['total'], 2),
+                'subtotal_deducible': round(v['subtotal_deducible'], 2)
+            }
+            for v in cat_summary_map.values()
+        ],
+        key=lambda x: x['subtotal'],
+        reverse=True
+    )
+
+    top_proveedores = sorted(
+        [
+            {
+                **v,
+                'subtotal': round(v['subtotal'], 2),
+                'iva': round(v['iva'], 2),
+                'total': round(v['total'], 2)
+            }
+            for v in proveedores_map.values()
+        ],
+        key=lambda x: x['subtotal'],
+        reverse=True
+    )
+
+    m_labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    matriz_mensual = [
+        {
+            'name': m_labels[m - 1],
+            'mes_num': m,
+            'egresos_brutos': round(mensual_pfae[m]['egresos'], 2),
+            'egresos_deducibles': round(mensual_pfae[m]['egresos_deducibles'], 2),
+            'egresos_no_deducibles': round(mensual_pfae[m]['egresos_no_deducibles'], 2),
+            'iva_acreditable_fiscal': round(mensual_pfae[m]['iva_acred_fiscal'], 2),
+            'iva_acreditable_bruto': round(mensual_pfae[m]['iva_acred'], 2)
+        }
+        for m in range(1, 13)
+    ]
+
     return {
         'lista_gastos': lista_gastos,
-        'total_egresos_deducibles': sum(v['egresos_deducibles'] for v in mensual_pfae.values()),
-        'total_egresos_brutos': sum(v['egresos'] for v in mensual_pfae.values()),
-        'total_iva_acreditable_fiscal': sum(v['iva_acred_fiscal'] for v in mensual_pfae.values())
+        'resumen_categorias': resumen_categorias,
+        'top_proveedores': top_proveedores,
+        'matriz_mensual': matriz_mensual,
+        'total_egresos_deducibles': round(sum(v['egresos_deducibles'] for v in mensual_pfae.values()), 2),
+        'total_egresos_brutos': round(sum(v['egresos'] for v in mensual_pfae.values()), 2),
+        'total_iva_acreditable_fiscal': round(sum(v['iva_acred_fiscal'] for v in mensual_pfae.values()), 2)
     }

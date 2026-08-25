@@ -225,3 +225,67 @@ class CatalogoSatClave(Base):
             "palabras_similares": self.palabras_similares,
             "tipo_gasto": self.tipo_gasto
         }
+
+
+class CfdiExclusion(Base):
+    __tablename__ = "cfdi_exclusions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(String(50), ForeignKey("clients.id"), index=True, nullable=False)
+    uuid = Column(String(100), index=True, nullable=False)
+    motivo = Column(String(250), nullable=True)
+    tipo = Column(String(30), default="ignorar")  # 'ignorar' | 'forzar_deducible' | 'forzar_no_deducible'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    client = relationship("Client")
+
+    __table_args__ = (
+        UniqueConstraint('client_id', 'uuid', name='_client_uuid_exclusion_uc'),
+    )
+
+
+class ConstanciaFiscalExterna(Base):
+    __tablename__ = "constancias_fiscales_externas"
+
+    id = Column(String(100), primary_key=True)
+    client_id = Column(String(50), ForeignKey("clients.id"), index=True, nullable=False)
+    year = Column(String(4), index=True, nullable=False)
+    uso_cfdi = Column(String(10), default="D06")
+    emisor_rfc = Column(String(13), nullable=True)
+    emisor_nombre = Column(String(250), nullable=True)
+    fecha = Column(String(30), nullable=True)
+    monto = Column(Float, default=0.0)
+    descripcion = Column(String(300), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    client = relationship("Client")
+
+
+class TarifaIsrAnual(Base):
+    __tablename__ = "tarifas_isr_anuales"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    year = Column(String(4), index=True, nullable=False)
+    limite_inferior = Column(Float, nullable=False)
+    limite_superior = Column(Float, nullable=False)
+    cuota_fija = Column(Float, default=0.0)
+    porcentaje_excedente = Column(Float, default=0.0)
+    orden = Column(Integer, default=0)
+
+    __table_args__ = (
+        UniqueConstraint('year', 'orden', name='_year_tarifa_orden_uc'),
+    )
+
+
+class ParametroSat(Base):
+    __tablename__ = "parametros_sat"
+
+    year = Column(String(4), primary_key=True)
+    uma_diaria = Column(Float, nullable=False)
+    uma_mensual = Column(Float, nullable=False)
+    uma_anual = Column(Float, nullable=False)
+    uma_5_anual = Column(Float, nullable=False)
+    tope_deducciones_pct = Column(Float, default=15.0)
+    salario_minimo = Column(Float, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+

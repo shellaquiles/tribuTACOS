@@ -11,55 +11,19 @@ import { exportEgresos } from '../../csvExport';
 
 export function getConceptoCat(c, parentItem) {
   if (c?.categoria_gasto && c.categoria_gasto.id) return c.categoria_gasto;
-
-  const clave = String(c?.clave || '').trim();
-  const desc = String(c?.desc || '').toUpperCase();
-
-  // 1. CLAVES SAT DE 8 Y 6 DÍGITOS (MÁXIMA PRIORIDAD)
-  if (clave.startsWith('801615') || clave.startsWith('8413')) {
-    return { id: 'seguros_polizas', nombre: 'Seguros y Fianzas', icono: '🛡️', color: '#0d9488', tipo: 'operativo' };
-  }
-  if (clave === '78111811' || /RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO|AUTO RENTA/.test(desc)) {
-    return { id: 'renta_vehiculos', nombre: 'Renta de Vehículos y Autos', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
-  }
-  if (clave === '78111808' || clave === '78111804' || /UBER|DIDI|CABIFY|TAXI|TARIFA/.test(desc)) {
-    return { id: 'movilidad_taxis', nombre: 'Plataformas de Movilidad y Taxis', icono: '🚖', color: '#eab308', tipo: 'viaticos' };
-  }
-  if (clave.startsWith('151015') || /GASOLINA|COMBUSTIBLE|DIESEL/.test(desc)) {
-    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f97316', tipo: 'operativo' };
-  }
-  if (clave.startsWith('951116') || clave.startsWith('781115') || clave.startsWith('9011') || /CASETA|PEAJE|AUTOPISTA|TAG|TELEVIA|AEROMEXICO|VOLARIS|VIVAEROBUS|VUELO|HOTEL|HOSPEDAJE|RESTAURANT/.test(desc)) {
-    return { id: 'viaticos_viajes', nombre: 'Viáticos, Viajes y Peajes', icono: '✈️', color: '#64748b', tipo: 'viaticos' };
-  }
-  if (clave.startsWith('8111') || /AWS|AZURE|GOOGLE CLOUD|HOSTING|DOMINIO|SOFTWARE|SAAS|LICENCIA|GITHUB|VERCEL/.test(desc)) {
-    return { id: 'software_ti', nombre: 'Software, Nube e Infraestructura TI', icono: '💻', color: '#8b5cf6', tipo: 'operativo' };
-  }
-  if (clave.startsWith('4321') || clave.startsWith('4322') || clave.startsWith('32') || /LAPTOP|COMPUTADORA|MONITOR|DISCO DURO|CIRCUITO|TRANSISTOR|ELECTRONICA/.test(desc)) {
-    return { id: 'computo_hardware', nombre: 'Equipo de Cómputo y Electrónica', icono: '🖥️', color: '#0ea5e9', tipo: 'inversion' };
-  }
-  if (clave.startsWith('8010') || clave.startsWith('8012') || clave.startsWith('8014') || clave.startsWith('8411') || clave.startsWith('8412') || /HONORARIOS|ASESORIA|CONSULTORIA|CONTABILIDAD|LEGAL|AUDITORIA|FACTURACION/.test(desc)) {
-    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
-  }
-
-  // 2. FAMILIAS Y SEGMENTOS UNSPSC (Fallback general)
-  const seg = clave.slice(0, 2);
-  if (seg === '15') return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f97316', tipo: 'operativo' };
-  if (seg === '81') return { id: 'software_ti', nombre: 'Software, Nube e Infraestructura TI', icono: '💻', color: '#8b5cf6', tipo: 'operativo' };
-  if (seg === '43' || seg === '32') return { id: 'computo_hardware', nombre: 'Equipo de Cómputo y Electrónica', icono: '🖥️', color: '#0ea5e9', tipo: 'inversion' };
-  if (seg === '80' || seg === '84' || seg === '82' || seg === '86') return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
-  if (seg === '78' || seg === '90' || seg === '95') return { id: 'viaticos_viajes', nombre: 'Viáticos, Viajes y Peajes', icono: '✈️', color: '#64748b', tipo: 'viaticos' };
-
+  if (parentItem?.categoria_gasto && parentItem.categoria_gasto.id) return parentItem.categoria_gasto;
   return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#475569', tipo: 'operativo' };
 }
 
 export function getGastoCat(item) {
   if (item?.categoria_gasto && item.categoria_gasto.id) return item.categoria_gasto;
   const conceptos = item?.conceptos || [];
-  if (conceptos.length > 0) {
-    return getConceptoCat(conceptos[0], item);
+  if (conceptos.length > 0 && conceptos[0]?.categoria_gasto) {
+    return conceptos[0].categoria_gasto;
   }
   return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b', tipo: 'operativo' };
 }
+
 
 export function EgresosMensualesSection({ data, notasCreditoData, year }) {
   const [activeSubTab, setActiveSubTab] = useState('gastos'); // 'gastos' | 'notas_credito'

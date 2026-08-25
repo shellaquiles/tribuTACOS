@@ -21,14 +21,17 @@ def init_db():
     from app import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
     
-    # Auto-inicializar catálogo SAT si la base de datos es nueva
+    # Auto-inicializar catálogo SAT y parámetros fiscales si la base de datos es nueva
     try:
         from app.catalogos.seed import asegurar_catalogo_sat
+        from app.catalogos.seed_fiscal import asegurar_parametros_fiscales
         db = SessionLocal()
         try:
             asegurar_catalogo_sat(db)
+            asegurar_parametros_fiscales(db)
         finally:
             db.close()
     except Exception as e:
-        print(f"[init_db] Advertencia en auto-seed del catálogo: {e}")
+        print(f"[init_db] Advertencia en auto-seed del catálogo y fiscal: {e}")
+
 

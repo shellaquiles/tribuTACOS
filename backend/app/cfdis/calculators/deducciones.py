@@ -4,8 +4,8 @@ Evalúa claves D01 a D10, motivos de observación (efectivo, clave 99, farmacias
 y aplica topes de ley (5 UMA anuales vs 15% de los ingresos acumulables).
 """
 
-from typing import Dict, List, Any
-from app.cfdis.calculators.tarifas import UMA_5_ANUAL
+from typing import Dict, List, Any, Optional
+from app.cfdis.calculators.tarifas import UMA_5_ANUAL_FALLBACK
 
 CAT_DEDUCCIONES: Dict[str, Dict[str, str]] = {
     'D01': {'nombre': 'Honorarios médicos, dentales y hospitalarios', 'icon': '🏥'},
@@ -25,11 +25,13 @@ def calcular_deducciones_personales(
     all_cfdis: List[Dict[str, Any]],
     year: str,
     total_ingresos_ejercicio: float,
-    include_constancias_externas: bool = False
+    constancias_externas: Optional[List[Dict[str, Any]]] = None,
+    uma_5_anual: Optional[float] = None
 ) -> Dict[str, Any]:
     """
     Procesa las facturas recibidas con uso de CFDI tipo D (D01-D10):
     - Filtra deducciones válidas vs observadas
+    - Agrega constancias y comprobantes fiscales externos registrados en base de datos
     - Agrupa por tipo de deducción
     - Aplica topes de Ley del ISR (Art. 151 último párrafo)
     """
@@ -38,22 +40,26 @@ def calcular_deducciones_personales(
         if (i.get('uso_cfdi') or '').startswith('D') and (i.get('fecha') or '').startswith(year)
     ]
 
-    # Soporte opcional para constancias anuales físicas externas (ej. PPR Insignia Life)
-    if include_constancias_externas and year == '2024' and not any(x.get('emisor_rfc') == 'ILI0805169R6' for x in pers_d_raw):
-        pers_d_raw.append({
-            'uuid': 'ILI-CONSTANCIA-ANUAL-2024',
-            'emisor_rfc': 'ILI0805169R6',
-            'emisor_nombre': 'INSIGNIA LIFE (PLAN PERSONAL DE RETIRO)',
-            'fecha': '2024-12-31',
-            'uso_cfdi': 'D06',
-            'subtotal': 7578.00,
-            'forma_pago': '03',
-            'metodo_pago': 'PUE',
-            'conceptos': [{
-                'desc': 'Aportaciones complementarias a planes personales de retiro (Art. 151 Fracc. V)',
-                'imp': 7578.00
-            }]
-        })
+    # Incorporar constancias fiscales externas provenientes de BD
+    if constancias_externas:
+        for c in constancias_externas:
+            # Asegurar que coincida con el año o fecha
+            c_fecha = c.get('fecha') or f"{year}-12-31"
+            if c_fecha.startswith(year):
+                pers_d_raw.append({
+                    'uuid': c.get('id') or c.get('uuid'),
+                    'emisor_rfc': c.get('emisor_rfc'),
+                    'emisor_nombre': c.get('emisor_nombre'),
+                    'fecha': c_fecha,
+                    'uso_cfdi': c.get('uso_cfdi', 'D06'),
+                    'subtotal': float(c.get('monto') or 0.0),
+                    'forma_pago': c.get('forma_pago', '03'),
+                    'metodo_pago': c.get('metodo_pago', 'PUE'),
+                    'conceptos': c.get('conceptos') or [{
+                        'desc': c.get('descripcion') or 'Constancia externa deducible',
+                        'imp': float(c.get('monto') or 0.0)
+                    }]
+                })
 
     pers_d_validas = []
     pers_d_observadas = []
@@ -101,7 +107,7 @@ def calcular_deducciones_personales(
     pers_d_total_observado = sum(x['monto'] for x in pers_d_observadas)
 
     limite_15_pct = total_ingresos_ejercicio * 0.15
-    limite_5_umas = UMA_5_ANUAL.get(year, 198031.80)
+    limite_5_umas = uma_5_anual if uma_5_anual is not None else UMA_5_ANUAL_FALLBACK.get(year, 198031.80)
     tope_legal = min(limite_15_pct, limite_5_umas) if total_ingresos_ejercicio > 0 else limite_5_umas
     monto_deducible_efectivo = min(pers_d_total_valido, tope_legal)
 

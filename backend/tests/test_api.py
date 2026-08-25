@@ -50,3 +50,23 @@ def test_get_summary_2024():
     assert "deducciones_personales" in data["sections"]
     assert "summary" in data
     assert "simulacion_anual" in data
+
+
+def test_client_exclusions_and_constancias():
+    """Valida los endpoints de exclusiones y constancias fiscales por cliente."""
+    # 1. Exclusiones
+    res_excl = client.get("/api/clients/default/exclusions")
+    assert res_excl.status_code == 200
+    assert isinstance(res_excl.json(), list)
+
+    # 2. Constancias
+    res_const = client.get("/api/clients/default/constancias?year=2024")
+    assert res_const.status_code == 200
+    assert isinstance(res_const.json(), list)
+
+    # 3. Tarifas SAT Art. 152
+    res_tarifas = client.get("/api/sat/tarifas/2024")
+    assert res_tarifas.status_code == 200
+    tarifas = res_tarifas.json()
+    assert len(tarifas) == 11
+    assert tarifas[0]["limite_inferior"] == 0.01

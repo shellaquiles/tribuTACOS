@@ -1,13 +1,17 @@
 """
 Orquestador Fiscal Principal (Fachada del Motor de CFDIs).
-Coordina las calculadoras de dominio y estructura el resultado para la API y la UI.
+Coordina las calculadoras de dominio inyectando exclusiones, constancias y tarifas desde BD
+y estructura el resultado analítico consolidado para la API y la UI.
 """
 
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Set, Tuple
 from sqlalchemy.orm import Session
 
-from app.models import Cfdi, Client, SummaryCache, DeclaracionAnualSAT
+from app.models import (
+    Cfdi, Client, SummaryCache, DeclaracionAnualSAT,
+    CfdiExclusion, ConstanciaFiscalExterna, TarifaIsrAnual, ParametroSat
+)
 from app.cfdis.calculators import (
     calcular_nomina,
     calcular_honorarios,
@@ -29,10 +33,11 @@ def build_fiscal_summary(
     """
     Construye la radiografía fiscal completa para el cliente y ejercicio fiscal solicitado:
     1. Si use_cache está activo y existe resumen en BD, lo retorna en < 1ms.
-    2. Procesa nóminas, honorarios, notas de crédito, egresos bancarizados, deducciones e intereses.
-    3. Simula pagos provisionales mensuales de ISR e IVA y declaración anual.
-    4. Cruza contra la declaración anual oficial del SAT si existe en BD.
-    5. Actualiza la caché en BD.
+    2. Consulta exclusiones, constancias externas y parámetros de tarifas SAT en BD.
+    3. Procesa nóminas, honorarios, notas de crédito, egresos bancarizados, deducciones e intereses.
+    4. Simula pagos provisionales mensuales de ISR e IVA y declaración anual.
+    5. Cruza contra la declaración anual oficial del SAT si existe en BD.
+    6. Actualiza la caché en BD.
     """
     if use_cache:
         cached = db.query(SummaryCache).filter(
@@ -51,8 +56,47 @@ def build_fiscal_summary(
     ejercicio = str(year)
     user_rfc = client.rfc.upper()
 
+    # ─── CONSULTAR EXCLUSIONES Y CONSTANCIAS EN BD ───
+    exclusions_db = db.query(CfdiExclusion).filter(CfdiExclusion.client_id == client.id).all()
+    ignored_uuids: Set[str] = {e.uuid for e in exclusions_db if e.tipo == 'ignorar'}
+
+    constancias_db = db.query(ConstanciaFiscalExterna).filter(
+        ConstanciaFiscalExterna.client_id == client.id,
+        ConstanciaFiscalExterna.year == ejercicio
+    ).all()
+    constancias_list = [
+        {
+            'id': c.id,
+            'uuid': c.id,
+            'emisor_rfc': c.emisor_rfc,
+            'emisor_nombre': c.emisor_nombre,
+            'fecha': c.fecha or f"{ejercicio}-12-31",
+            'uso_cfdi': c.uso_cfdi,
+            'monto': c.monto,
+            'descripcion': c.descripcion
+        }
+        for c in constancias_db
+    ]
+
+    # ─── CONSULTAR PARÁMETROS SAT Y TARIFAS EN BD ───
+    param_sat = db.query(ParametroSat).filter(ParametroSat.year == ejercicio).first()
+    uma_5_anual = param_sat.uma_5_anual if param_sat else None
+
+    tarifas_rows = db.query(TarifaIsrAnual).filter(TarifaIsrAnual.year == ejercicio).order_by(TarifaIsrAnual.orden).all()
+    tarifa_actual: Optional[List[Tuple[float, float, float, float]]] = None
+    if tarifas_rows:
+        tarifa_actual = [
+            (
+                r.limite_inferior,
+                float('inf') if r.limite_superior >= 999999999 else r.limite_superior,
+                r.cuota_fija,
+                r.porcentaje_excedente
+            )
+            for r in tarifas_rows
+        ]
+
     # 1. Sueldos y Salarios (Nómina)
-    res_nomina = calcular_nomina(all_cfdis, ejercicio)
+    res_nomina = calcular_nomina(all_cfdis, ejercicio, ignored_uuids=ignored_uuids)
     tg = res_nomina['total_gravado']
     te = res_nomina['total_exento']
     isr_n = res_nomina['isr_retenido']
@@ -86,13 +130,19 @@ def build_fiscal_summary(
 
     # 6. Deducciones Personales (Art. 151 LISR)
     total_ingresos_ejercicio = tg + te + total_ing + total_otros_ingresos + real_i
-    res_deducciones = calcular_deducciones_personales(all_cfdis, ejercicio, total_ingresos_ejercicio)
+    res_deducciones = calcular_deducciones_personales(
+        all_cfdis=all_cfdis,
+        year=ejercicio,
+        total_ingresos_ejercicio=total_ingresos_ejercicio,
+        constancias_externas=constancias_list,
+        uma_5_anual=uma_5_anual
+    )
     monto_deducible_efectivo = res_deducciones['total']
     pers_d_total_valido = res_deducciones['total_valido_bruto']
     tope_legal = res_deducciones['tope']['tope_aplicable']
 
     # 7. Simulador de Pagos Provisionales Mensuales
-    simulacion_provisionales = simular_pagos_provisionales(mensual_pfae)
+    simulacion_provisionales = simular_pagos_provisionales(mensual_pfae, tarifa=tarifa_actual)
     total_pagos_prov_isr = sum(m['isr_a_cargo_mes'] for m in simulacion_provisionales)
 
     # 8. Simulador de Declaración Anual
@@ -107,7 +157,8 @@ def build_fiscal_summary(
         pers_d_total_valido=pers_d_total_valido,
         tope_legal=tope_legal,
         total_pagos_provisionales_calculados=total_pagos_prov_isr,
-        total_retenciones_anuales=total_retenciones_anuales
+        total_retenciones_anuales=total_retenciones_anuales,
+        tarifa=tarifa_actual
     )
 
     # 9. Declaración Oficial del SAT en BD (si existe)
@@ -179,8 +230,17 @@ def build_fiscal_summary(
                 "gravado": round(tg, 2),
                 "exento": round(te, 2),
                 "isr_retenido": round(isr_n, 2),
+                "total_bruto": res_nomina.get('total_bruto', round(tg + te, 2)),
+                "total_deducciones": res_nomina.get('total_deducciones', round(isr_n, 2)),
+                "total_vales": res_nomina.get('total_vales', 0.0),
+                "neto": res_nomina.get('neto', round(tg + te - isr_n, 2)),
+                "meses_laborados": res_nomina.get('meses_laborados', 1.0),
+                "total_dias_pagados": res_nomina.get('total_dias_pagados', 0.0),
                 "detalle_exento": det_ex,
                 "detalle": [{**v, "nombre": v.get('nombre_display', k)} for k, v in by_emp.items()],
+                "nomina_mensual_resumen": res_nomina.get('nomina_mensual_resumen', []),
+                "percepciones_por_tipo": res_nomina.get('percepciones_por_tipo', []),
+                "deducciones_por_tipo": res_nomina.get('deducciones_por_tipo', []),
                 "resumen_conceptos": []
             },
             "honorarios": {
@@ -191,7 +251,10 @@ def build_fiscal_summary(
                 "utilidad": round(total_ing - total_egr, 2),
                 "mensual": [{"mes": m, "datos": v} for m, v in mensual_pfae.items()],
                 "detalle": lista_honorarios,
-                "resumen_conceptos": lista_hon_conceptos
+                "resumen_conceptos": lista_hon_conceptos,
+                "analitica_mensual": res_honorarios.get('analitica_mensual', []),
+                "top_clientes": res_honorarios.get('top_clientes', []),
+                "mix_conceptos": res_honorarios.get('mix_conceptos', [])
             },
             "intereses": {
                 "nominal": round(nom_i, 2),
@@ -200,10 +263,13 @@ def build_fiscal_summary(
                 "detalle": []
             },
             "reporte_gastos": lista_gastos,
+            "resumen_categorias_gastos": res_gastos.get('resumen_categorias', []),
+            "top_proveedores_gastos": res_gastos.get('top_proveedores', []),
+            "matriz_mensual_gastos": res_gastos.get('matriz_mensual', []),
             "otros_ingresos": {
                 "total": round(total_otros_ingresos, 2),
                 "detalle": lista_otros_ingresos,
-                "resumen_conceptos": []
+                "resumen_conceptos": res_nc.get('resumen_conceptos', [])
             },
             "deducciones_personales": res_deducciones
         },
