@@ -20,3 +20,15 @@ def get_db():
 def init_db():
     from app import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-inicializar catálogo SAT si la base de datos es nueva
+    try:
+        from app.catalogos.seed import asegurar_catalogo_sat
+        db = SessionLocal()
+        try:
+            asegurar_catalogo_sat(db)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[init_db] Advertencia en auto-seed del catálogo: {e}")
+

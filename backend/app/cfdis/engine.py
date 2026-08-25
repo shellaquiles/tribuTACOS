@@ -266,10 +266,13 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
                 cat_pago_info = clasificar_gasto(p.get('emisor_nombre') or (orig.get('emisor_nombre') if orig else ''), p.get('emisor_rfc') or '', conceptos_to_show)
                 
                 factor_iva_p = (iva / base) if base > 0 else 0.16
+                sum_orig_imp = sum(float(c.get('imp') or 0.0) for c in conceptos_to_show)
+                scale_factor = (base / sum_orig_imp) if (sum_orig_imp > 0 and abs(sum_orig_imp - base) > 1.0) else 1.0
+
                 conceptos_enriquecidos_p = []
                 for c in conceptos_to_show:
                     c_dict = dict(c)
-                    c_imp = float(c_dict.get('imp') or 0.0)
+                    c_imp = round(float(c_dict.get('imp') or 0.0) * scale_factor, 2)
                     c_dict['subtotal_partida'] = c_imp
                     c_dict['iva_partida'] = round(c_imp * factor_iva_p, 2)
                     c_dict['total_partida'] = round(c_imp + c_dict['iva_partida'], 2)
