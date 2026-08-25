@@ -62,18 +62,21 @@ def poblar_catalogo_db(db: Session, force: bool = False) -> int:
     return sembrar_catalogo_sat(db, force=force)
 
 
-def resolver_partida_sat(clave: str, descripcion_concepto: str = "") -> Dict[str, Any]:
+def resolver_partida_sat(
+    clave: str = "",
+    descripcion_concepto: str = "",
+    clave_sat: Optional[str] = None,
+    desc_concepto: Optional[str] = None,
+    uso_cfdi: str = "",
+    **kwargs
+) -> Dict[str, Any]:
     """
     Resuelve la categoría contable, icono, color y tipo de gasto para un concepto
-    siguiendo la jerarquía oficial:
-    1. Clave específica de 8 dígitos (máxima prioridad)
-    2. Familia UNSPSC (4 dígitos)
-    3. Segmento UNSPSC (2 dígitos)
-    4. Análisis semántico por descripción de la partida
-    5. Fallback a 'otros_operativos'
+    siguiendo la jerarquía oficial del SAT.
     """
-    c = str(clave or "").strip()
-    desc_upper = (descripcion_concepto or "").upper()
+    c = str(clave_sat if clave_sat is not None else clave or "").strip()
+    desc_raw = desc_concepto if desc_concepto is not None else descripcion_concepto or ""
+    desc_upper = desc_raw.upper()
 
     # 1. Clave exacta de 8 dígitos en taxonomía prioritaria
     if c in TAXONOMIA_CLAVES_ESPECIFICAS:
@@ -116,44 +119,32 @@ def resolver_partida_sat(clave: str, descripcion_concepto: str = "") -> Dict[str
             "descripcion_sat": sat_data.get("descripcion", info["nombre"])
         }
 
-    # 4. Búsqueda directa en catálogo completo del SAT
-    if c in _CATALOGO_DICT:
-        sat_data = _CATALOGO_DICT[c]
-        desc_sat = sat_data.get("descripcion", "")
-        return {
-            "id": f"sat_{fam}" if fam else "otros_operativos",
-            "nombre": desc_sat if len(desc_sat) <= 35 else f"{desc_sat[:32]}...",
-            "icono": "📋",
-            "color": "#64748b",
-            "tipo": "operativo",
-            "descripcion_sat": desc_sat
-        }
-
-    # 5. Análisis semántico por palabras clave
+    # 4. Análisis semántico por palabras clave
     if any(k in desc_upper for k in ["GASOLINA", "COMBUSTIBLE", "DIESEL", "MAGNA", "PREMIUM"]):
-        return {"id": "combustibles", "nombre": "Combustibles y Gasolinas", "icono": "⛽", "color": "#f97316", "tipo": "operativo"}
-    if any(k in desc_upper for k in ["CASETA", "PEAJE", "AUTOPISTA", "TAG", "TELEVIA"]):
-        return {"id": "casetas_peajes", "nombre": "Casetas, Peajes y Autopistas", "icono": "🛣️", "color": "#64748b", "tipo": "viaticos"}
-    if any(k in desc_upper for k in ["RENTA AUTO", "LEASING", "ARRENDAMIENTO VEHICUL", "PULSE AUDACE", "TIP AUTO"]):
-        return {"id": "arrendamiento_vehiculos", "nombre": "Arrendamiento de Vehículos (Leasing)", "icono": "🚗", "color": "#3b82f6", "tipo": "operativo"}
+        return {"id": "combustibles", "nombre": "Combustibles y Lubricantes", "icono": "⛽", "color": "#f97316", "tipo": "operativo"}
+    if any(k in desc_upper for k in ["CASETA", "PEAJE", "AUTOPISTA", "TAG", "TELEVIA", "AEROMEXICO", "VOLARIS", "VIVAEROBUS", "VUELO", "HOTEL", "HOSPEDAJE", "RESTAURANT"]):
+        return {"id": "viaticos_viajes", "nombre": "Viáticos, Viajes y Peajes", "icono": "✈️", "color": "#64748b", "tipo": "viaticos"}
+    if any(k in desc_upper for k in ["RENTA AUTO", "LEASING", "ARRENDAMIENTO VEHICUL", "PULSE AUDACE", "TIP AUTO", "AUTO RENTA"]):
+        return {"id": "renta_vehiculos", "nombre": "Renta de Vehículos y Autos", "icono": "🚗", "color": "#3b82f6", "tipo": "operativo"}
     if any(k in desc_upper for k in ["UBER", "DIDI", "CABIFY", "TAXI", "TARIFA"]):
-        return {"id": "taxis_plataformas", "nombre": "Plataformas de Movilidad y Taxis", "icono": "🚕", "color": "#f59e0b", "tipo": "viaticos"}
+        return {"id": "movilidad_taxis", "nombre": "Plataformas de Movilidad y Taxis", "icono": "🚖", "color": "#eab308", "tipo": "viaticos"}
     if any(k in desc_upper for k in ["SEGURO", "POLIZA", "COBERTURA", "FIANZA", "QUALITAS", "GNP", "AXA"]):
         return {"id": "seguros_polizas", "nombre": "Seguros y Fianzas", "icono": "🛡️", "color": "#0d9488", "tipo": "operativo"}
-    if any(k in desc_upper for k in ["HONORARIOS", "ASESORIA", "CONSULTORIA", "CONTABILIDAD", "LEGAL", "AUDITORIA"]):
+    if any(k in desc_upper for k in ["HONORARIOS", "ASESORIA", "CONSULTORIA", "CONTABILIDAD", "LEGAL", "AUDITORIA", "FACTURACION"]):
         return {"id": "servicios_profesionales", "nombre": "Servicios Profesionales y Asesoría", "icono": "💼", "color": "#059669", "tipo": "operativo"}
-    if any(k in desc_upper for k in ["HOSTING", "DOMINIO", "AWS", "AZURE", "GOOGLE CLOUD", "SOFTWARE", "SAAS", "LICENCIA"]):
-        return {"id": "software_nube", "nombre": "Software, Nube y Telecomunicaciones", "icono": "🌐", "color": "#8b5cf6", "tipo": "operativo"}
-    if any(k in desc_upper for k in ["TRANSISTOR", "CONECTOR", "CAPACITOR", "RESISTENCIA", "DIODO", "CIRCUITO"]):
-        return {"id": "electronica", "nombre": "Componentes Electrónicos", "icono": "🔌", "color": "#0284c7", "tipo": "operativo"}
+    if any(k in desc_upper for k in ["HOSTING", "DOMINIO", "AWS", "AZURE", "GOOGLE CLOUD", "SOFTWARE", "SAAS", "LICENCIA", "GITHUB", "VERCEL"]):
+        return {"id": "software_ti", "nombre": "Software, Nube e Infraestructura TI", "icono": "💻", "color": "#8b5cf6", "tipo": "operativo"}
+    if any(k in desc_upper for k in ["COMPUTADORA", "LAPTOP", "MONITOR", "TECLADO", "DISCO DURO", "TRANSISTOR", "CONECTOR", "ELECTRICA", "CABLE", "RELE", "CIRCUITO", "BATERIA", "AUDIO"]):
+        return {"id": "computo_hardware", "nombre": "Equipo de Cómputo y Electrónica", "icono": "🖥️", "color": "#0ea5e9", "tipo": "inversion"}
 
+    sat_data = _CATALOGO_DICT.get(c, {})
     return {
         "id": "otros_operativos",
         "nombre": "Otros Gastos Operativos",
         "icono": "📋",
-        "color": "#64748b",
+        "color": "#475569",
         "tipo": "operativo",
-        "descripcion_sat": "Gasto operativo sin clave específica"
+        "descripcion_sat": sat_data.get("descripcion") or (descripcion_concepto or "Gasto operativo general")
     }
 
 

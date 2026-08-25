@@ -13,7 +13,7 @@ NS = {
     'nomina12': 'http://www.sat.gob.mx/nomina12'
 }
 
-USER_RFC = "GAQA810905BCA"
+USER_RFC = "HECA850101XYZ"
 
 def parse_cfdi(xml_path: str) -> Optional[Dict]:
     try:

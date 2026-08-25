@@ -383,6 +383,7 @@ def build_fiscal_summary(client: Client, year: str, db: Session, use_cache: bool
             v['gravado'] = max(0.0, v['gravado_raw'] - v['prevision_social_exenta'])
         else:
             v['gravado'] = v['gravado_raw']
+        v['total'] = round(v['gravado'] + v['exento'], 2)
         tg += v['gravado']
         te += v['exento']
         isr_n += v['isr']

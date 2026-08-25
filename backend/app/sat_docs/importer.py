@@ -17,7 +17,7 @@ def parse_acuse_pago(pdf_path: str) -> Dict[str, Any]:
     data = {
         'archivo': fn,
         'tipo': 'Acuse_Pago',
-        'rfc': 'GAQA810905BCA',
+        'rfc': 'HECA850101XYZ',
         'year': '',
         'mes_numero': 0,
         'periodo': '',

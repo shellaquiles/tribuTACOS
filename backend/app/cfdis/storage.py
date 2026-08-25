@@ -20,7 +20,7 @@ def ensure_default_client(db: Session) -> Client:
         client = Client(
             id="default",
             name="Contribuyente Principal",
-            rfc="GAQA810905BCA",
+            rfc="HECA850101XYZ",
             email="contacto@tributacos.mx",
             plan="pro",
             local_path_emitidos=str(LEGACY_EMITIDOS) if LEGACY_EMITIDOS.exists() else None,

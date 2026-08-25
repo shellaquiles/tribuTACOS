@@ -104,37 +104,75 @@ export default function PreDeclaracionMensualSection({ data, year, onSelectMonth
                 <th style={{ padding: '12px 16px' }}>Mes</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ingreso Facturado</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>Gasto Deducible</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Flujo / Utilidad</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>ISR Retenido</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>ISR a Pagar</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>IVA Cobrado (16%)</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>IVA Acreditable</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>IVA a Pagar</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Total a Pagar</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Total Impuestos</th>
                 <th style={{ padding: '12px 16px', textAlign: 'center' }}>Borrador SAT</th>
               </tr>
             </thead>
             <tbody>
               {meses.map((m) => {
                 const totalMes = m.total_a_pagar_mes || 0;
-                const tieneActividad = (m.ingresos_periodo || 0) > 0 || (m.deducciones_bancarizadas_periodo || 0) > 0;
+                const ing = m.ingresos_periodo || 0;
+                const ded = m.deducciones_bancarizadas_periodo || 0;
+                const utilidadMes = ing - ded;
+                const esMesMalo = ing > 0 && utilidadMes < 0;
+                const esMesSinIngreso = ing === 0 && ded > 0;
+                const tieneActividad = ing > 0 || ded > 0;
+
+                const rowBg = (esMesMalo || esMesSinIngreso) 
+                  ? '#fff1f2' 
+                  : (totalMes > 0 ? '#fffafa' : (tieneActividad ? 'white' : '#f8fafc'));
 
                 return (
                   <tr
                     key={m.mes_numero}
                     style={{
                       borderBottom: '1px solid #f1f5f9',
-                      background: totalMes > 0 ? '#fffafa' : (tieneActividad ? 'white' : '#f8fafc'),
+                      background: rowBg,
                       transition: 'background 0.15s ease'
                     }}
                   >
                     <td style={{ padding: '12px 16px', fontWeight: 800, color: '#0f172a' }}>
-                      {m.mes_numero.toString().padStart(2, '0')}. {m.mes_nombre}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>{esMesMalo || esMesSinIngreso ? '🔴' : (ing > 40000 ? '🟢' : '🔵')}</span>
+                        <span>{m.mes_numero.toString().padStart(2, '0')}. {m.mes_nombre}</span>
+                      </div>
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: m.ingresos_periodo > 0 ? '#0f172a' : '#94a3b8' }}>
-                      {formatMoney(m.ingresos_periodo)}
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: ing > 0 ? '#0f172a' : '#94a3b8' }}>
+                      {formatMoney(ing)}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: m.deducciones_bancarizadas_periodo > 0 ? '#059669' : '#94a3b8' }}>
-                      {formatMoney(m.deducciones_bancarizadas_periodo)}
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: ded > 0 ? '#dc2626' : '#94a3b8' }}>
+                      {formatMoney(ded)}
+                    </td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 800 }}>
+                      {utilidadMes < 0 ? (
+                        <span style={{
+                          background: '#fee2e2',
+                          color: '#b91c1c',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #fca5a5',
+                          fontSize: '0.75rem'
+                        }}>
+                          Déficit: -{formatMoney(Math.abs(utilidadMes))}
+                        </span>
+                      ) : (
+                        <span style={{
+                          background: ing > 0 ? '#dcfce7' : 'transparent',
+                          color: ing > 0 ? '#15803d' : '#94a3b8',
+                          padding: ing > 0 ? '3px 8px' : '0',
+                          borderRadius: '6px',
+                          border: ing > 0 ? '1px solid #86efac' : 'none',
+                          fontSize: '0.75rem'
+                        }}>
+                          {ing > 0 ? `+${formatMoney(utilidadMes)}` : '$0.00'}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: m.isr_retenido_periodo > 0 ? '#059669' : '#94a3b8' }}>
                       {m.isr_retenido_periodo > 0 ? `-${formatMoney(m.isr_retenido_periodo)}` : '$0.00'}
@@ -167,15 +205,15 @@ export default function PreDeclaracionMensualSection({ data, year, onSelectMonth
                         </span>
                       ) : (
                         <span style={{
-                          background: '#f0fdf4',
-                          color: '#166534',
-                          border: '1px solid #bbf7d0',
+                          background: utilidadMes < 0 ? '#fff1f2' : '#f0fdf4',
+                          color: utilidadMes < 0 ? '#991b1b' : '#166534',
+                          border: utilidadMes < 0 ? '1px solid #fecdd3' : '1px solid #bbf7d0',
                           padding: '4px 10px',
                           borderRadius: '8px',
                           fontWeight: 800,
                           fontSize: '0.75rem'
                         }}>
-                          🟢 $0.00 (Sin Pago)
+                          {utilidadMes < 0 ? '⚠️ Saldo a Favor' : '🟢 $0.00 (Sin Pago)'}
                         </span>
                       )}
                     </td>

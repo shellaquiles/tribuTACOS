@@ -2997,91 +2997,41 @@ export function getConceptoCat(c, parentItem) {
   const clave = String(c?.clave || '').trim();
   const desc = String(c?.desc || '').toUpperCase();
 
-  // 1. CLAVES SAT DE 8 Y 6 DÍGITOS (MÁXIMA PRIORIDAD OFICIAL)
-  if (clave.startsWith('801615')) {
+  // 1. CLAVES SAT DE 8 Y 6 DÍGITOS (MÁXIMA PRIORIDAD)
+  if (clave.startsWith('801615') || clave.startsWith('8413')) {
     return { id: 'seguros_polizas', nombre: 'Seguros y Fianzas', icono: '🛡️', color: '#0d9488', tipo: 'operativo' };
   }
-  if (clave.startsWith('781118') || clave.startsWith('781115')) {
-    if (clave === '78111502' || clave === '78111500' || /AEROMEXICO|VOLARIS|VIVAEROBUS|VUELO|AVION/.test(desc)) {
-      return { id: 'vuelos_aviones', nombre: 'Boletos de Avión y Vuelos', icono: '✈️', color: '#0284c7', tipo: 'viaticos' };
-    }
-    if (clave === '78111808' || clave === '78111804' || clave === '78111802' || /UBER|DIDI|CABIFY|TAXI|TARIFA/.test(desc)) {
-      return { id: 'movilidad_taxis', nombre: 'Plataformas de Movilidad y Taxis', icono: '🚖', color: '#eab308', tipo: 'viaticos' };
-    }
-    if (clave === '78111811' || /RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO/.test(desc)) {
-      return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
-    }
-    return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
+  if (clave === '78111811' || /RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO|AUTO RENTA/.test(desc)) {
+    return { id: 'renta_vehiculos', nombre: 'Renta de Vehículos y Autos', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
   }
-  if (clave.startsWith('151015')) {
-    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f59e0b', tipo: 'operativo' };
+  if (clave === '78111808' || clave === '78111804' || /UBER|DIDI|CABIFY|TAXI|TARIFA/.test(desc)) {
+    return { id: 'movilidad_taxis', nombre: 'Plataformas de Movilidad y Taxis', icono: '🚖', color: '#eab308', tipo: 'viaticos' };
   }
-  if (clave.startsWith('951116')) {
-    return { id: 'peajes_casetas', nombre: 'Casetas y Peajes', icono: '🛣️', color: '#8b5cf6', tipo: 'viaticos' };
+  if (clave.startsWith('151015') || /GASOLINA|COMBUSTIBLE|DIESEL/.test(desc)) {
+    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f97316', tipo: 'operativo' };
   }
-  if (clave.startsWith('8411')) {
-    return { id: 'contabilidad_facturacion', nombre: 'Contabilidad y Facturación', icono: '🧾', color: '#6366f1', tipo: 'operativo' };
+  if (clave.startsWith('951116') || clave.startsWith('781115') || clave.startsWith('9011') || /CASETA|PEAJE|AUTOPISTA|TAG|TELEVIA|AEROMEXICO|VOLARIS|VIVAEROBUS|VUELO|HOTEL|HOSPEDAJE|RESTAURANT/.test(desc)) {
+    return { id: 'viaticos_viajes', nombre: 'Viáticos, Viajes y Peajes', icono: '✈️', color: '#64748b', tipo: 'viaticos' };
   }
-  if (clave.startsWith('8013')) {
-    return { id: 'arrendamiento_inmuebles', nombre: 'Renta de Inmuebles y Oficinas', icono: '🏢', color: '#0284c7', tipo: 'operativo' };
+  if (clave.startsWith('8111') || /AWS|AZURE|GOOGLE CLOUD|HOSTING|DOMINIO|SOFTWARE|SAAS|LICENCIA|GITHUB|VERCEL/.test(desc)) {
+    return { id: 'software_ti', nombre: 'Software, Nube e Infraestructura TI', icono: '💻', color: '#8b5cf6', tipo: 'operativo' };
   }
-  if (clave.startsWith('8012')) {
+  if (clave.startsWith('4321') || clave.startsWith('4322') || clave.startsWith('32') || /LAPTOP|COMPUTADORA|MONITOR|DISCO DURO|CIRCUITO|TRANSISTOR|ELECTRONICA/.test(desc)) {
+    return { id: 'computo_hardware', nombre: 'Equipo de Cómputo y Electrónica', icono: '🖥️', color: '#0ea5e9', tipo: 'inversion' };
+  }
+  if (clave.startsWith('8010') || clave.startsWith('8012') || clave.startsWith('8014') || clave.startsWith('8411') || clave.startsWith('8412') || /HONORARIOS|ASESORIA|CONSULTORIA|CONTABILIDAD|LEGAL|AUDITORIA|FACTURACION/.test(desc)) {
     return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
   }
 
-  // 2. FAMILIAS Y SEGMENTOS UNSPSC (4 Y 2 DÍGITOS)
-  const fam = clave.slice(0, 4);
+  // 2. FAMILIAS Y SEGMENTOS UNSPSC (Fallback general)
   const seg = clave.slice(0, 2);
+  if (seg === '15') return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f97316', tipo: 'operativo' };
+  if (seg === '81') return { id: 'software_ti', nombre: 'Software, Nube e Infraestructura TI', icono: '💻', color: '#8b5cf6', tipo: 'operativo' };
+  if (seg === '43' || seg === '32') return { id: 'computo_hardware', nombre: 'Equipo de Cómputo y Electrónica', icono: '🖥️', color: '#0ea5e9', tipo: 'inversion' };
+  if (seg === '80' || seg === '84' || seg === '82' || seg === '86') return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
+  if (seg === '78' || seg === '90' || seg === '95') return { id: 'viaticos_viajes', nombre: 'Viáticos, Viajes y Peajes', icono: '✈️', color: '#64748b', tipo: 'viaticos' };
 
-  if (seg === '84') {
-    return { id: 'servicios_financieros', nombre: 'Servicios Bancarios y Financieros', icono: '🏦', color: '#475569', tipo: 'financiero' };
-  }
-  if (seg === '81') {
-    return { id: 'servicios_ti_software', nombre: 'Software, Nube y Telecomunicaciones', icono: '💻', color: '#6366f1', tipo: 'operativo' };
-  }
-  if (seg === '32') {
-    return { id: 'componentes_electronicos', nombre: 'Componentes Electrónicos', icono: '🔌', color: '#3b82f6', tipo: 'inversion' };
-  }
-  if (seg === '43') {
-    return { id: 'equipo_computo', nombre: 'Equipo de Cómputo y Servidores', icono: '🖥️', color: '#3b82f6', tipo: 'inversion' };
-  }
-  if (seg === '44') {
-    return { id: 'papeleria_oficina', nombre: 'Papelería y Artículos de Oficina', icono: '📎', color: '#64748b', tipo: 'operativo' };
-  }
-  if (seg === '90') {
-    return { id: 'alimentos_restaurantes', nombre: 'Restaurantes y Consumo de Alimentos', icono: '🍽️', color: '#f97316', tipo: 'viaticos' };
-  }
-  if (seg === '78') {
-    return { id: 'fletes_logistica', nombre: 'Transporte, Fletes y Envíos', icono: '🚚', color: '#ea580c', tipo: 'operativo' };
-  }
-  if (seg === '70') {
-    return { id: 'veterinaria_animales', nombre: 'Servicios Veterinarios y Cuidado Animal', icono: '🐾', color: '#10b981', tipo: 'operativo' };
-  }
-  if (seg === '80') {
-    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
-  }
-
-  // 3. ANÁLISIS SEMÁNTICO POR DESCRIPCIÓN SI LA CLAVE NO FUE IDENTIFICADA
-  if (/SEGURO|POLIZA|COBERTURA|FIANZA|QUALITAS|GNP|AXA|CHUBB/.test(desc)) {
-    return { id: 'seguros_polizas', nombre: 'Seguros y Fianzas', icono: '🛡️', color: '#0d9488', tipo: 'operativo' };
-  }
-  if (/RENTA.*AUTO|LEASING|ARRENDAMIENTO.*VEHICUL|PULSE AUDACE|TIP AUTO/.test(desc)) {
-    return { id: 'arrendamiento_vehiculos', nombre: 'Arrendamiento de Vehículos (Leasing)', icono: '🚗', color: '#3b82f6', tipo: 'operativo' };
-  }
-  if (/GASOLINA|COMBUSTIBLE|DIESEL/.test(desc)) {
-    return { id: 'combustibles', nombre: 'Combustibles y Lubricantes', icono: '⛽', color: '#f59e0b', tipo: 'operativo' };
-  }
-  if (/CASETA|PEAJE|TAG|TELEVIA|AUTOPISTA/.test(desc)) {
-    return { id: 'peajes_casetas', nombre: 'Casetas y Peajes', icono: '🛣️', color: '#8b5cf6', tipo: 'viaticos' };
-  }
-  if (/HONORARIOS|ASESORIA|CONSULTORIA|CONTABILIDAD|LEGAL|ADMINISTRACION/.test(desc)) {
-    return { id: 'servicios_profesionales', nombre: 'Servicios Profesionales y Asesoría', icono: '💼', color: '#059669', tipo: 'operativo' };
-  }
-
-  if (parentItem?.categoria_gasto && parentItem.categoria_gasto.id && parentItem.categoria_gasto.id !== 'otros_operativos') {
-    return parentItem.categoria_gasto;
-  }
-  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#64748b', tipo: 'operativo' };
+  return { id: 'otros_operativos', nombre: 'Otros Gastos Operativos', icono: '📋', color: '#475569', tipo: 'operativo' };
 }
 
 export function getGastoCat(item) {
