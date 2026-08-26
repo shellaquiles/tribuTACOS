@@ -105,28 +105,46 @@ La plataforma estará disponible de inmediato en:
 
 En el panel lateral izquierdo (*Sidebar*), el usuario dispone de los selectores maestros:
 
-1. **Selector de Contribuyente:** Permite alternar entre diferentes personas físicas registradas en el sistema (por ejemplo, `SHLL250825XYZ - Sheila Shellaquiles Ortega`).
-2. **Selector de Ejercicio Fiscal:** Permite navegar instantáneamente entre los ejercicios fiscales **2021 a 2026**, recalculando la base gravable y las tarifas oficiales en menos de 15 milisegundos.
+1. **Selector de Contribuyente:** Permite alternar entre diferentes personas físicas registradas en el sistema (identificadas por su RFC y Razón Social).
+2. **Selector de Ejercicio Fiscal:** Permite navegar instantáneamente entre los diferentes años fiscales analizados, recalculando la base gravable y las tarifas oficiales en tiempo real.
 3. **Botón de Sincronización:** Fuerza la reevaluación de los comprobantes y la invalidación de la caché.
 
 ---
 
-## 3. Ingesta Masiva de Comprobantes XML
+## 3. Descarga de Comprobantes XML desde el Portal del SAT
+
+Antes de realizar la carga en tribuTACOS, el usuario debe descargar sus comprobantes fiscales digitales timbrados directamente desde el portal oficial del SAT:
+
+1. **Acceso al Servicio de Facturación:**
+   * Ingrese a [sat.gob.mx](https://www.sat.gob.mx) ➔ *Factura Electrónica* ➔ *Cancela y recupera tus facturas* (autenticación con Contraseña CIEC o e.firma portable).
+
+2. **Comprobantes a Descargar:**
+   * **Facturas Emitidas (Ingresos):** Seleccione *Consultar Facturas Emitidas* y filtre por el rango de fechas del ejercicio fiscal (CFDI de Ingresos, Recibos de Honorarios y Complementos de Recepción de Pagos).
+   * **Facturas Recibidas (Gastos, Nómina y Deducciones):** Seleccione *Consultar Facturas Recibidas* y descargue los comprobantes de gastos operativos, recibos de nómina timbrados por sus empleadores y facturas de deducciones personales (médicos, colegiaturas, seguros, aportaciones a retiro).
+
+3. **Formato de Descarga:**
+   * Puede descargar los archivos `.xml` de forma individual o generar una **Solicitud de Descarga Masiva** para obtener paquetes comprimidos en `.zip`.
+
+---
+
+## 4. Ingesta Masiva de Comprobantes en tribuTACOS
 
 Al hacer clic en el botón principal **"Cargar Comprobantes XML"**, se despliega el modal interactivo de ingesta:
 
 ![Modal de Ingesta y Carga de XMLs](img/02_upload_modal.png)
 
-### 3.1 Métodos de Carga Soportados:
-* **Arrastrar y Soltar (Drag & Drop):** Arrastre de múltiples archivos `.xml` o carpetas completas directamente sobre el área punteada.
-* **Archivos Comprimidos (.ZIP):** Carga de paquetes `.zip` con cientos de facturas timbradas; el backend descomprime y clasifica cada archivo en memoria.
+### 4.1 Métodos de Carga Soportados:
+* **Arrastrar y Soltar (Drag & Drop):** Arrastre de múltiples archivos `.xml` o carpetas completas directamente sobre el área punteada del modal.
+* **Archivos Comprimidos (.ZIP):** Carga directa de paquetes `.zip` descargados del SAT; el motor desempaca y clasifica cada archivo en memoria.
 * **Explorador de Archivos:** Clic sobre el área de carga para seleccionar archivos locales desde el explorador del sistema operativo.
+* **Línea de Comandos (CLI):** Ejecución de `make db-import-xml` para ingestar lotes de archivos ubicados en el almacenamiento local.
 
-### 3.2 Pipeline Automático de Procesamiento:
+### 4.2 Pipeline Automático de Procesamiento:
 1. **Validación de Esquema XML:** Comprobación del estándar Anexo 20 (CFDI 3.3 y CFDI 4.0) mediante el parser optimizado en C (`lxml`).
 2. **Deduplicación por UUID Fiscal:** Si un comprobante ya fue registrado previamente en la base de datos, se omite de forma idempotente sin duplicar montos.
 3. **Clasificación por RFC:** Si el RFC del contribuyente activo coincide con el emisor, se clasifica como *Ingreso / Emitido*; si coincide con el receptor, se clasifica como *Gasto / Deducción / Recibido*.
-4. **Invalidación de Caché:** Se actualiza automáticamente el registro en `summary_cache` para reflejar las nuevas cifras en tiempo real.
+4. **Taxonomía Inteligente de Conceptos:** Mapeo automático de las claves de producto/servicio del SAT a los 8 rubros contables operativos.
+5. **Invalidación de Caché:** Se actualiza automáticamente el registro en `summary_cache` para reflejar las nuevas cifras en tiempo real.
 
 ---
 
@@ -261,11 +279,10 @@ flowchart TD
 ## 3. Métricas Financieras del Ejercicio
 
 * **Tasa Efectiva de Impuesto:** Porcentaje real del ingreso que representa el impuesto determinado ($\text{ISR Determinado} / \text{Ingresos Totales}$).
-* **Tasa Marginal:** Porcentaje aplicable al último tramo de la tarifa en el que se ubica la base gravable (hasta el 35%).
-* **Evolución Multianual de Saldos:**
-  - **2021-2022:** Saldos a cargo por salto de tarifa del Art. 152.
-  - **2023:** Inicio de estrategia fiscal con Planes Personales de Retiro (PPR) y Seguro de Gastos Médicos Mayores (SGMM), reduciendo el saldo a cargo.
-  - **2024-2026:** Consolidación con **Saldos a Favor recurrentes** (de $2,358 a $9,105 MXN) sujetos a devolución automática del SAT a cuenta CLABE.
+* **Tasa Marginal:** Porcentaje aplicable al último tramo de la tarifa en el que se ubica la base gravable (de acuerdo con el límite superior del Art. 152 LISR, de hasta el 35%).
+* **Determinación de Saldos Anuales:**
+  - **Saldo a Favor (Devolución SAT):** Se origina cuando el total de retenciones e impuestos pagados provisionalmente durante el ejercicio excede el ISR anual causado, indicando el importe disponible para solicitar devolución automática con CLABE interbancaria o compensación contra ejercicios futuros.
+  - **Saldo a Cargo (Línea de Captura):** Se origina cuando el impuesto anual determinado es superior a los anticipos y retenciones acumuladas en el año, señalando el importe a enterar a la autoridad fiscal.
 
 ---
 
@@ -377,21 +394,45 @@ Este módulo permite contrastar la realidad contable obtenida de los comprobante
 
 ---
 
-## 2. Componentes de Auditoría
+## 2. Documentos Oficiales a Descargar e Ingestar
 
-### 2.1 Declaración Anual Oficial:
-* **Número de Operación:** Código oficial de recepción del SAT (ej. `261572124966`).
-* **Fecha y Hora de Presentación:** Marca de tiempo oficial del timbrado de la declaración.
-* **Tipo de Declaración:** Normal o Complementaria.
-* **Cuenta CLABE Registrada:** Identificación de la cuenta bancaria para la devolución del saldo a favor (`012180000000000000` - BBVA México).
+Para habilitar la conciliación automática, el contribuyente o contador debe descargar del portal del SAT y de su banca electrónica los siguientes comprobantes en formato **PDF**:
 
-### 2.2 Matriz de Cumplimiento de Pagos Provisionales (12 Meses):
-* **Tabla Comparativa Mensual:** Desglose mes a mes de los ingresos acumulados declarados ante el SAT, retenciones de ISR y montos de IVA reportados.
+1. **Declaración Anual del Ejercicio (PDF):**
+   * *Dónde obtenerlo:* Portal del SAT ➔ *Declaraciones* ➔ *Consulta de Declaraciones Presentadas* ➔ *Declaración Anual de Personas Físicas*.
+   * *Datos extraídos:* Número de operación, tipo de declaración (Normal/Complementaria), fecha de presentación, ingresos acumulables reportados, deducciones personales autorizadas e ISR a favor/cargo con CLABE interbancaria.
+
+2. **Acuses y Declaraciones Mensuales Provisionales de ISR e IVA (PDF):**
+   * *Dónde obtenerlo:* Portal del SAT ➔ *Pagos Provisionales / Declaraciones y Pagos* ➔ *Reimpresión de Acuses y Declaraciones*.
+   * *Datos extraídos:* Ingresos del mes, deducciones del mes, ISR retenido, pagos provisionales efectuados, IVA causado, IVA acreditable y retenciones de IVA de los 12 periodos (Enero a Diciembre).
+
+3. **Comprobantes Bancarios de Pago de Contribuciones Federales (PDF):**
+   * *Dónde obtenerlo:* Portal de la institución bancaria (banca en línea) en el apartado de pagos de impuestos federales.
+   * *Datos extraídos:* Folio de control bancario, línea de captura, fecha efectiva de pago e importe transferido a la Tesorería de la Federación.
+
+### Procesamiento y Carga en tribuTACOS:
+* **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o al panel de Conciliación SAT.
+* **Desde la Terminal:** Ejecute `make db-import-pdf` para procesar por lotes todos los PDFs colocados en el directorio local de almacenamiento.
+* **Motor de Extracción:** El parser interno de tribuTACOS extrae mediante expresiones regulares y análisis de tablas los folios de 14 dígitos, sellos digitales y matrices financieras sin requerir captura manual.
+
+---
+
+## 3. Componentes de la Pantalla de Auditoría
+
+### 3.1 Resumen de la Declaración Anual Oficial:
+* **Número de Operación:** Folio oficial de recepción emitido por el SAT al sellar y timbrar la declaración.
+* **Fecha y Hora de Presentación:** Marca de tiempo oficial de acuse de recibo.
+* **Tipo de Declaración:** Indicador de declaración Normal o Complementaria.
+* **Cuenta CLABE Registrada:** Cuenta bancaria estandarizada a 18 dígitos designada ante la autoridad para el depósito del saldo a favor.
+
+### 3.2 Matriz de Cumplimiento de Pagos Provisionales (12 Meses):
+* **Tabla Comparativa Mensual:** Desglose mes a mes de los ingresos acumulados declarados ante el SAT, retenciones de ISR y montos de IVA reportados vs lo calculado por tribuTACOS.
 * **Verificación de Acuses Bancarios:** Validación de comprobantes bancarios emitidos por la institución financiera con su respectiva línea de captura y sello digital.
 
-### 2.3 Utilidad Contable y Preventiva:
-* Detección de discrepancias fiscales o diferencias entre lo timbrado por los clientes/proveedores y lo presentado en el portal del SAT.
-* Prevención de cartas invitación, requerimientos o diferencias en declaraciones complementarias.
+### 3.3 Utilidad Contable y Preventiva:
+* **Detección de Discrepancias Fiscales:** Identificación de diferencias entre lo timbrado por los clientes/proveedores en CFDI y lo presentado en el portal del SAT.
+* **Prevención de Cartas Invitación:** Alerta temprana sobre omisiones de ingresos o retenciones inconsistentes antes de revisiones electrónicas del SAT.
+* **Sustento para Declaraciones Complementarias:** Base de cálculo precisa para corregir periodos con inconsistencias.
 
 ---
 

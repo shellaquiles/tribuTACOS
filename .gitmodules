@@ -1,0 +1,3 @@
+[submodule "pandocquiles"]
+	path = utils/pandocquiles
+	url = https://github.com/shellaquiles/pandocquiles

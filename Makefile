@@ -61,6 +61,9 @@ help:
 	@printf "  $(GREEN)make test$(RESET)              Ejecuta la suite de pruebas unitarias y de integración (pytest)\n"
 	@printf "  $(GREEN)make build$(RESET)             Compila el bundle optimizado de producción para Next.js\n"
 	@printf "  $(GREEN)make lint$(RESET)              Ejecuta la validación de tipado y estilo de código\n"
+	@printf "  $(GREEN)make pdf$(RESET)               Compila toda la documentación a PDF/DOCX con Pandocquiles\n"
+	@printf "  $(GREEN)make pdf-docs$(RESET)          Compila la documentación técnica (/docs) a PDF\n"
+	@printf "  $(GREEN)make pdf-user$(RESET)          Compila el manual de usuario (/documentacion) a PDF\n"
 	@echo ""
 	@echo "$(BOLD)Limpieza y Mantenimiento:$(RESET)"
 	@printf "  $(GREEN)make clean$(RESET)             Elimina cachés de compilación, temporales y artefactos .next\n"
@@ -165,16 +168,31 @@ build:
 	@cd $(FRONTEND_DIR) && $(NPM) run build
 
 # ==============================================================================
+# COMPILACIÓN DE DOCUMENTACIÓN (PANDOCQUILES)
+# ==============================================================================
+
+pdf: pdf-docs pdf-user
+	@echo "$(BOLD)$(GREEN)Toda la documentación ha sido compilada en utils/dist_docs/.$(RESET)"
+
+pdf-docs:
+	@echo "$(BOLD)$(CYAN)Compilando documentación técnica (/docs) con Pandocquiles...$(RESET)"
+	@cd utils/pandocquiles && ./bin/build.sh ../../docs
+
+pdf-user:
+	@echo "$(BOLD)$(CYAN)Compilando manual de usuario (/documentacion) con Pandocquiles...$(RESET)"
+	@cd utils/pandocquiles && ./bin/build.sh ../../documentacion
+
+# ==============================================================================
 # LIMPIEZA
 # ==============================================================================
 
 clean:
-	@echo "$(BOLD)$(YELLOW)Limpiando cachés de compilación y temporales...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Limpiando cachés de compilación, temporales y documentación compilada...$(RESET)"
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next
+	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next utils/dist_docs
 	@echo "$(BOLD)$(GREEN)Limpieza completada.$(RESET)"
 
 clean-all: clean
