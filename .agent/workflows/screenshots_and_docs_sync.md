@@ -8,7 +8,27 @@ Este workflow documenta cómo capturar las vistas completas de la aplicación we
 
 ---
 
-## 1. Reglas Técnicas de Captura (Playwright)
+## 1. Pipeline de Capturas y Sincronización de Documentación
+
+> [!IMPORTANT]
+> **Regla de Desarrollo Ágil (Cero Sobrecarga):** Las capturas de pantalla y la compilación de documentación en PDF **NO** deben ejecutarse durante el ciclo normal de desarrollo del frontend o backend. Se ejecutan exclusivamente bajo demanda antes de un commit, PR o release mediante los comandos `make`.
+
+### Comandos del Pipeline
+
+Para no ralentizar el desarrollo local:
+
+1. **Solo capturas de pantalla:**
+   ```bash
+   make screenshots
+   ```
+2. **Pipeline completo de pre-release (Capturas + Sincronización de manual + PDFs):**
+   ```bash
+   make docs-sync
+   ```
+
+---
+
+## 2. Reglas Técnicas de Captura (Playwright)
 
 El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un contenedor interno con scroll vertical:
 

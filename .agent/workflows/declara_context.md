@@ -72,17 +72,27 @@ tributacos/
 
 ---
 
-## 3. Comandos Esenciales del Makefile
+### Comandos Principales (`Makefile`)
 
-| Comando | Función |
-| :--- | :--- |
-| `make setup` | Instala dependencias en Python y Node.js, y restaura la BD con datos demo. |
-| `make dev` | Inicia simultáneamente Backend (FastAPI :8010) y Frontend (Next.js :3000). |
-| `make test` | Corre los 11 tests unitarios de cálculo fiscal con Pytest. |
-| `make db-fresh` | Recrea la base de datos limpia e importa `demo_dataset.json.gz`. |
-| `make build` | Compila el bundle optimizado de producción en Next.js. |
-| `make pdf` | Compila la documentación técnica y el manual de usuario en PDF usando Pandocquiles by shellaquiles.org (inicializa el submódulo y aprovisiona automáticamente `utils/pandocquiles/.env` desde `utils/pandocquiles.env`). |
+El proyecto organiza sus comandos en 5 fases secuenciales (`make help`):
 
-
-
-
+| Fase | Comando | Descripción |
+| :--- | :--- | :--- |
+| **1. Inicio & Dev** | `make setup` | Instala dependencias y prepara la BD con datos demo. |
+| | `make dev` | Inicia Backend (`:8010`) y Frontend (`:3000`) en paralelo. |
+| | `make stop` | Detiene servidores en los puertos 8010 y 3000. |
+| **2. Base de Datos** | `make db-seed` | Restaura la BD con el dataset demo completo (139 CFDIs). |
+| | `make db-reset` | Limpia la base de datos dejando solo catálogos del SAT. |
+| | `make db-import-xml` | Procesa y clasifica XMLs locales en la base de datos. |
+| | `make db-import-sat` | Procesa declaraciones y acuses oficiales en PDF del SAT. |
+| | `make db-export` | Exporta un respaldo fixture de la base de datos actual. |
+| **3. Calidad** | `make test` | Corre los 11 tests unitarios de cálculo fiscal con Pytest. |
+| | `make lint` | Verifica tipado y estándares de código en el Frontend. |
+| | `make build` | Compila el bundle optimizado de producción en Next.js. |
+| **4. Documentación** | `make screenshots` | Captura pantallas completas con scroll (Playwright). |
+| | `make docs-sync` | Pipeline de pre-release: capturas + manual + PDFs oficiales. |
+| | `make pdf-all` | Compila ambos PDFs oficiales con Pandocquiles by shellaquiles.org. |
+| | `make pdf-manual` | Compila únicamente el Manual de Usuario en PDF. |
+| | `make pdf-tecnica` | Compila únicamente la Documentación Técnica en PDF. |
+| **5. Mantenimiento** | `make clean` | Elimina temporales, cachés y PDFs generados. |
+| | `make clean-deep` | Elimina librerías `node_modules` y entorno virtual `venv`. |

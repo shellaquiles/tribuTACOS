@@ -326,12 +326,13 @@ const App = () => {
 
         {/* Footer institucional */}
         <div className="p-3 border-t border-zinc-200 text-[10px] font-mono text-zinc-500 flex items-center justify-between bg-zinc-50">
-          <span>v2.5 • STABLE</span>
+          <span className="font-bold text-zinc-700">v1.0.1 • STABLE</span>
           <span className="text-zinc-800 font-bold">
             {(sections?.reporte_gastos?.length || 0) + (sections?.honorarios?.detalle?.length || 0)} CFDIs
           </span>
         </div>
       </aside>
+
 
       {/* ── CONTENIDO PRINCIPAL ── */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-zinc-50/40">
@@ -401,9 +402,13 @@ const App = () => {
             <span className="font-bold text-zinc-800 uppercase mr-2">AVISO LEGAL:</span>
             <span>SIMULACIÓN FISCAL ESTIMATIVA (LISR/LIVA). NO SUSTITUYE PRESENTACIONES ANTE EL SAT.</span>
           </div>
-          <span className="text-zinc-400">tribuTACOS • shellaquiles.org</span>
+          <div className="flex items-center gap-3">
+            <span className="bg-zinc-100 text-zinc-700 px-2 py-0.5 border border-zinc-300 font-bold">v1.0.1 STABLE</span>
+            <span className="text-zinc-500 font-semibold">tribuTACOS • shellaquiles.org</span>
+          </div>
         </footer>
       </main>
+
 
       {/* Modal de Subida de Archivos */}
       <UploadModal

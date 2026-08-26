@@ -113,21 +113,30 @@ make test
 
 ---
 
-## Guía de Comandos del Sistema (`Makefile`)
+## Guía de Comandos de Operación (`Makefile`)
 
-| Comando | Descripción |
-| :--- | :--- |
-| `make setup` | Instala dependencias de backend/frontend y genera la base de datos con el dataset demo oficial. |
-| `make install` | Instala o actualiza dependencias de Python (`requirements.txt`) y Node.js (`package.json`). |
-| `make dev` | Inicia Backend (FastAPI en puerto 8010) y Frontend (Next.js en puerto 3000) en paralelo con hot-reload. |
-| `make backend` | Inicia únicamente el servidor backend de FastAPI. |
-| `make frontend` | Inicia únicamente el servidor frontend de Next.js. |
-| `make db-fresh` | Reinicia la base de datos y carga el dataset de prueba completo (CFDIs, nómina, honorarios y declaraciones SAT). |
-| `make db-empty` | Crea una base de datos limpia con catálogos SAT pero sin comprobantes fiscales. |
-| `make db-export` | Genera un respaldo comprimido (`demo_dataset.json.gz`) del estado actual de la base de datos. |
-| `make test` | Ejecuta la suite completa de pruebas unitarias y de integración con Pytest. |
-| `make build` | Compila el paquete optimizado de producción para la aplicación Next.js. |
-| `make clean` | Elimina cachés temporales de compilación (`.next`, `__pycache__`). |
+El proyecto implementa un `Makefile` estructurado en **5 fases operativas intuitivas**. Para ver la ayuda interactiva en consola ejecute `make` o `make help`:
+
+| Fase | Comando | Propósito y Acción |
+| :--- | :--- | :--- |
+| **1. Inicio & Dev** | `make setup` | Instala dependencias y prepara la base de datos con datos demo. |
+| | `make dev` | Inicia Backend (`:8010`) y Frontend (`:3000`) de forma paralela. |
+| | `make stop` | Detiene cualquier proceso ocupando los puertos `8010` o `3000`. |
+| **2. Datos & CFDIS** | `make db-seed` | Restaura la BD con el dataset demo completo (139 CFDIs). |
+| | `make db-reset` | Limpia la base de datos dejando solo catálogos oficiales del SAT. |
+| | `make db-import-xml` | Procesa y clasifica facturas/recibos XML en `cfdi_recibidos/` y `cfdi_emitidos/`. |
+| | `make db-import-sat` | Ingesta y procesa declaraciones y acuses oficiales del SAT en PDF. |
+| | `make db-export` | Exporta un respaldo fixture de la base de datos actual. |
+| **3. Calidad** | `make test` | Ejecuta la suite de 11 pruebas unitarias del motor fiscal con Pytest. |
+| | `make lint` | Valida tipado, linting y estándares de código en el Frontend. |
+| | `make build` | Compila el bundle optimizado para producción en Next.js. |
+| **4. Documentación** | `make screenshots` | Ejecuta capturas completas automatizadas con Playwright asistido por scroll. |
+| | `make docs-sync` | Pipeline de pre-release: capturas + sincronización del manual + PDFs. |
+| | `make pdf-all` | Compila ambos PDFs oficiales con Pandocquiles by shellaquiles.org. |
+| | `make pdf-manual` | Compila únicamente el Manual de Usuario en PDF (`manual_usuario/`). |
+| | `make pdf-tecnica` | Compila únicamente la Documentación Técnica en PDF (`docs/`). |
+| **5. Limpieza** | `make clean` | Elimina temporales, cachés (`__pycache__`) y PDFs generados. |
+| | `make clean-deep` | Elimina entornos locales (`backend/venv` y `frontend/node_modules`). |
 
 ---
 
@@ -174,6 +183,9 @@ declara/
 │   ├── ...
 │   ├── MANUAL_DE_USUARIO_COMPLETO.md
 │   └── tribuTACOS_manual_usuario.pdf
+├── utils/                    # Utilerías y Generador de Documentación
+│   ├── pandocquiles.env      # Configuración oficial persistente (temas, títulos, metadatos)
+│   └── pandocquiles/         # Submódulo del motor de generación PDF (Pandocquiles)
 ├── Makefile                  # Automatización integral del ciclo de vida
 ├── levantar_proyecto.sh      # Script de inicialización rápida
 ├── CHANGELOG.md              # Historial de versiones y cambios
@@ -182,6 +194,7 @@ declara/
 ├── SECURITY.md               # Política de seguridad y privacidad local
 ├── LICENSE                   # Licencia MIT
 └── README.md                 # Guía principal del proyecto
+
 ```
 
 ---

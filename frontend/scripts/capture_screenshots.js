@@ -15,7 +15,23 @@ async function run() {
   await page.goto('http://localhost:3000', { waitUntil: 'networkidle' });
   await page.waitForTimeout(2000);
 
+  // Ocultar indicadores flotantes de desarrollo (Next.js badge, overlays)
+  await page.addStyleTag({
+    content: `
+      nextjs-portal,
+      [data-nextjs-toast],
+      [data-nextjs-dialog-overlay],
+      div[class*="nextjs-toast"],
+      #__next-build-watcher {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+      }
+    `
+  });
+
   // Seleccionar año fiscal 2024
+
   try {
     const selects = page.locator('select');
     const count = await selects.count();
