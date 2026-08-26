@@ -53,7 +53,7 @@ Para personas físicas con Actividad Empresarial y Profesional, el pago provisio
 $$\text{Base Gravable Acumulada}_m = \max\left(0, \sum_{i=1}^m \text{Ingresos PFAE}_i - \sum_{i=1}^m \text{Gastos Deducibles}_i\right)$$
 
 ### 2.2 Tarifa Mensual Acumulada:
-Para calcular el impuesto causado acumulado al mes $m$, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la proporción del periodo $\frac{m}{12}$:
+Para calcular el impuesto causado acumulado al mes $m$, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la proporción del periodo $m / 12$:
 $$\text{ISR Causado Acumulado}_m = \text{TarifaAnual}\left(\text{Base}_m \times \frac{12}{m}\right) \times \frac{m}{12}$$
 
 ### 2.3 ISR Neto a Pagar del Mes:
@@ -84,7 +84,7 @@ flowchart TD
 
 Las deducciones personales (honorarios médicos `D01`, gastos dentales `D02`, gastos hospitalarios `D03`, intereses reales hipotecarios `D05`, primas de seguros `D07`, colegiaturas) están sujetas a un límite general:
 
-$$\text{Tope Legal General} = \min\left(\text{Total Ingresos Anuales} \times 15\%, 5 \times \text{UMA Anual}\right)$$
+$$\text{Tope Legal General} = \min(0.15 \times \text{Total Ingresos Anuales}, 5 \times \text{UMA Anual})$$
 
 ### 4.1 Excepciones y Reglas Específicas:
 * **Planes Personales de Retiro (PPR - Fracc. V):** Cuentan con un límite independiente de hasta el **10% de los ingresos acumulables o 5 UMAs anuales**, adicional al tope general.
@@ -107,7 +107,7 @@ $$\text{Base Gravable Anual} = \text{Ingresos Acumulables Totales} - \text{Deduc
 
 $$\text{ISR Causado Anual} = \text{Cuota Fija} + (\text{Base Gravable} - \text{Límite Inferior}) \times \text{Tasa Marginal}$$
 
-$$\text{Resultado Final} = \text{ISR Causado Anual} - \text{Retenciones de Nómina} - \text{Retenciones PFAE} - \text{Pagos Provisionales ISR}$$
+$$\text{Resultado Final} = \text{ISR Causado Anual} - \text{Retenciones Nómina} - \text{Retenciones PFAE} - \text{Pagos Provisionales ISR}$$
 
 * Si $\text{Resultado Final} < 0$: **Saldo a Favor** (sujeto a devolución o compensación).
 * Si $\text{Resultado Final} > 0$: **Saldo a Cargo** (impuesto a liquidar ante el SAT).
