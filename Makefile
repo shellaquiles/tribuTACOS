@@ -3,147 +3,131 @@
 # ==============================================================================
 
 .DEFAULT_GOAL := help
-.PHONY: help setup dev backend frontend build test test-cov lint \
+.PHONY: help setup install dev backend frontend stop \
         db-fresh db-empty db-import-xml db-import-pdf db-export \
-        clean clean-all \
-        reset-db recreate-db init-db seed-demo export-demo sync sync-docs seed-sat
+        test lint build pdf pdf-docs pdf-user docs-all clean clean-all
 
-# --- Configuración y Rutas ---
-PYTHON        := python3
-NPM           := npm
-BACKEND_DIR   := backend
-FRONTEND_DIR  := frontend
-VENV_DIR      := $(BACKEND_DIR)/venv
-VENV_PYTHON   := $(VENV_DIR)/bin/python
-VENV_PIP      := $(VENV_DIR)/bin/pip
-UVICORN       := $(VENV_DIR)/bin/uvicorn
-PYTEST        := $(VENV_DIR)/bin/pytest
-DB_FILE       := $(BACKEND_DIR)/tributacos.db
+# --- Rutas y Comandos ---
+PYTHON         := python3
+NPM            := npm
+BACKEND_DIR    := backend
+FRONTEND_DIR   := frontend
+VENV_DIR       := $(BACKEND_DIR)/venv
+VENV_PYTHON    := $(VENV_DIR)/bin/python
+VENV_PIP       := $(VENV_DIR)/bin/pip
+UVICORN        := $(VENV_DIR)/bin/uvicorn
+PYTEST         := $(VENV_DIR)/bin/pytest
+DB_FILE        := $(BACKEND_DIR)/tributacos.db
 
-PORT          ?= 8010
-HOST          ?= 0.0.0.0
+PORT           ?= 8010
+HOST           ?= 0.0.0.0
 
-# --- Paleta de Colores ANSI ---
-BOLD          := \033[1m
-RESET         := \033[0m
-CYAN          := \033[36m
-GREEN         := \033[32m
-YELLOW        := \033[33m
-BLUE          := \033[34m
-DIM           := \033[2m
+# --- Rutas de Documentación y PDFs ---
+BUILD_DOCS     := cd utils/pandocquiles && ./bin/build.sh
+DIST_DOCS      := utils/dist_docs
+PDF_DOCS_SRC   := $(DIST_DOCS)/pandocquiles.pdf
+PDF_USER_SRC   := $(DIST_DOCS)/manual_usuario.pdf
+PDF_DOCS_OUT   := docs/tribuTACOS_documentacion_tecnica.pdf
+PDF_USER_OUT   := manual_usuario/tribuTACOS_manual_usuario.pdf
+
+# --- Estilos ANSI ---
+BOLD           := \033[1m
+RESET          := \033[0m
+CYAN           := \033[36m
+GREEN          := \033[32m
+YELLOW         := \033[33m
+BLUE           := \033[34m
+DIM            := \033[2m
 
 # ==============================================================================
-# AYUDA / MENÚ PRINCIPAL
+# MENÚ PRINCIPAL
 # ==============================================================================
 
 help:
 	@echo ""
 	@echo "$(BOLD)$(CYAN)  tribuTACOS — Comandos del Sistema$(RESET)"
 	@echo "$(DIM)  --------------------------------------------------------------$(RESET)"
+	@echo "$(BOLD)Puesta en Marcha:$(RESET)"
+	@printf "  $(GREEN)make setup$(RESET)             Instala dependencias y prepara la BD demo\n"
+	@printf "  $(GREEN)make dev$(RESET)               Inicia Backend (:$(PORT)) y Frontend (:3000)\n"
 	@echo ""
-	@echo "$(BOLD)Puesta en Marcha (Setup Inicial):$(RESET)"
-	@printf "  $(GREEN)make setup$(RESET)             Configura venv, dependencias npm y crea la BD con datos de prueba\n"
-	@printf "  $(GREEN)make install$(RESET)           Instala dependencias de Backend (Python) y Frontend (npm)\n"
+	@echo "$(BOLD)Base de Datos y Procesamiento:$(RESET)"
+	@printf "  $(GREEN)make db-fresh$(RESET)          Reinicia la base de datos con dataset demo completo\n"
+	@printf "  $(GREEN)make db-empty$(RESET)          Crea base de datos limpia con catálogos SAT\n"
+	@printf "  $(GREEN)make db-import-xml$(RESET)     Procesa e ingesta comprobantes XML locales\n"
+	@printf "  $(GREEN)make db-import-pdf$(RESET)     Procesa declaraciones y acuses oficiales del SAT\n"
+	@printf "  $(GREEN)make db-export$(RESET)         Exporta un fixture de respaldo de la BD\n"
 	@echo ""
-	@echo "$(BOLD)Servidores de Desarrollo:$(RESET)"
-	@printf "  $(GREEN)make dev$(RESET)               Inicia Backend (FastAPI :$(PORT)) y Frontend (Next.js :3000) en paralelo\n"
-	@printf "  $(GREEN)make backend$(RESET)           Inicia únicamente el servidor Backend (FastAPI con hot-reload)\n"
-	@printf "  $(GREEN)make frontend$(RESET)          Inicia únicamente el servidor Frontend (Next.js en modo dev)\n"
+	@echo "$(BOLD)Pruebas y Compilación:$(RESET)"
+	@printf "  $(GREEN)make test$(RESET)              Ejecuta la suite de pruebas automatizadas (pytest)\n"
+	@printf "  $(GREEN)make lint$(RESET)              Valida tipado y linteo del Frontend\n"
+	@printf "  $(GREEN)make build$(RESET)             Compila el bundle de producción de Next.js\n"
 	@echo ""
-	@echo "$(BOLD)Base de Datos y Procesamiento Fiscal:$(RESET)"
-	@printf "  $(GREEN)make db-fresh$(RESET)          Reinicia la BD y carga el dataset de prueba completo (recomendado)\n"
-	@printf "  $(GREEN)make db-empty$(RESET)          Crea una base de datos limpia con catálogos SAT pero sin comprobantes\n"
-	@printf "  $(GREEN)make db-import-xml$(RESET)     Procesa e ingesta archivos XML de facturas locales\n"
-	@printf "  $(GREEN)make db-import-pdf$(RESET)     Procesa e ingesta declaraciones oficiales SAT en formato PDF\n"
-	@printf "  $(GREEN)make db-export$(RESET)         Genera un respaldo fixture de la base de datos actual\n"
+	@echo "$(BOLD)Generación de Documentación (Pandocquiles):$(RESET)"
+	@printf "  $(GREEN)make pdf$(RESET)               Compila ambos documentos oficiales en PDF\n"
+	@printf "  $(GREEN)make pdf-user$(RESET)          Compila $(PDF_USER_OUT)\n"
+	@printf "  $(GREEN)make pdf-docs$(RESET)          Compila $(PDF_DOCS_OUT)\n"
+	@printf "  $(GREEN)make docs-all$(RESET)          Compila en todos los formatos (PDF, Word, HTML)\n"
 	@echo ""
-	@echo "$(BOLD)Calidad, Pruebas y Compilación:$(RESET)"
-	@printf "  $(GREEN)make test$(RESET)              Ejecuta la suite de pruebas unitarias y de integración (pytest)\n"
-	@printf "  $(GREEN)make build$(RESET)             Compila el bundle optimizado de producción para Next.js\n"
-	@printf "  $(GREEN)make lint$(RESET)              Ejecuta la validación de tipado y estilo de código\n"
-	@printf "  $(GREEN)make pdf$(RESET)               Compila toda la documentación a PDF/DOCX con Pandocquiles\n"
-	@printf "  $(GREEN)make pdf-docs$(RESET)          Compila la documentación técnica (/docs) a PDF\n"
-	@printf "  $(GREEN)make pdf-user$(RESET)          Compila el manual de usuario (/documentacion) a PDF\n"
-	@echo ""
-	@echo "$(BOLD)Limpieza y Mantenimiento:$(RESET)"
-	@printf "  $(GREEN)make clean$(RESET)             Elimina cachés de compilación, temporales y artefactos .next\n"
-	@printf "  $(GREEN)make clean-all$(RESET)         Limpieza profunda: borra venv y node_modules para reinstalación\n"
+	@echo "$(BOLD)Limpieza:$(RESET)"
+	@printf "  $(GREEN)make clean$(RESET)             Elimina cachés, temporales y PDFs compilados\n"
+	@printf "  $(GREEN)make clean-all$(RESET)         Limpieza profunda (elimina venv y node_modules)\n"
 	@echo ""
 
 # ==============================================================================
-# PUESTA EN MARCHA
+# PUESTA EN MARCHA Y SERVIDORES
 # ==============================================================================
 
 setup: install db-fresh
-	@echo ""
-	@echo "$(BOLD)$(GREEN)Entorno de tribuTACOS listo. Ejecuta 'make dev' para iniciar el sistema.$(RESET)"
-	@echo ""
+	@echo "\n$(BOLD)$(GREEN)✅ Entorno listo. Ejecuta 'make dev' para iniciar el sistema.$(RESET)\n"
 
 $(VENV_DIR):
-	@echo "$(BOLD)$(YELLOW)Creando entorno virtual de Python en $(VENV_DIR)...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Creando entorno virtual Python en $(VENV_DIR)...$(RESET)"
 	@$(PYTHON) -m venv $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)Instalando dependencias de Python...$(RESET)"
 	@$(VENV_PIP) install --upgrade pip
 	@$(VENV_PIP) install -r $(BACKEND_DIR)/requirements.txt
 
 install: $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)Instalando paquetes de Frontend (npm)...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Instalando dependencias de Frontend...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) install
-	@echo "$(BOLD)$(GREEN)Instalación completada exitosamente.$(RESET)"
-
-# ==============================================================================
-# SERVIDORES
-# ==============================================================================
 
 stop:
-	@echo "$(BOLD)$(YELLOW)Liberando puertos $(PORT) y 3000 si están en uso...$(RESET)"
 	@fuser -k $(PORT)/tcp 3000/tcp 2>/dev/null || true
 
 dev: $(VENV_DIR) stop
-	@echo "$(BOLD)$(CYAN)Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend :3000)...$(RESET)"
+	@echo "$(BOLD)$(CYAN)Iniciando tribuTACOS (Backend :$(PORT) + Frontend :3000)...$(RESET)"
 	@make -j 2 backend frontend
 
 backend: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)Iniciando Backend FastAPI en http://$(HOST):$(PORT)...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
 
 frontend:
-	@echo "$(BOLD)$(BLUE)Iniciando Frontend Next.js en http://localhost:3000...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) run dev
 
 # ==============================================================================
-# BASE DE DATOS Y GESTIÓN FISCAL
+# BASE DE DATOS FISCAL
 # ==============================================================================
 
 db-empty: $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)Eliminando base de datos actual ($(DB_FILE))...$(RESET)"
 	@rm -f $(DB_FILE)
-	@echo "$(BOLD)$(GREEN)Inicializando esquema relacional y catálogos fiscales del SAT...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli init-db
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
-	@echo "$(BOLD)$(GREEN)Base de datos limpia creada exitosamente.$(RESET)"
 
 db-fresh: db-empty
-	@echo "$(BOLD)$(CYAN)Cargando dataset demo completo (CFDIs, nómina, honorarios y declaraciones)...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-demo --fixture
-	@echo "$(BOLD)$(GREEN)Base de datos poblada al 100% con datos de prueba.$(RESET)"
+	@echo "$(BOLD)$(GREEN)✅ Base de datos poblada con dataset demo.$(RESET)"
 
 db-import-xml: $(VENV_DIR)
-	@echo "$(BOLD)$(BLUE)Procesando comprobantes XML locales...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync
 
 db-import-pdf: $(VENV_DIR)
-	@echo "$(BOLD)$(BLUE)Procesando declaraciones y acuses PDF oficiales del SAT...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync-sat-docs
 
 db-export: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)Exportando dataset actual a fixture comprimido...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli export-demo
 
 # Alias retrocompatibles
-reset-db: db-empty
-recreate-db: db-fresh
-init-db: db-empty
+reset-db recreate-db init-db: db-empty
 seed-demo: db-fresh
 export-demo: db-export
 sync: db-import-xml
@@ -152,51 +136,59 @@ seed-sat: $(VENV_DIR)
 	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
 
 # ==============================================================================
-# CALIDAD, PRUEBAS Y COMPILACIÓN
+# PRUEBAS Y CALIDAD
 # ==============================================================================
 
 test: $(VENV_DIR)
-	@echo "$(BOLD)$(CYAN)Ejecutando suite de pruebas unitarias y de integración...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(PYTEST) -v
 
 lint:
-	@echo "$(BOLD)$(CYAN)Validando tipado y linteo del Frontend...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) run lint
 
 build:
-	@echo "$(BOLD)$(CYAN)Compilando bundle de producción del Frontend...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) run build
 
 # ==============================================================================
-# COMPILACIÓN DE DOCUMENTACIÓN (PANDOCQUILES)
+# DOCUMENTACIÓN OFICIAL (PANDOCQUILES)
 # ==============================================================================
 
 pdf: pdf-docs pdf-user
-	@echo "$(BOLD)$(GREEN)Toda la documentación ha sido compilada en utils/dist_docs/.$(RESET)"
+	@echo "\n$(BOLD)$(GREEN)🎉 Documentación oficial generada exitosamente:$(RESET)"
+	@echo "  📄 $(BOLD)$(PDF_DOCS_OUT)$(RESET)"
+	@echo "  📘 $(BOLD)$(PDF_USER_OUT)$(RESET)\n"
 
 pdf-docs:
-	@echo "$(BOLD)$(CYAN)Compilando documentación técnica (/docs) con Pandocquiles...$(RESET)"
-	@cd utils/pandocquiles && ./bin/build.sh ../../docs
+	@echo "$(BOLD)$(CYAN)Compilando documentación técnica en PDF...$(RESET)"
+	@$(BUILD_DOCS) --pdf-only ../../docs
+	@cp $(PDF_DOCS_SRC) $(PDF_DOCS_OUT)
+	@echo "$(BOLD)$(GREEN)✅ Generado: $(PDF_DOCS_OUT)$(RESET)"
 
 pdf-user:
-	@echo "$(BOLD)$(CYAN)Compilando manual de usuario (/documentacion) con Pandocquiles...$(RESET)"
-	@cd utils/pandocquiles && ./bin/build.sh ../../documentacion
+	@echo "$(BOLD)$(CYAN)Compilando manual de usuario en PDF...$(RESET)"
+	@$(BUILD_DOCS) --pdf-only ../../manual_usuario
+	@cp $(PDF_USER_SRC) $(PDF_USER_OUT)
+	@echo "$(BOLD)$(GREEN)✅ Generado: $(PDF_USER_OUT)$(RESET)"
+
+docs-all:
+	@echo "$(BOLD)$(CYAN)Compilando documentación en todos los formatos (PDF, Word, HTML)...$(RESET)"
+	@$(BUILD_DOCS) ../../docs ../../manual_usuario
+	@cp $(PDF_DOCS_SRC) $(PDF_DOCS_OUT) 2>/dev/null || true
+	@cp $(PDF_USER_SRC) $(PDF_USER_OUT) 2>/dev/null || true
 
 # ==============================================================================
 # LIMPIEZA
 # ==============================================================================
 
 clean:
-	@echo "$(BOLD)$(YELLOW)Limpiando cachés de compilación, temporales y documentación compilada...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Limpiando cachés, temporales y PDFs compilados...$(RESET)"
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next utils/dist_docs
+	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next $(DIST_DOCS)
+	@rm -f $(PDF_DOCS_OUT) $(PDF_USER_OUT)
 	@echo "$(BOLD)$(GREEN)Limpieza completada.$(RESET)"
 
 clean-all: clean
-	@echo "$(BOLD)$(YELLOW)Eliminando $(VENV_DIR) y $(FRONTEND_DIR)/node_modules...$(RESET)"
-	@rm -rf $(VENV_DIR)
-	@rm -rf $(FRONTEND_DIR)/node_modules
+	@echo "$(BOLD)$(YELLOW)Eliminando $(VENV_DIR) y node_modules...$(RESET)"
+	@rm -rf $(VENV_DIR) $(FRONTEND_DIR)/node_modules
 	@echo "$(BOLD)$(GREEN)Limpieza profunda completada.$(RESET)"
