@@ -39,10 +39,10 @@ help:
 	@echo "$(CYAN)  ==============================================================$(RESET)"
 	@echo ""
 	@echo "$(BOLD)$(YELLOW)🚀 Servidores y Desarrollo:$(RESET)"
-	@printf "  $(GREEN)make dev$(RESET)            Inicia Backend (FastAPI :$(PORT)) y Frontend (Vite) en paralelo\n"
+	@printf "  $(GREEN)make dev$(RESET)            Inicia Backend (FastAPI :$(PORT)) y Frontend (Next.js) en paralelo\n"
 	@printf "  $(GREEN)make backend$(RESET)        Inicia únicamente el servidor Backend con Hot-Reload\n"
-	@printf "  $(GREEN)make frontend$(RESET)       Inicia únicamente el servidor de desarrollo Frontend (Vite)\n"
-	@printf "  $(GREEN)make build$(RESET)          Compila el bundle estático de producción del Frontend\n"
+	@printf "  $(GREEN)make frontend$(RESET)       Inicia únicamente el servidor de desarrollo Frontend (Next.js)\n"
+	@printf "  $(GREEN)make build$(RESET)          Compila el bundle de producción del Frontend (Next.js build)\n"
 	@echo ""
 	@echo "$(BOLD)$(YELLOW)📦 Instalación y Dependencias:$(RESET)"
 	@printf "  $(GREEN)make install$(RESET)        Configura el entorno virtual de Python e instala npm packages\n"
@@ -61,7 +61,7 @@ help:
 	@printf "  $(GREEN)make seed-sat$(RESET)       Siembra catálogo de claves y tarifas Art. 152 LISR\n"
 	@echo ""
 	@echo "$(BOLD)$(YELLOW)🧹 Mantenimiento y Limpieza:$(RESET)"
-	@printf "  $(GREEN)make clean$(RESET)          Limpia cachés de Python (__pycache__), dist y temporales\n"
+	@printf "  $(GREEN)make clean$(RESET)          Limpia cachés de Python (__pycache__), .next y temporales\n"
 	@printf "  $(GREEN)make clean-all$(RESET)      Limpieza profunda (elimina venv y node_modules)\n"
 	@echo ""
 
@@ -70,11 +70,11 @@ help:
 # ==============================================================================
 
 stop:
-	@echo "$(BOLD)$(YELLOW)🛑 Deteniendo procesos anteriores en puertos $(PORT) y 5173...$(RESET)"
-	@fuser -k $(PORT)/tcp 5173/tcp 5174/tcp 2>/dev/null || true
+	@echo "$(BOLD)$(YELLOW)🛑 Deteniendo procesos anteriores en puertos $(PORT), 3000 y 5173...$(RESET)"
+	@fuser -k $(PORT)/tcp 3000/tcp 5173/tcp 5174/tcp 2>/dev/null || true
 
 dev: $(VENV_DIR) stop
-	@echo "$(BOLD)$(MAGENTA)🚀 Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend)...$(RESET)"
+	@echo "$(BOLD)$(MAGENTA)🚀 Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend Next.js)...$(RESET)"
 	@make -j 2 backend frontend
 
 backend: $(VENV_DIR)
@@ -82,7 +82,7 @@ backend: $(VENV_DIR)
 	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
 
 frontend:
-	@echo "$(BOLD)$(BLUE)💻 Iniciando Frontend Vite...$(RESET)"
+	@echo "$(BOLD)$(BLUE)💻 Iniciando Frontend Next.js en http://localhost:3000...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) run dev
 
 build:
@@ -164,7 +164,7 @@ clean:
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/node_modules/.vite
+	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next
 	@echo "$(BOLD)$(GREEN)✨ Limpieza completada.$(RESET)"
 
 clean-all: clean
