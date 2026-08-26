@@ -128,8 +128,7 @@ def asegurar_parametros_fiscales(db: Session) -> None:
                 tope_deducciones_pct=15.0
             ))
 
-    # 3. Sembrar excepciones iniciales conocidas para cliente default
-    # Exclusión de Mattilda (nómina cancelada reemplazada por finiquito)
+    # Exclusión de nómina (cancelada y reemplazada por finiquito)
     mattilda_uuid = '9CA1819A-BA40-4179-84A2-AFCBF5E885F3'
     exclusion = db.query(CfdiExclusion).filter(
         CfdiExclusion.client_id == 'default',
@@ -139,12 +138,12 @@ def asegurar_parametros_fiscales(db: Session) -> None:
         db.add(CfdiExclusion(
             client_id='default',
             uuid=mattilda_uuid,
-            motivo='CFDI de nómina Mattilda cancelado y sustituido por finiquito',
+            motivo='CFDI de nómina cancelado y sustituido por finiquito',
             tipo='ignorar'
         ))
 
-    # Constancia física externa de PPR Insignia Life (2024)
-    insignia_id = 'ILI-CONSTANCIA-ANUAL-2024'
+    # Constancia física externa de PPR (Plan Personal de Retiro 2024)
+    insignia_id = 'SPN-CONSTANCIA-ANUAL-2024'
     constancia = db.query(ConstanciaFiscalExterna).filter(
         ConstanciaFiscalExterna.client_id == 'default',
         ConstanciaFiscalExterna.id == insignia_id
@@ -155,8 +154,8 @@ def asegurar_parametros_fiscales(db: Session) -> None:
             client_id='default',
             year='2024',
             uso_cfdi='D06',
-            emisor_rfc='ILI0805169R6',
-            emisor_nombre='INSIGNIA LIFE (PLAN PERSONAL DE RETIRO)',
+            emisor_rfc='SPN1805169R6',
+            emisor_nombre='SEGUROS Y PENSIONES DEL NORTE SA DE CV (PLAN PERSONAL DE RETIRO)',
             fecha='2024-12-31',
             monto=7578.00,
             descripcion='Aportaciones complementarias a planes personales de retiro (Art. 151 Fracc. V)'
