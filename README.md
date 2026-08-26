@@ -1,5 +1,7 @@
 # tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat-square)](./CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_15_App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
@@ -198,27 +200,50 @@ declara/
 │   ├── 05_api_endpoints.md
 │   ├── 06_frontend_ux_componentes.md
 │   ├── funcional.md
-│   └── tecnico.md
-├── documentacion/            # Manual de Usuario Completo con Guías Visuales
+│   ├── tecnico.md
+│   └── tribuTACOS_documentacion_tecnica.pdf
+├── manual_usuario/           # Manual de Usuario Completo con Guías Visuales
+│   ├── 01_introduccion_y_propuesta_de_valor.md
+│   ├── ...
+│   ├── MANUAL_DE_USUARIO_COMPLETO.md
+│   └── tribuTACOS_manual_usuario.pdf
 ├── Makefile                  # Automatización integral del ciclo de vida
 ├── levantar_proyecto.sh      # Script de inicialización rápida
+├── CHANGELOG.md              # Historial de versiones y cambios
+├── CONTRIBUTING.md           # Guía de contribución y estándares
+├── CODE_OF_CONDUCT.md        # Código de conducta para la comunidad
+├── SECURITY.md               # Política de seguridad y privacidad local
+├── LICENSE                   # Licencia MIT
 └── README.md                 # Guía principal del proyecto
 ```
 
 ---
 
-## Documentación Detallada
+## 📚 Documentación Oficial
 
 Para consultar la documentación técnica y funcional en profundidad:
 
-* **[Manual de Usuario Completo](documentacion/MANUAL_DE_USUARIO_COMPLETO.md)**: Guía detallada de uso con capturas de pantalla de cada sección.
-* **[Especificación de Arquitectura](docs/01_arquitectura_general.md)**: Diseño de software, flujo de datos y dependencias.
-* **[Modelo de Datos Relacional](docs/02_modelo_de_datos.md)**: Diagrama entidad-relación y diccionario de datos.
-* **[Motor Fiscal y Algoritmos](docs/03_motor_fiscal_algoritmos.md)**: Fórmulas y disposiciones legales de la LISR y LIVA.
-* **[Especificación de la API REST](docs/05_api_endpoints.md)**: Esquemas JSON y contratos de endpoints.
+* 📘 **[Manual de Usuario Completo (Markdown)](manual_usuario/MANUAL_DE_USUARIO_COMPLETO.md)** / **[Versión PDF](manual_usuario/tribuTACOS_manual_usuario.pdf)**: Guía detallada paso a paso con diagramas y capturas de pantalla de la interfaz.
+* 📄 **[Documentación Técnica de Arquitectura (Markdown)](docs/01_arquitectura_general.md)** / **[Versión PDF](docs/tribuTACOS_documentacion_tecnica.pdf)**: Diseño de software, flujo de datos y dependencias.
+* 🧮 **[Motor Fiscal y Algoritmos LISR/LIVA](docs/03_motor_fiscal_algoritmos.md)**: Fórmulas y disposiciones legales de la legislación tributaria mexicana.
+* 🗄️ **[Modelo de Datos Relacional](docs/02_modelo_de_datos.md)**: Diagrama entidad-relación y catálogo de tablas.
+* 🔌 **[Especificación de la API REST](docs/05_api_endpoints.md)**: Esquemas JSON y contratos de endpoints FastAPI.
 
 ---
 
-## Aviso Legal / Disclaimer
+## 📄 Comunidad, Gobernanza y Licencia
+
+Desarrollado bajo la licencia MIT como parte del ecosistema de herramientas de código abierto de **Shellaquiles Org**.
+
+- 📜 [Licencia MIT](./LICENSE)
+- 📋 [Historial de Cambios (Changelog)](./CHANGELOG.md)
+- 🤝 [Guía de Contribución](./CONTRIBUTING.md)
+- 🛡️ [Política de Seguridad y Privacidad](./SECURITY.md)
+- 📜 [Código de Conducta](./CODE_OF_CONDUCT.md)
+
+---
+
+## ⚖️ Aviso Legal / Disclaimer
 
 tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos, proyecciones y determinaciones presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal, contable o legal vinculante, y no sustituyen las determinaciones, declaraciones formales ni obligaciones presentadas ante el Servicio de Administración Tributaria (SAT).
+
