@@ -23,6 +23,14 @@ graph TD
     Cat --> UNSPSC[Resolución Jerárquica UNSPSC]
     API --> Endpoints[Contratos de Servicios REST]
     Front --> UI[Interfaces y Visualización de Datos]
+
+    classDef mainNode fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef moduleNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef detailNode fill:#f8fafc,stroke:#cbd5e1,stroke-width:1px,color:#334155;
+
+    class Root mainNode;
+    class Arch,Data,Fiscal,Cat,API,Front moduleNode;
+    class Flow,DB,Calcs,UNSPSC,Endpoints,UI detailNode;
 ```
 
 ---

@@ -41,6 +41,16 @@ flowchart TD
     Engine --> Cache
     Cache --> API
     API --> Frontend
+
+    classDef ingestaStyle fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef backendStyle fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#312e81;
+    classDef frontendStyle fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#064e3b;
+    classDef dbStyle fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#78350f;
+
+    class XML_Emitidos,XML_Recibidos,PDF_SAT ingestaStyle;
+    class Parser,SatCat,Engine,Cache,API backendStyle;
+    class DB dbStyle;
+    class UI_Nav,UI_Dash,UI_Pre,UI_Egr,UI_Aud,UI_Exp frontendStyle;
 ```
 
 ---

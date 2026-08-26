@@ -25,6 +25,18 @@ graph TD
     Tab3 --> FilterRubro[Filtro por 8 Rubros Operativos]
     Tab7 --> ModalConcil[Modal de Conciliación Detallada]
     App --> Export[Módulo de Exportación CSV - csvExport.js]
+
+    classDef mainNode fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef headerNode fill:#f8fafc,stroke:#94a3b8,stroke-width:1px,color:#334155;
+    classDef tabNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef subNode fill:#ecfdf5,stroke:#10b981,stroke-width:1px,color:#064e3b;
+    classDef exportNode fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#78350f;
+
+    class App mainNode;
+    class Header,Tabs headerNode;
+    class Tab1,Tab2,Tab3,Tab4,Tab5,Tab6,Tab7 tabNode;
+    class ModalProv,FilterRubro,ModalConcil subNode;
+    class Export exportNode;
 ```
 
 ---

@@ -41,6 +41,16 @@ graph TD
     
     N4 -->|Coincidencia| Res4[Asignación por Patrón de Texto]
     N4 -->|Sin coincidencia| Fallback[Asignación a Otros Gastos Operativos]
+
+    classDef startNode fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef decisionNode fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#78350f;
+    classDef matchNode fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#064e3b;
+    classDef fallbackNode fill:#f8fafc,stroke:#94a3b8,stroke-width:1.5px,color:#334155;
+
+    class Start startNode;
+    class N1,N2,N3,N4 decisionNode;
+    class Res1,Res2,Res3,Res4 matchNode;
+    class Fallback fallbackNode;
 ```
 
 ### 2.1 Niveles de Resolución:

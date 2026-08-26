@@ -15,28 +15,23 @@
 ## Flujo de Procesamiento y Arquitectura
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Ingesta["Fuentes de Entrada"]
-        XML["CFDIs en XML\n• Ingresos PFAE\n• Gastos Operativos\n• Recibos de Nómina\n• Deducciones Personales"]
-        PDF["Documentos SAT (PDF)\n• Declaraciones Anuales\n• Pagos Provisionales\n• Acuses Bancarios"]
+        XML["CFDIs en XML (Ingresos, Gastos, Nómina, Deducciones)"]
+        PDF["Documentos SAT (Declaraciones, Provisionales, Acuses)"]
     end
 
     subgraph Backend["Motor Backend (FastAPI :8010)"]
         Parser["Parser C (lxml & pdfplumber)"]
-        DB[(Persistencia Relacional\nSQLAlchemy 2.0)]
-        Engine["Motor Fiscal LISR & LIVA\n• Art. 96, 106, 151, 152\n• Acreditamiento IVA Art. 5/6"]
+        DB[(Persistencia Relacional SQLAlchemy)]
+        Engine["Motor Fiscal LISR & LIVA (Art. 96, 106, 151, 152)"]
         Cache["Caché de Resúmenes Fiscales"]
         API["Servicios REST API"]
     end
 
     subgraph Frontend["Interfaz de Usuario (Next.js 15 :3000)"]
-        Dash["Tablero Global"]
-        Prov["Pre-Declaración Mensual"]
-        Nom["Sueldos y Salarios"]
-        Hon["Honorarios PFAE"]
-        Egr["Gastos en 8 Rubros"]
-        Ded["Deducciones Art. 151"]
-        Aud["Auditoría Oficial SAT"]
+        Dash["Tablero Global & Pre-Declaración"]
+        Mod["Módulos: Sueldos, Honorarios, Gastos, Deducciones, Auditoría"]
     end
 
     XML --> Parser
@@ -46,6 +41,16 @@ flowchart LR
     Engine --> Cache
     Cache --> API
     API --> Frontend
+
+    classDef inNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef backNode fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#312e81;
+    classDef frontNode fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#064e3b;
+    classDef dbNode fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#78350f;
+
+    class XML,PDF inNode;
+    class Parser,Engine,Cache,API backNode;
+    class DB dbNode;
+    class Dash,Mod frontNode;
 ```
 
 ---

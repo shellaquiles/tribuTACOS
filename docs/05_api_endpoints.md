@@ -9,16 +9,22 @@ Contratos de servicios REST, parámetros de consulta, esquemas de respuesta JSON
 La API está estructurada bajo el prefijo `/api` y expuesta por defecto en el puerto `8010`:
 
 ```mermaid
-graph LR
+flowchart TD
     ClientApp[Cliente HTTP / Frontend] --> Routers
     
-    subgraph Routers[Enrutadores FastAPI]
-        R1["/api/summary\nResumen Fiscal Consolidado"]
-        R2["/api/sat_docs\nAuditoría Oficial SAT"]
-        R3["/api/cfdis\nGestión y Consulta de CFDIs"]
-        R4["/api/clients\nGestión de Contribuyentes"]
-        R5["/api/sync\nSincronización de Comprobantes"]
+    subgraph Routers[Enrutadores FastAPI :8010]
+        R1["/api/summary (Resumen Fiscal Consolidado)"]
+        R2["/api/sat_docs (Auditoría Oficial SAT)"]
+        R3["/api/cfdis (Gestión y Consulta de CFDIs)"]
+        R4["/api/clients (Gestión de Contribuyentes)"]
+        R5["/api/sync (Sincronización de Comprobantes)"]
     end
+
+    classDef clientNode fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef routerNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+
+    class ClientApp clientNode;
+    class R1,R2,R3,R4,R5 routerNode;
 ```
 
 ---

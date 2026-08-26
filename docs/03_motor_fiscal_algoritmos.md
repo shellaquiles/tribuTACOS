@@ -17,30 +17,41 @@ El motor fiscal implementado en [`backend/app/cfdis/calculators/`](file:///home/
 * [`simulador_sat.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con desglose paso a paso.
 
 ```mermaid
-graph LR
-    subgraph Ingresos["Ingresos Acumulables"]
-        Nomina["Sueldos y Salarios\n(Capítulo I - Art. 94/96)"]
-        PFAE["Actividad Profesional / PFAE\n(Capítulo II - Art. 100/106)"]
-        Intereses["Intereses Financieros\n(Capítulo VI - Art. 133/135)"]
+flowchart TD
+    subgraph Ingresos["1. Ingresos Acumulables"]
+        Nomina["Sueldos y Salarios (Art. 94/96)"]
+        PFAE["Honorarios / PFAE (Art. 100/106)"]
+        Intereses["Intereses Financieros (Art. 133/135)"]
     end
 
-    subgraph Provisionales["Determinaciones Provisionales"]
-        ISR_Prov["ISR Mensual Acumulativo\nArt. 106 LISR"]
-        IVA_Def["IVA Definitivo Mensual\nArt. 5 y 6 LIVA"]
+    subgraph Provisionales["2. Determinaciones Provisionales"]
+        ISR_Prov["ISR Mensual Acumulativo (Art. 106)"]
+        IVA_Def["IVA Definitivo Mensual (Art. 5/6 LIVA)"]
     end
 
-    subgraph Anual["Determinación Anual"]
-        Deds_Pers["Deducciones Personales\nArt. 151 LISR\n(Tope 15% o 5 UMAs)"]
-        Tarifa_Anual["Tarifa Anual Progresiva\nArt. 152 LISR\n(1.92% a 35%)"]
-        Liquidacion["Liquidación del Ejercicio\n• Saldo a Favor\n• Saldo a Cargo"]
+    subgraph Anual["3. Determinación Anual ISR (Art. 152)"]
+        Deds_Pers["Deducciones Personales (Art. 151)"]
+        Tarifa_Anual["Tarifa Anual Progresiva"]
+        Liquidacion["Liquidación Final\n(Saldo a Favor / Saldo a Cargo)"]
     end
 
-    Nomina --> Liquidacion
     PFAE --> ISR_Prov
     PFAE --> IVA_Def
+    Nomina --> Liquidacion
+    Intereses --> Liquidacion
     ISR_Prov --> Liquidacion
     Deds_Pers --> Liquidacion
     Tarifa_Anual --> Liquidacion
+
+    classDef blueBox fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef purpleBox fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#312e81;
+    classDef amberBox fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#78350f;
+    classDef greenBox fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#064e3b;
+
+    class Nomina,PFAE,Intereses blueBox;
+    class ISR_Prov,IVA_Def purpleBox;
+    class Deds_Pers,Tarifa_Anual amberBox;
+    class Liquidacion greenBox;
 ```
 
 ---
@@ -76,6 +87,16 @@ flowchart TD
     
     D -->|Saldo a Favor| G["Generar Nuevo Remanente de IVA a Favor"]
     G --> H["Arrastre a Periodos Siguientes (Art. 6 LIVA)"]
+
+    classDef baseNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef decNode fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#78350f;
+    classDef payNode fill:#fff1f2,stroke:#f43f5e,stroke-width:2px,color:#881337;
+    classDef favorNode fill:#ecfdf5,stroke:#10b981,stroke-width:2px,color:#064e3b;
+
+    class A,B,C baseNode;
+    class D decNode;
+    class E,F payNode;
+    class G,H favorNode;
 ```
 
 ---
