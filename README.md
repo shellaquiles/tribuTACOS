@@ -64,46 +64,55 @@ flowchart TD
 * Determinación preliminar de saldo a favor proyectado o impuesto a cargo.
 * Desglose proporcional de ingresos por régimen fiscal.
 
+![Tablero de Control Global](manual_usuario/img/01_dashboard_global.png)
+
 ### 2. Pre-Declaración Mensual (12 Meses)
 * Simulación mensual bajo el principio de **flujo de efectivo** (facturas PUE y complementos de pago PPD efectivamente cobrados o pagados).
 * Determinación acumulativa del Impuesto Sobre la Renta (Art. 106 LISR).
 * Determinación del Impuesto al Valor Agregado mensual con gestión automática del **arrastre de saldos a favor** (Art. 5 y 6 LIVA).
 * Modales interactivos con el desglose del borrador oficial para ISR e IVA.
 
+![Pre-Declaración Mensual y Arrastre de IVA](manual_usuario/img/03_predeclaracion_mensual.png)
+
 ### 3. Determinación Anual y Cascada Fiscal
 * Cálculo de ISR anual conforme a la tarifa progresiva del Art. 152 LISR.
 * Desglose en cascada de cinco pasos: Ingresos Acumulables ➔ Deducciones Personales ➔ Base Gravable ➔ ISR Determinado ➔ Liquidación Final.
 * Cálculo de tasa efectiva y tasa marginal del ejercicio.
 
+![Pre-Declaración Anual y Cascada Fiscal](manual_usuario/img/05_predeclaracion_anual.png)
+
 ### 4. Clasificación Taxonómica de Egresos en 8 Rubros SAT
-* Algoritmo jerárquico en 4 niveles que mapea partidas contra las 52,547 claves oficiales del SAT:
-  1. *Software, Nube e Infraestructura TI*
-  2. *Equipo de Cómputo y Electrónica*
-  3. *Servicios Profesionales y Asesoría*
-  4. *Renta de Vehículos y Transporte*
-  5. *Plataformas de Movilidad y Taxis*
-  6. *Combustibles y Lubricantes*
-  7. *Seguros y Coberturas*
-  8. *Viáticos, Viajes y Peajes*
-  9. *Otros Gastos Operativos Generales*
+* Algoritmo jerárquico que mapea partidas contra las más de 52,000 claves oficiales del catálogo `c_ClaveProdServ` del SAT.
+* Detección y auditoría de métodos de pago y medios bancarizados.
+* Vistas analíticas por categoría, proveedor, artículo y flujo cronológico mensual.
+
+![Egresos y Clasificación Taxonómica SAT](manual_usuario/img/06_gastos_y_compras.png)
 
 ### 5. Deducciones Personales y Optimizador Legal (Art. 151 LISR)
-* Auditoría de requisitos de deducibilidad y medios de pago bancarizados.
+* Auditoría de requisitos de deducibilidad y medios de pago bancarizados obligatorios.
 * Control del límite legal general (el menor entre 15% de ingresos acumulables o 5 UMAs anuales).
 * Tratamiento especializado con subtopes para Planes Personales de Retiro (PPR, Fracc. V) y Seguro de Gastos Médicos Mayores (SGMM, Fracc. VI).
 
+![Optimizador de Deducciones Personales](manual_usuario/img/07_deducciones_personales.png)
+
 ### 6. Sueldos, Salarios y Recibos de Nómina (Capítulo I LISR)
-* Auditoría quincenal y mensual de recibos timbrados.
+* Auditoría quincenal y mensual de recibos timbrados bajo el complemento CFDI 1.2.
 * Desglose de ingresos gravados y percepciones exentas (aguinaldo, prima vacacional y previsión social bajo el Art. 93 LISR).
-* Conciliación de retenciones de ISR de nómina (Art. 96 LISR) y cuotas de seguridad social (IMSS).
+* Conciliación de retenciones de ISR de nómina (Art. 96 LISR) y cuotas obreras del IMSS.
+
+![Sueldos, Salarios y Recibos de Nómina](manual_usuario/img/08_sueldos_y_salarios.png)
 
 ### 7. Honorarios y Facturación Emitida (Capítulo II LISR)
 * Monitoreo de ingresos facturados, retenciones de ISR (10%) e IVA (10.6667%) efectuadas por personas morales.
-* Análisis de concentración de cartera por cliente y distribución por tipo de servicio.
+* Análisis de concentración de cartera por cliente y distribución por clave de producto/servicio.
+
+![Honorarios y Facturación Emitida](manual_usuario/img/10_honorarios_emitidos.png)
 
 ### 8. Auditoría y Conciliación Oficial SAT
 * Comparativa 1 a 1 entre los cálculos derivados de comprobantes XML y las cifras reportadas en las declaraciones oficiales (PDFs).
-* Conciliación de números de operación, fechas de presentación y confirmación de acuses bancarios de pago.
+* Conciliación de números de operación, fechas de presentación y confirmación de acuses bancarios de pago con línea de captura.
+
+![Auditoría y Conciliación Oficial SAT](manual_usuario/img/12_auditoria_sat_oficial.png)
 
 ---
 
