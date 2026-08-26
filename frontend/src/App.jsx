@@ -1,3 +1,5 @@
+'use client';
+
 import axios from 'axios';
 import { Component, useEffect, useState, useCallback } from 'react';
 import {
