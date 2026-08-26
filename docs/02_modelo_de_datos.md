@@ -4,7 +4,63 @@ Diseño de base de datos relacional, diagramas entidad-relación (ERD), modelos 
 
 ---
 
-## 1. Diagrama Entidad-Relación (ERD)
+## 1. Esquema Relacional de Entidades
+
+```mermaid
+flowchart TD
+    subgraph Core["Entidad Central"]
+        CLIENT["CLIENT\n(Contribuyente Multi-RFC)"]
+    end
+
+    subgraph Comprobantes["Comprobantes y Reglas"]
+        CFDI["CFDI\n(XMLs Ingresos, Gastos, Nómina)"]
+        CFDI_EXC["CFDI_EXCLUSION\n(Reglas de Exclusión)"]
+        CONST_EXT["CONSTANCIA_FISCAL_EXTERNA\n(PPRs y Deducciones Físicas)"]
+    end
+
+    subgraph DocumentosSAT["Auditoría Oficial SAT"]
+        DECL_ANUAL["DECLARACION_ANUAL_SAT\n(Declaraciones Anuales PDF)"]
+        PAGO_PROV["PAGO_PROVISIONAL_SAT\n(12 Pagos Provisionales PDF)"]
+        ACUSE_PAGO["ACUSE_PAGO_SAT\n(Comprobantes Bancarios)"]
+    end
+
+    subgraph Catalogos["Catálogos y Parámetros Fiscales"]
+        CAT_SAT["CATALOGO_SAT_CLAVE\n(52,547 Claves UNSPSC)"]
+        TARIFA_ISR["TARIFA_ISR_ANUAL\n(Art. 152 2021-2026)"]
+        PARAM_SAT["PARAMETRO_SAT\n(Factores UMA y Topes)"]
+    end
+
+    subgraph Rendimiento["Aceleración de Consultas"]
+        SUMMARY_CACHE["SUMMARY_CACHE\n(Resumen Fiscal Compilado)"]
+    end
+
+    CLIENT --> CFDI
+    CLIENT --> CFDI_EXC
+    CLIENT --> CONST_EXT
+    CLIENT --> DECL_ANUAL
+    CLIENT --> PAGO_PROV
+    CLIENT --> ACUSE_PAGO
+    CLIENT --> SUMMARY_CACHE
+
+    CFDI -.-> CAT_SAT
+    TARIFA_ISR -.-> PARAM_SAT
+
+    classDef clientStyle fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
+    classDef cfdiStyle fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef satStyle fill:#eef2ff,stroke:#6366f1,stroke-width:1.5px,color:#312e81;
+    classDef catStyle fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#78350f;
+    classDef cacheStyle fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#064e3b;
+
+    class CLIENT clientStyle;
+    class CFDI,CFDI_EXC,CONST_EXT cfdiStyle;
+    class DECL_ANUAL,PAGO_PROV,ACUSE_PAGO satStyle;
+    class CAT_SAT,TARIFA_ISR,PARAM_SAT catStyle;
+    class SUMMARY_CACHE cacheStyle;
+```
+
+---
+
+## 2. Diagrama Entidad-Relación Detallado (ERD)
 
 ```mermaid
 erDiagram
@@ -162,7 +218,7 @@ erDiagram
 
 ---
 
-## 2. Índices de Rendimiento y Optimización
+## 3. Índices de Rendimiento y Optimización
 
 Para garantizar tiempos de respuesta inferiores a 15 ms en consultas analíticas sobre volúmenes elevados de comprobantes, se definen los siguientes índices en SQLAlchemy:
 
@@ -178,7 +234,7 @@ __table_args__ = (
 
 ---
 
-## 3. Estructura del Campo Desestructurado (`parsed_data`)
+## 4. Estructura del Campo Desestructurado (`parsed_data`)
 
 Cada comprobante fiscal almacena en su columna `parsed_data` un objeto JSON estandarizado con la información analizada del XML:
 
@@ -223,7 +279,7 @@ Cada comprobante fiscal almacena en su columna `parsed_data` un objeto JSON esta
 
 ---
 
-## 4. Estrategia de Caché e Invalidación (`SummaryCache`)
+## 5. Estrategia de Caché e Invalidación (`SummaryCache`)
 
 La tabla `summary_cache` almacena el payload precalculado del resumen fiscal para proporcionar respuestas de baja latencia a la capa de frontend.
 
