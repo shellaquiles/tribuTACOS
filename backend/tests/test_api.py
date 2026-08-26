@@ -2,6 +2,7 @@
 Tests de integración para los endpoints de la API FastAPI de tributacos.
 """
 
+from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 from app.main import app
@@ -37,19 +38,26 @@ def test_get_taxonomia():
     assert "taxonomia" in data
 
 
-def test_get_summary_2024():
-    """Valida el endpoint de resumen fiscal para un ejercicio."""
-    response = client.get("/api/summary?year=2024")
+def test_get_summary():
+    """Valida el endpoint de resumen fiscal por defecto (año actual) y con query param."""
+    # 1. Por defecto: año actual
+    response = client.get("/api/summary")
     assert response.status_code == 200
     data = response.json()
-    assert data.get("year") == "2024"
+    assert data.get("year") == str(datetime.now().year)
     assert "sections" in data
-    assert "sueldos" in data["sections"]
-    assert "honorarios" in data["sections"]
-    assert "reporte_gastos" in data["sections"]
-    assert "deducciones_personales" in data["sections"]
     assert "summary" in data
-    assert "simulacion_anual" in data
+
+    # 2. Con año explícito (2024)
+    res_2024 = client.get("/api/summary?year=2024")
+    assert res_2024.status_code == 200
+    d_2024 = res_2024.json()
+    assert d_2024.get("year") == "2024"
+    assert "sueldos" in d_2024["sections"]
+    assert "honorarios" in d_2024["sections"]
+    assert "reporte_gastos" in d_2024["sections"]
+    assert "deducciones_personales" in d_2024["sections"]
+    assert "simulacion_anual" in d_2024
 
 
 def test_client_exclusions_and_constancias():
@@ -60,7 +68,7 @@ def test_client_exclusions_and_constancias():
     assert isinstance(res_excl.json(), list)
 
     # 2. Constancias
-    res_const = client.get("/api/clients/default/constancias?year=2024")
+    res_const = client.get("/api/clients/default/constancias")
     assert res_const.status_code == 200
     assert isinstance(res_const.json(), list)
 

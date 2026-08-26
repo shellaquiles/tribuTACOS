@@ -34,14 +34,14 @@ class ErrorBoundary extends Component {
   }
 }
 
-const API_BASE = `http://${window.location.hostname}:8010/api`;
+const API_BASE = '/api';
 
 const App = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [year, setYear] = useState('2024');
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [clients, setClients] = useState([]);
   const [currentClientId, setCurrentClientId] = useState('default');

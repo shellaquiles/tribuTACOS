@@ -146,3 +146,53 @@ Devuelve la matriz de conciliación oficial entre las declaraciones y pagos del 
   ]
 }
 ```
+
+---
+
+### `GET /api/clients/{client_id}/exclusions`
+Obtiene las exclusiones o reglas fiscales activas para el cliente (e.g. UUIDs cancelados o duplicados).
+
+* **Respuesta Exitosa (`200 OK`):**
+```json
+[
+  {
+    "id": 1,
+    "client_id": "default",
+    "uuid": "4391e533-31f0-466d-96eb-69671d18721c",
+    "motivo": "Nómina cancelada",
+    "tipo": "nomina"
+  }
+]
+```
+
+---
+
+### `GET /api/clients/{client_id}/constancias?year=YYYY`
+Obtiene las constancias fiscales externas (e.g. aportaciones a Planes Personales de Retiro PPRs físicos) registradas para el cliente en el ejercicio fiscal.
+
+* **Respuesta Exitosa (`200 OK`):**
+```json
+[
+  {
+    "id": "CONST-PPR-INSIGNIA-2024",
+    "client_id": "default",
+    "year": "2024",
+    "uso_cfdi": "D06",
+    "emisor_rfc": "ILM080311ABC",
+    "emisor_nombre": "INSIGNIA LIFE S.A. DE C.V.",
+    "fecha": "2024-12-31",
+    "monto": 10000.00,
+    "descripcion": "Constancia de aportaciones voluntarias a PPR"
+  }
+]
+```
+
+---
+
+### `GET /api/sat/tarifas/{year}`
+Retorna los 11 tramos de la tarifa progresiva de ISR anual (Art. 152 LISR) para el ejercicio especificado.
+
+---
+
+### `GET /api/sat/parametros`
+Retorna la tabla histórica de factores UMA y topes de deducciones (2021 a 2026).

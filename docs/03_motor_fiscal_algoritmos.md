@@ -6,7 +6,15 @@
 
 ## 1. Fundamentos Legales de la Legislación Fiscal Mexicana
 
-El motor fiscal implementado en [`backend/app/cfdis/engine.py`](file:///home/kubrick/www/declara/backend/app/cfdis/engine.py) opera bajo los siguientes artículos de la **Ley del Impuesto sobre la Renta (LISR)** y la **Ley del Impuesto al Valor Agregado (LIVA)**:
+El motor fiscal implementado en [`backend/app/cfdis/calculators/`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/) y coordinado por [`backend/app/cfdis/engine.py`](file:///home/kubrick/www/declara/backend/app/cfdis/engine.py) opera como un conjunto de funciones matemáticas puras desacopladas de la persistencia:
+
+* [`tarifas.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/tarifas.py): Cálculo de ISR Art. 152 con breakdown detallado (`limite_inferior`, `cuota_fija`, `porcentaje_excedente`, `impuesto_marginal`).
+* [`nomina.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/nomina.py): Cálculo de sueldos, desglose de percepciones/deducciones, serie mensual y filtrado dinámico de exclusiones de BD.
+* [`honorarios.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/honorarios.py): Facturación PFAE, serie de 12 meses, concentración de clientes y mix de conceptos.
+* [`gastos.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/gastos.py): Deducibilidad, matriz mensual de egresos y clasificación por rubros SAT.
+* [`deducciones.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/deducciones.py): Deducciones personales, integración de constancias físicas externas (PPRs) y tope del 15% o 5 UMAs.
+* [`intereses.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/intereses.py): Intereses nominales, reales y retenciones de entidades financieras.
+* [`simulador_sat.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con cascada (`waterfall_pasos`), tasa efectiva y marginal.
 
 ```mermaid
 graph LR

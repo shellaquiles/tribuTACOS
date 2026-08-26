@@ -1,38 +1,53 @@
-# Documentación Funcional - Simulador de Pre-Declaración Anual ISR
+# Documentación Funcional — tribuTACOS
 
-## Propósito
-El Simulador de Pre-Declaración Anual es una herramienta diseñada para Personas Físicas con Actividad Empresarial (PFAE) y Sueldos y Salarios. Su objetivo principal es adelantarse a la propuesta oficial del SAT, permitiendo a los contribuyentes previsualizar el cálculo de su ISR y conocer si tendrán saldo a favor o a cargo.
+## 1. Propósito y Alcance
+**tribuTACOS** es una plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3/4.0) y pre-declaración automática (ISR e IVA) diseñada para Personas Físicas con Actividad Empresarial y Profesional (PFAE) y Sueldos y Salarios en México.
 
-## Módulos Principales
+Su objetivo principal es calcular de forma anticipada y transparente los **Pagos Provisionales Mensuales (ISR R122 e IVA R21)** y la **Declaración Anual del ISR**, auditando la información contra los documentos oficiales emitidos por el SAT.
 
-### 1. Panel de Ingresos (Dashboard)
-Este módulo agrupa la información procesada a partir de los CFDI (recibidos y emitidos) categorizada por regímenes fiscales.
-*   **Sueldos, Salarios y Asimilados:**
-    *   Muestra los ingresos anuales gravados y exentos.
-    *   Detalla los ingresos por cada empleador.
-    *   Presenta un desglose detallado de los ingresos exentos según el Art. 93 LISR (Aguinaldo, Prima Vacacional, PTU, etc.).
-*   **Actividad Empresarial y Servicios Profesionales (Honorarios):**
-    *   Calcula y muestra los ingresos cobrados y las deducciones autorizadas pagadas bajo la regla de Flujo de Efectivo del SAT (facturas PUE + complementos).
-    *   Integra un resumen mensual de los pagos provisionales, mostrando si hubieron ingresos y la utilidad o pérdida de cada mes.
-*   **Intereses:**
-    *   Resume el total de intereses nominales reportados por instituciones financieras y el ISR que estas retuvieron.
+---
 
-### 2. Deducciones Personales
-*   Sección destinada a agrupar los gastos personales del ejercicio fiscal (Art. 151 LISR) que pueden disminuir la base gravable.
+## 2. Módulos Principales de la Aplicación
 
-### 3. Determinación del ISR
-Es la "calculadora" principal que simula el proceso oficial del SAT. Contiene el papel de trabajo anual detallado paso a paso:
-1.  **Ingresos Acumulables:** Suma de ingresos gravados de todos los regímenes.
-2.  **Base Gravable:** Ingresos Acumulables menos Deducciones Personales.
-3.  **Cálculo del ISR:** Aplicación de la Tarifa Anual (Art. 152 LISR) correspondiente al año seleccionado (2024 o 2025). Muestra de forma transparente el Límite Inferior, Excedente, Tasa Marginal y Cuota Fija aplicados.
-4.  **Acreditamientos:** Suma del ISR retenido durante el año por patrones o clientes.
-5.  **Resultado Definitivo:** El balance final que indica si existe un **Saldo a Favor** (para devolución) o un **ISR a Cargo** (a pagar).
+### 1. Visión General (Dashboard Global)
+* Consolida el estado financiero y fiscal anual del contribuyente.
+* KPIs instantáneos: Ingresos Totales Cobrados, Egresos Pagados, Utilidad Fiscal, ISR Retenido e IVA a Favor/Cargo.
+* Estado proyectado de saldo a favor o impuesto a cargo.
 
-## Navegación y Uso
-1.  **Selección de Ejercicio Fiscal:** En la parte superior de la interfaz, el usuario puede intercambiar entre los años fiscales (2024 y 2025). La interfaz y la tarifa aplicada se actualizarán dinámicamente.
-2.  **Pestañas (Tabs):** La interfaz utiliza un sistema de pestañas para saltar entre *Ingresos*, *Deducciones Personales* y *Determinación ISR*, manteniendo el foco del usuario.
-3.  **Filtrado Inteligente:** El sistema detecta automáticamente duplicados de comprobantes fiscales y aísla correctamente los datos pertenecientes exclusivamente al año consultado.
+### 2. Pre-Declaraciones SAT
+* **Pre-Declaración Mensual (12 Meses):**
+  * Simula los 12 pagos provisionales del formulario R122 (ISR) y R21 (IVA definitivo).
+  * Implementa el principio de **Flujo de Efectivo** (facturas PUE + complementos de pago PPD con fecha de cobro/pago).
+  * Control automático del **arrastre de saldos a favor de IVA** (Art. 5 y 6 LIVA).
+* **Pre-Declaración Anual:**
+  * Papel de trabajo anual con visualización de cascada (**Waterfall de 5 pasos**).
+  * Tarifa progresiva del Art. 152 LISR con detalle de cuota fija, límite inferior, excedente e impuesto marginal.
+  * Determinación de tasa efectiva y tasa marginal.
 
-## Beneficios
-*   **Transparencia Total:** A diferencia de la plataforma del SAT que oculta el cálculo aritmético tras bambalinas, el simulador detalla cada operación matemática.
-*   **Anticipación Fiscal:** Provee información útil meses antes de abril (mes de declaración para personas físicas).
+### 3. Egresos y Deducciones
+* **Gastos y Compras (8 Rubros SAT):**
+  * Clasificación automática de partidas y conceptos contra el catálogo de más de 52,500 claves del SAT.
+  * Filtro interactivo por categorías (Software/TI, Servicios Profesionales, Combustibles, Viáticos, Renta de Vehículos, Seguros, Cómputo, Otros Operativos).
+  * Matriz mensual de proveedores y deducibilidad bancarizada.
+* **Deducciones Personales (Art. 151 LISR):**
+  * Auditoría de requisitos fiscales (formas de pago bancarizadas, métodos PUE).
+  * Aplicación del doble tope legal: **15% del total de ingresos o 5 UMAs anuales**.
+  * Soporte para aportaciones voluntarias y constancias externas físicas (PPRs).
+
+### 4. Ingresos y Nómina
+* **Sueldos y Salarios (Capítulo I LISR):**
+  * Masa bruta anual, retenciones de ISR y cálculo de neto depositado por empleador.
+  * Desglose detallado de ingresos gravados y exentos (Aguinaldo, PTU, Primas vacacionales/dominicales).
+* **Honorarios y Facturas Clientes (Capítulo II LISR):**
+  * Analítica mensual de facturación emitida, concentración por cliente (Top Clientes) y mix de conceptos por clave SAT.
+
+### 5. Verificación Oficial (Auditoría SAT)
+* Cruce comparativo 1 a 1 entre los PDFs oficiales emitidos por el SAT (Declaraciones Anuales, Pagos Provisionales, Acuses bancarios) y los cálculos obtenidos a partir de los XMLs.
+* Detección de discrepancias y validación de acuses de recibo.
+
+---
+
+## 3. Beneficios Clave
+* **Transparencia Total:** Cálculos matemáticos y fiscales abiertos y trazables paso a paso.
+* **Anticipación Fiscal:** Proyecciones disponibles en cualquier momento del año, sin depender del portal del SAT.
+* **Seguridad y Privacidad:** Datos procesados 100% de forma local en la base de datos relacional del usuario.

@@ -3,6 +3,7 @@ Router de FastAPI para CFDIs, Ingesta, Parámetros SAT, Exclusiones y Resumen Fi
 """
 
 import os
+from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from fastapi.responses import FileResponse
@@ -68,7 +69,7 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
 
 @router.get("/summary")
 def get_summary(
-    year: str = Query("2024", description="Ejercicio fiscal a calcular (ej. 2024)"),
+    year: Optional[str] = Query(None, description="Ejercicio fiscal a calcular"),
     client_id: Optional[str] = Query(None, description="ID del cliente/contribuyente"),
     force_refresh: bool = Query(False, description="Forzar re-cálculo e invalidar caché"),
     db: Session = Depends(get_db)
@@ -76,6 +77,8 @@ def get_summary(
     """
     Retorna la radiografía fiscal del cliente y ejercicio fiscal seleccionado.
     """
+    target_year = year or str(datetime.now().year)
+
     if client_id:
         client = db.query(Client).filter(Client.id == client_id).first()
         if not client:
@@ -89,9 +92,9 @@ def get_summary(
         scan_local_paths(client, db)
 
     if force_refresh:
-        invalidate_client_cache(client.id, db, year)
+        invalidate_client_cache(client.id, db, target_year)
 
-    return build_fiscal_summary(client, year, db, use_cache=not force_refresh)
+    return build_fiscal_summary(client, target_year, db, use_cache=not force_refresh)
 
 
 @router.post("/upload")

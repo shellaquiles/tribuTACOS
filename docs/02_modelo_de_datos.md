@@ -12,9 +12,12 @@ erDiagram
     CLIENT ||--o{ DECLARACION_ANUAL_SAT : "presenta"
     CLIENT ||--o{ PAGO_PROVISIONAL_SAT : "liquida (12 meses)"
     CLIENT ||--o{ ACUSE_PAGO_SAT : "comprueba"
+    CLIENT ||--o{ CFDI_EXCLUSION : "configura reglas/exclusiones"
+    CLIENT ||--o{ CONSTANCIA_FISCAL_EXTERNA : "registra deducciones externas"
     CLIENT ||--o{ SUMMARY_CACHE : "invalida/consulta"
     
     CFDI }|..|{ CATALOGO_SAT_CLAVE : "clasifica por clave"
+    TARIFA_ISR_ANUAL ||--o{ PARAMETRO_SAT : "parámetros del ejercicio"
 
     CLIENT {
         string id PK "default / rfc"
@@ -51,6 +54,47 @@ erDiagram
         boolean es_nomina "Bandera de nómina"
         string parsed_data "JSON con partidas y complementos"
         datetime created_at
+    }
+
+    CFDI_EXCLUSION {
+        int id PK "Autoincremental"
+        string client_id FK "Relación al cliente"
+        string uuid "UUID a ignorar o reclasificar"
+        string motivo "Motivo de la exclusión (cancelado, duplicado)"
+        string tipo "nomina / ingreso / gasto"
+        datetime created_at
+    }
+
+    CONSTANCIA_FISCAL_EXTERNA {
+        string id PK "Identificador único"
+        string client_id FK "Relación al cliente"
+        string year "Ejercicio fiscal YYYY"
+        string uso_cfdi "D06 (PPR), D01, etc."
+        string emisor_rfc "RFC de la institución emisora"
+        string emisor_nombre "Nombre de la institución"
+        string fecha "Fecha de emisión YYYY-MM-DD"
+        float monto "Monto de la constancia"
+        string descripcion "Detalle fiscal de la aportación"
+    }
+
+    TARIFA_ISR_ANUAL {
+        int id PK "Autoincremental"
+        string year "Ejercicio fiscal YYYY"
+        float limite_inferior "Límite inferior del tramo"
+        float limite_superior "Límite superior del tramo"
+        float cuota_fija "Cuota fija del tramo"
+        float porcentaje_excedente "Tasa aplicable sobre excedente"
+        int orden "Posición en la tarifa (1 a 11)"
+    }
+
+    PARAMETRO_SAT {
+        string year PK "Ejercicio fiscal YYYY"
+        float uma_diaria "Valor diario UMA"
+        float uma_mensual "Valor mensual UMA"
+        float uma_anual "Valor anual UMA"
+        float uma_5_anual "Tope 5 UMAs anuales"
+        float tope_deducciones_pct "Tope 15% de ingresos"
+        float salario_minimo "Salario mínimo general"
     }
 
     DECLARACION_ANUAL_SAT {

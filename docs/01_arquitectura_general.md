@@ -96,33 +96,56 @@ declara/
 │   │   ├── catalogos/        # Taxonomía y Catálogos SAT (52k claves)
 │   │   │   ├── taxonomia.py  # Definición de 8 rubros maestros y reglas
 │   │   │   ├── sat_catalogo.py # Motor de resolución en 4 capas
-│   │   │   └── seed.py       # Sembrador automático en SQLite
-│   │   ├── cfdis/            # Motor Fiscal y Parser de XMLs
-│   │   │   ├── engine.py     # Lógica algorítmica fiscal LISR / LIVA
+│   │   │   ├── seed.py       # Sembrador de claves SAT en SQLite
+│   │   │   └── seed_fiscal.py# Sembrador de tarifas Art. 152 y factores UMA
+│   │   ├── cfdis/            # Motor Fiscal, Calculadoras y Parser XML
+│   │   │   ├── calculators/  # Calculadoras de dominio puras
+│   │   │   │   ├── tarifas.py      # Tarifa progresiva Art. 152 y breakdown
+│   │   │   │   ├── nomina.py       # Sueldos, retenciones y masa bruta
+│   │   │   │   ├── honorarios.py   # PFAE, analítica mensual y clientes
+│   │   │   │   ├── gastos.py       # Clasificación, matriz mensual y deducibilidad
+│   │   │   │   ├── deducciones.py  # Deducciones personales y topes UMA
+│   │   │   │   ├── intereses.py    # Intereses reales del sistema financiero
+│   │   │   │   └── simulador_sat.py# Cascada anual (waterfall) y tasas
+│   │   │   ├── engine.py     # Despachador de agregaciones y resúmenes
 │   │   │   ├── parser.py     # Parser optimizado de CFDI 3.3/4.0
-│   │   │   └── router.py     # Endpoints de CFDIs y resúmenes
+│   │   │   ├── storage.py    # Ingesta, escaneo local y caché
+│   │   │   ├── schemas.py    # Modelos Pydantic v2
+│   │   │   └── router.py     # Endpoints REST de CFDIs y analíticas
 │   │   ├── sat_docs/         # Parser y Conciliación de PDFs Oficiales SAT
-│   │   │   ├── parser.py     # Extractor OCR/Texto de declaraciones SAT
+│   │   │   ├── parser.py     # Extractor de declaraciones SAT y acuses
+│   │   │   ├── importer.py   # Ingesta de PDFs a BD relacional
 │   │   │   └── router.py     # Endpoint /api/sat_docs/summary
+│   │   ├── seeds/            # Seeding y Fixtures de Prueba
+│   │   │   ├── seed_demo.py  # Exportador/importador de datos de prueba
+│   │   │   └── demo_dataset.json.gz # Fixture empaquetado (269 KB)
+│   │   ├── auth/             # Autenticación y JWT opcional
 │   │   ├── database.py       # Conexión SQLAlchemy y SessionLocal
-│   │   ├── models.py         # Modelos de BD (Client, Cfdi, etc.)
+│   │   ├── models.py         # Modelos relacionales ORM (Client, Cfdi, etc.)
+│   │   ├── cli.py            # CLI unificada (init-db, seed-demo, sync)
+│   │   ├── config.py         # Configuración centralizada (.env)
 │   │   └── main.py           # Instancia principal de FastAPI y CORS
+│   ├── tests/                # Suite de pruebas Pytest (11 tests)
 │   ├── tributacos.db         # Base de datos relacional SQLite
 │   ├── requirements.txt      # Dependencias Python
-│   ├── anonymize.py          # Motor de sanitización determinista
-│   └── sincronizar_sat_docs.py # Sincronizador de declaraciones SAT
+│   └── anonymize.py          # Motor de sanitización determinista
 ├── frontend/                 # Aplicación Cliente React (Vite)
 │   ├── src/
-│   │   ├── components/
+│   │   ├── components/       # Componentes visuales modularizados
+│   │   │   ├── ui/           # Primitives y Modals reutilizables
+│   │   │   ├── nomina/       # Sueldos, quincenas y analítica de recibos
+│   │   │   ├── honorarios/   # Facturas, clientes y mix de conceptos
+│   │   │   ├── egresos/      # Matriz mensual y reporte por rubro SAT
+│   │   │   ├── deducciones/  # Deducciones personales y determinación anual
 │   │   │   ├── PreDeclaracionMensualSection.jsx # Matriz de 12 meses
 │   │   │   └── ConciliacionSatSection.jsx      # Auditoría SAT vs XMLs
-│   │   ├── SatUI.jsx         # Secciones de Sueldos, PFAE, Egresos, KPIs
+│   │   ├── SatUI.jsx         # Barrel export modular
 │   │   ├── csvExport.js      # Motor de exportación estructurada CSV
-│   │   ├── App.jsx           # Componente raíz, router de tabs y estado
+│   │   ├── App.jsx           # Componente raíz y navegación
 │   │   └── index.css         # Design System y CSS tokens
 │   ├── package.json
-│   └── vite.config.js
+│   └── vite.config.js        # Configuración de Vite con proxy /api
 ├── docs/                     # Documentación Técnica Especializada
-├── Makefile                  # Automatización de tareas de desarrollo
-└── levantar_proyecto.sh      # Script de arranque todo-en-uno
+├── Makefile                  # Suite de automatización de desarrollo
+└── levantar_proyecto.sh      # Script de arranque local
 ```

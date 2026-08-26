@@ -69,13 +69,17 @@ help:
 # 🚀 SERVIDORES Y DESARROLLO
 # ==============================================================================
 
-dev: $(VENV_DIR)
+stop:
+	@echo "$(BOLD)$(YELLOW)🛑 Deteniendo procesos anteriores en puertos $(PORT) y 5173...$(RESET)"
+	@fuser -k $(PORT)/tcp 5173/tcp 5174/tcp 2>/dev/null || true
+
+dev: $(VENV_DIR) stop
 	@echo "$(BOLD)$(MAGENTA)🚀 Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend)...$(RESET)"
 	@make -j 2 backend frontend
 
 backend: $(VENV_DIR)
 	@echo "$(BOLD)$(GREEN)⚙️  Iniciando Backend FastAPI en http://$(HOST):$(PORT)...$(RESET)"
-	@cd $(BACKEND_DIR) && PYTHONPATH=.. $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
+	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
 
 frontend:
 	@echo "$(BOLD)$(BLUE)💻 Iniciando Frontend Vite...$(RESET)"

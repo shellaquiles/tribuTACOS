@@ -1,89 +1,57 @@
-# Documentación Técnica - Simulador de Pre-Declaración Anual ISR
+# Documentación Técnica — tribuTACOS
 
-## Arquitectura del Proyecto
+## 1. Arquitectura y Tecnologías
 
-Este proyecto opera bajo una arquitectura cliente-servidor, con un backend en Python (FastAPI) enfocado en procesamiento de datos XML y un frontend en React (Vite) para la visualización.
+El sistema opera bajo una arquitectura cliente-servidor desacoplada:
+* **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.0 (SQLite / PostgreSQL), lxml (parser C de XMLs), pdfplumber (parser PDF).
+* **Frontend:** React 18, Vite (con proxy `/api`), Recharts, Vanilla CSS con Design Tokens y Glassmorphism.
+* **Automatización:** GNU Makefile con menú interactivo ANSI y comandos de ciclo de vida completo.
 
-### Tecnologías Clave:
-*   **Backend:** Python 3, FastAPI, lxml (para parseo rápido de XML), Uvicorn.
-*   **Frontend:** React (JSX), Vite, Axios para requests, CSS estándar (Vanilla) estructurado con variables.
+---
 
-## Backend `/backend`
+## 2. Capa Backend (`/backend`)
 
-### Lógica de Extracción (Parser)
-*   **`parser.py`**: El motor encargado del "scraping" de los archivos XML (`.xml` directos o dentro de `.zip`).
-    *   Utiliza `lxml` para un recorrido rápido del DOM del CFDI.
-    *   Asigna una clasificación (`categoria`): `ingreso`, `egreso`, `nomina`, `pago`.
-    *   Extrae metadatos fiscales, base, impuestos retenidos/trasladados y el UUID.
+### A. Calculadoras de Dominio Puras (`app/cfdis/calculators/`)
+La lógica de negocio fiscal está desacoplada de la base de datos en funciones deterministas:
+1. `tarifas.py`: Cálculo de la tarifa progresiva Art. 152 LISR con desglose de tramos.
+2. `nomina.py`: Procesamiento de sueldos, percepciones gravadas/exentas, deducciones y serie de 12 meses.
+3. `honorarios.py`: Facturación PFAE emitida, serie mensual, concentración de clientes y mix de conceptos.
+4. `gastos.py`: Deducibilidad, matriz mensual y asignación de rubros SAT.
+5. `deducciones.py`: Deducciones personales (Art. 151), validación de forma de pago y topes de 5 UMAs.
+6. `intereses.py`: Intereses nominales, reales y retenciones bancarias.
+7. `simulador_sat.py`: Pre-declaración mensual provisional y determinación anual con cascada visual (waterfall de 5 pasos).
 
-### API y Lógica de Negocio
-*   **`sat_bridge.py`**: Interfaz FastAPI y orquestador lógico.
-    *   Se exponen endpoints, destacando `/api/summary?year={YYYY}`.
-    *   **Procesamiento Flujo de Efectivo:** Revisa facturas PUE (reconocido al momento) y recibos de pago ('P').
-    *   **Limpieza de Datos:** Elimina duplicaciones verificando `UUID`s, de forma que un XML extraído de un ZIP o en el directorio no modifique los saldos. 
-    *   Calcula de forma mensual los movimientos de Honorarios (AEyP).
-    *   Genera un objeto final JSON consumido de forma declarativa en el frontend.
+### B. Motor Fiscal y Caché (`app/cfdis/engine.py` y `app/cfdis/storage.py`)
+* `build_fiscal_summary`: Orquesta las calculadoras inyectando parámetros fiscales y exclusiones de la base de datos.
+* `SummaryCache`: Almacena en base de datos los resúmenes compilados para respuesta instantánea (<1ms).
 
-## Frontend `/frontend/src`
+### C. Catálogos y Sembrado (`app/catalogos/` y `app/seeds/`)
+* Catálogo de 52,547 claves SAT sembrado automáticamente en SQLite.
+* `seed_fiscal.py`: Tarifas del Art. 152 LISR (2021-2026) y factores UMA.
+* `seed_demo.py`: Carga y exportación del fixture comprimido `demo_dataset.json.gz` (269 KB).
 
-Este fue reimplementado recientemente para ofrecer una UX/UI profesional, estilo "Dashboard", mejorando sustantivamente la legibilidad sobre la propuesta original.
+---
 
-### Componentes Principales (`SatUI.jsx`)
-*   **`SueldosSection`**: Procesa la salida pre-calculada de patronos, listando dinámicamente sub-filas de ingresos exentos separados por tipo.
-*   **`HonorariosSection`**: Tabula los periodos mensuales, ingresos acumulados y deducciones. Incluye visualización por tipo mediante 'Pills'.
-*   **`DeterminacionSection`**: El motor de la interfaz, que aplica logica estática del LISR (Límites y Tablas).
-    *   **Lógica de Cálculos (Art 152 LISR):** Posee pre-cargadas las tablas de ISR para **2024** y **2025** como constantes locales en disco y ejecuta una iteración (`calcISR`) para determinar la alícuota correcta a partir del ingreso base.
+## 3. Capa Frontend (`/frontend/src`)
 
-### Estilo Visual (`index.css`)
-Implementado con 'design tokens' estáticos como variables en `:root`.
-*   Aplica tarjetas flotantes (`SectionCard`), celdas de KPIs (`KpiRow`), jerarquías modulares y banners interactivos o dinámicos (`card-success`, `card-danger`).
+### Componentes Visuales (Thin Views)
+* Los componentes en `components/` están desacoplados de la lógica fiscal pesada, consumiendo directamente las matrices y series precalculadas por el backend.
+* Proxy de desarrollo configurado en `vite.config.js` (`/api` -> `http://127.0.0.1:8010`).
+* Barrel export centralizado en `SatUI.jsx`.
 
-## Flujo de Datos
-1. Archivos ubicados en `/cfdi_emitidos` y `/cfdi_recibidos`.
-2. Frontend hace GET a `localhost:8010/api/summary?year=Y`.
-3. Backend llama `process_directory`, inyecta logs o descarta años anteriores en memoria, agrupa la suma de operaciones cobradas/pagadas en `sat_bridge.py` y emite el payload final.
-4. Componente React se monta, el componente padre `App.jsx` parsea y distribuye como *props* hacia las secciones.
+---
 
-## Comandos de Ejecución Local
-
-Para levantar el ecosistema completo desde `/home/kubrick/www/declara`, existen múltiples opciones.
-
-### Opción 1: Usando el Makefile (Recomendado)
-
-Si tienes `make` instalado, es la opción más sencilla para correr ambos servicios en paralelo. Crea automáticamente un entorno virtual (`venv`) en la carpeta `backend` e instala las dependencias la primera vez que se ejecuta.
+## 4. Comandos de Operación (`Makefile`)
 
 ```bash
-make dev
-```
+# Desarrollo
+make dev          # Inicia Backend (:8010) y Frontend (:5173) con hot-reload
+make test         # Ejecuta la suite de 11 tests en Pytest
+make build        # Compila el bundle estático de producción de Vite
 
-Otros comandos útiles en el Makefile:
-*   `make backend`: Solo levanta el servidor FastAPI (dentro de su `venv`).
-*   `make frontend`: Solo levanta el servidor Vite.
-*   `make install`: Crea el entorno virtual si no existe, instala las dependencias de Python y también ejecuta `npm install`.
-*   `make clean`: Limpia cachés de Python, el entorno virtual (`venv`) y artefactos de build de Node.
-
-### Opción 2: Usando el Script Shell
-
-Se ha provisto un script que arranca ambos procesos en background y los mata al cancelar el script (Ctrl+C). Al igual que el `Makefile`, creará automáticamente el entorno virtual (`venv`) e instalará dependencias si no lo encuentra.
-
-```bash
-./levantar_proyecto.sh
-```
-
-### Opción 3: Manualmente (Terminales separadas)
-
-Si prefieres tener control total y ver los logs por separado:
-
-**Terminal 1 (Backend - Carpeta `/backend`):**
-Primero, asegúrate de haber creado tu entorno virtual e instalado las dependencias:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-PYTHONPATH=.. uvicorn sat_bridge:app --reload --port 8010
-```
-
-**Terminal 2 (Frontend - Carpeta `/frontend`):**
-```bash
-npm run dev
+# Base de Datos y Datos de Prueba
+make recreate-db  # Recrea la BD limpia y carga el fixture empaquetado
+make seed-demo    # Carga datos de prueba y precalcula cachés
+make export-demo  # Exporta el estado de la BD a fixture comprimido
+make clean        # Limpia cachés temporales
 ```
