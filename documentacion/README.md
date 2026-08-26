@@ -16,7 +16,7 @@
 | **06** | [06_modulo_egresos_y_deducciones.md](06_modulo_egresos_y_deducciones.md) | Gastos en 8 rubros maestros SAT y optimizador de deducciones personales (Art. 151). |
 | **07** | [07_modulo_ingresos_y_nomina.md](07_modulo_ingresos_y_nomina.md) | Sueldos y salarios (Capítulo I), recibos quincenales y honorarios/PFAE (Capítulo II). |
 | **08** | [08_modulo_auditoria_sat_conciliacion.md](08_modulo_auditoria_sat_conciliacion.md) | Conciliación de declaraciones oficiales en PDF, pagos provisionales y acuses bancarios. |
-| **09** | [09_roadmap_y_evolucion_modulos.md](09_roadmap_y_evolucion_modulos.md) | Arquitectura modular, roadmap de versiones (v1.0 a v3.0) y plan de expansión. |
+| **09** | [09_roadmap_y_evolucion_modulos.md](09_roadmap_y_evolucion_modulos.md) | Arquitectura modular de 3 capas, catálogo de módulos y principios de diseño fiscal. |
 | **Manual Maestro** | [MANUAL_DE_USUARIO_COMPLETO.md](MANUAL_DE_USUARIO_COMPLETO.md) | Documento integral consolidado con todas las guías e imágenes del sistema. |
 
 ---

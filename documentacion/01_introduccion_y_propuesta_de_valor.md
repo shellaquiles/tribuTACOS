@@ -2,13 +2,20 @@
 
 # Capítulo 01: Introducción y Propuesta de Valor
 
+[![Versión](https://img.shields.io/badge/Versión-2.2.0-blue.svg?style=flat-square)](#)
+[![CFDI](https://img.shields.io/badge/CFDI-3.3%20%7C%204.0-emerald.svg?style=flat-square)](#)
+[![Régimen](https://img.shields.io/badge/Régimen-PFAE%20%7C%20Sueldos%20y%20Salarios-indigo.svg?style=flat-square)](#)
+[![Legislación](https://img.shields.io/badge/Legislación-LISR%20%7C%20LIVA%20%7C%20CFF-purple.svg?style=flat-square)](#)
+
 Plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3 y 4.0 en XML) y pre-declaración automática para personas físicas en México.
 
 ---
 
 ## 1. Visión General del Producto
 
-**tribuTACOS** es una herramienta analítica diseñada para contribuyentes bajo regímenes de **Sueldos y Salarios (Capítulo I)** y **Actividad Empresarial y Servicios Profesionales (Capítulo II - PFAE)**.
+**tribuTACOS** es una herramienta analítica diseñada para contribuyentes bajo los regímenes fiscales de:
+* **Sueldos y Salarios e Ingresos Asimilados (Capítulo I)**
+* **Actividad Empresarial y Servicios Profesionales (Capítulo II - PFAE)**
 
 La plataforma resuelve la complejidad del cálculo tributario mediante el análisis algorítmico y determinista de los comprobantes fiscales digitales timbrados (CFDIs) y los documentos oficiales del SAT en PDF, permitiendo proyectar con exactitud:
 * **Pagos Provisionales Mensuales de ISR (Art. 106 LISR)** bajo el principio estricto de flujo de efectivo.
@@ -34,25 +41,21 @@ flowchart TD
 
 ---
 
-## 2. Diferenciadores Clave
+## 2. Capacidades Operativas del Sistema
 
-| Característica | Visor Tradicional / SAT | tribuTACOS |
-| :--- | :--- | :--- |
-| **Procesamiento de Datos** | Servidores remotos y lentos | 100% Local y Privado (Baja latencia <15ms) |
-| **Taxonomía de Gastos** | Sin categorización operativa | Clasificación automática en 8 rubros de 52,547 claves SAT |
-| **Flujo de Efectivo** | Mezcla PUE y PPD sin conciliar | Validación estricta por fecha efectiva de cobro/pago |
-| **Deducciones Personales** | Criterio opaco sin desglose de topes | Termómetro en tiempo real: 15% de ingresos vs 5 UMAs y PPR |
-| **Arrastre de IVA** | Manual y propenso a errores | Arrastre automático mes a mes de remanentes a favor |
-| **Auditoría de Pagos** | Consulta dispersa en portales bancarios | Conciliación 1 a 1 de acuses bancarios vs declaraciones |
+* **Procesamiento Local de Alta Velocidad:** Análisis e ingesta determinista en memoria local con tiempos de respuesta reactivos inferiores a 15 ms por ejercicio.
+* **Taxonomía Automatizada de Egresos:** Clasificación de comprobantes en 8 rubros contables operativos a partir del catálogo de más de 52,000 claves del SAT.
+* **Flujo de Efectivo Estricto:** Conciliación precisa de ingresos y egresos conforme a la fecha efectiva de cobro o pago (`PUE` y `PPD + REP`).
+* **Auditoría de Deducciones Personales:** Verificación en tiempo real de los topes legales del Art. 151 LISR (15% de ingresos acumulables vs 5 UMAs anuales y subtope de PPR).
+* **Control y Arrastre de IVA:** Determinación de pagos definitivos de IVA con acreditamiento y arrastre cronológico automático de saldos a favor.
+* **Conciliación Bidireccional:** Cruce 1 a 1 entre comprobantes timbrados (XML) y documentos oficiales presentados ante el SAT (PDF).
 
----
-
-## 3. Principio de Soberanía y Privacidad de Datos
-
-tribuTACOS opera bajo una estricta política de **privacidad local**. La información contable, UUIDs fiscales, cadenas originales y montos financieros residen exclusivamente en la base de datos relacional local (`tributacos.db`), sin transmisión a servidores externos ni intermediarios terceros.
+> [!NOTE]
+> **Soberanía y Privacidad Local:** tribuTACOS opera bajo una estricta política de privacidad local. La información contable, UUIDs fiscales, cadenas originales y montos financieros residen exclusivamente en la base de datos relacional local (`backend/tributacos.db`), sin transmisión a servidores externos ni intermediarios terceros.
 
 ---
 
-## 4. Aviso Legal / Disclaimer
+## 3. Aviso Legal / Disclaimer
 
-tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos y resultados presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal ni reemplazan las declaraciones oficiales presentadas ante el Servicio de Administración Tributaria (SAT).
+> [!IMPORTANT]
+> **Aviso Legal:** tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos y resultados presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal ni reemplazan las declaraciones oficiales presentadas ante el Servicio de Administración Tributaria (SAT).

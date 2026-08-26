@@ -61,14 +61,20 @@ flowchart TD
 Para personas físicas con Actividad Empresarial y Profesional, el pago provisional de ISR se calcula de forma acumulativa mes a mes dentro del ejercicio fiscal:
 
 ### 2.1 Base Gravable Acumulada:
-$$\text{Base Gravable Acumulada}_m = \max\left(0, \sum_{i=1}^m \text{Ingresos PFAE}_i - \sum_{i=1}^m \text{Gastos Deducibles}_i\right)$$
+```
+Base Gravable Acumulada(m) = MAX(0, Σ Ingresos PFAE(1..m) - Σ Gastos Deducibles(1..m))
+```
 
 ### 2.2 Tarifa Mensual Acumulada:
-Para calcular el impuesto causado acumulado al mes $m$, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la proporción del periodo $m / 12$:
-$$\text{ISR Causado Acumulado}_m = \text{TarifaAnual}\left(\text{Base}_m \times \frac{12}{m}\right) \times \frac{m}{12}$$
+Para calcular el impuesto causado acumulado al mes `m`, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la proporción del periodo `m / 12`:
+```
+ISR Causado Acumulado(m) = TarifaAnual(Base(m) × 12 / m) × (m / 12)
+```
 
 ### 2.3 ISR Neto a Pagar del Mes:
-$$\text{ISR a Pagar}_m = \max\left(0, \text{ISR Causado Acumulado}_m - \sum_{i=1}^{m-1} \text{Pagos Prov Anteriores}_i - \sum_{i=1}^m \text{ISR Retenido}_i\right)$$
+```
+ISR a Pagar(m) = MAX(0, ISR Causado Acumulado(m) - Σ Pagos Prov Anteriores - Σ ISR Retenido)
+```
 
 ---
 
@@ -105,7 +111,9 @@ flowchart TD
 
 Las deducciones personales (honorarios médicos `D01`, gastos dentales `D02`, gastos hospitalarios `D03`, intereses reales hipotecarios `D05`, primas de seguros `D07`, colegiaturas) están sujetas a un límite general:
 
-$$\text{Tope Legal General} = \min(0.15 \times \text{Total Ingresos Anuales}, 5 \times \text{UMA Anual})$$
+```
+Tope Legal General = MIN(15% × Total Ingresos Anuales, 5 × UMA Anual)
+```
 
 ### 4.1 Excepciones y Reglas Específicas:
 * **Planes Personales de Retiro (PPR - Fracc. V):** Cuentan con un límite independiente de hasta el **10% de los ingresos acumulables o 5 UMAs anuales**, adicional al tope general.

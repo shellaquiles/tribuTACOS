@@ -2,13 +2,17 @@
 
 # Capítulo 08: Módulo de Auditoría SAT y Conciliación Oficial
 
+[![Auditoría](https://img.shields.io/badge/Auditoría-Bidireccional%20XML%20vs%20PDF-blue.svg?style=flat-square)](#)
+[![SAT](https://img.shields.io/badge/SAT-Declaraciones%20%7C%20Acuses-emerald.svg?style=flat-square)](#)
+[![Bancario](https://img.shields.io/badge/Conciliación-Líneas%20de%20Captura-indigo.svg?style=flat-square)](#)
+
 Conciliación 1 a 1 de declaraciones anuales, pagos provisionales de 12 meses y acuses bancarios de pago extraídos de los PDFs oficiales del SAT.
 
 ---
 
 ## 1. Visión General de la Auditoría Bidireccional
 
-Este módulo permite contrastar la realidad contable obtenida de los comprobantes digitales timbrados (**XMLs**) contra las cifras registradas formalmente ante la autoridad tributaria (**PDFs oficiales del SAT**).
+Este módulo permite contrastar la realidad contable obtenida de los comprobantes digitales timbrados (**XMLs**) contra las cifras registradas formalmente ante la autoridad tributaria (**PDFs oficiales del SAT**):
 
 ![Módulo de Auditoría SAT Oficial](img/12_auditoria_sat_oficial.png)
 
@@ -18,21 +22,15 @@ Este módulo permite contrastar la realidad contable obtenida de los comprobante
 
 Para habilitar la conciliación automática, el contribuyente o contador debe descargar del portal del SAT y de su banca electrónica los siguientes comprobantes en formato **PDF**:
 
-1. **Declaración Anual del Ejercicio (PDF):**
-   * *Dónde obtenerlo:* Portal del SAT ➔ *Declaraciones* ➔ *Consulta de Declaraciones Presentadas* ➔ *Declaración Anual de Personas Físicas*.
-   * *Datos extraídos:* Número de operación, tipo de declaración (Normal/Complementaria), fecha de presentación, ingresos acumulables reportados, deducciones personales autorizadas e ISR a favor/cargo con CLABE interbancaria.
-
-2. **Acuses y Declaraciones Mensuales Provisionales de ISR e IVA (PDF):**
-   * *Dónde obtenerlo:* Portal del SAT ➔ *Pagos Provisionales / Declaraciones y Pagos* ➔ *Reimpresión de Acuses y Declaraciones*.
-   * *Datos extraídos:* Ingresos del mes, deducciones del mes, ISR retenido, pagos provisionales efectuados, IVA causado, IVA acreditable y retenciones de IVA de los 12 periodos (Enero a Diciembre).
-
-3. **Comprobantes Bancarios de Pago de Contribuciones Federales (PDF):**
-   * *Dónde obtenerlo:* Portal de la institución bancaria (banca en línea) en el apartado de pagos de impuestos federales.
-   * *Datos extraídos:* Folio de control bancario, línea de captura, fecha efectiva de pago e importe transferido a la Tesorería de la Federación.
+| Documento | Origen / Dónde Descargar | Datos Extraídos por el Parser |
+| :--- | :--- | :--- |
+| **Declaración Anual (PDF)** | *Portal del SAT ➔ Declaraciones ➔ Consulta de Declaraciones* | Folio de 14 dígitos, tipo de declaración, fecha de timbrado, base gravable e ISR a favor/cargo con CLABE. |
+| **Pagos Provisionales (PDF)** | *Portal del SAT ➔ Pagos Provisionales / Declaraciones y Pagos* | Ingresos, deducciones, retenciones de ISR/IVA, pagos provisionales e IVA de los 12 meses. |
+| **Acuses Bancarios (PDF)** | *Banca Electrónica ➔ Pagos de Impuestos Federales SAT* | Folio de control bancario, línea de captura, fecha efectiva de pago e importe transferido. |
 
 ### Procesamiento y Carga en tribuTACOS:
 * **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o al panel de Conciliación SAT.
-* **Desde la Terminal:** Ejecute `make db-import-pdf` para procesar por lotes todos los PDFs colocados en el directorio local de almacenamiento.
+* **Desde la Terminal:** Ejecute `make db-import-pdf` para procesar por lotes todos los PDFs colocados en el directorio local.
 * **Motor de Extracción:** El parser interno de tribuTACOS extrae mediante expresiones regulares y análisis de tablas los folios de 14 dígitos, sellos digitales y matrices financieras sin requerir captura manual.
 
 ---
@@ -49,7 +47,5 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 * **Tabla Comparativa Mensual:** Desglose mes a mes de los ingresos acumulados declarados ante el SAT, retenciones de ISR y montos de IVA reportados vs lo calculado por tribuTACOS.
 * **Verificación de Acuses Bancarios:** Validación de comprobantes bancarios emitidos por la institución financiera con su respectiva línea de captura y sello digital.
 
-### 3.3 Utilidad Contable y Preventiva:
-* **Detección de Discrepancias Fiscales:** Identificación de diferencias entre lo timbrado por los clientes/proveedores en CFDI y lo presentado en el portal del SAT.
-* **Prevención de Cartas Invitación:** Alerta temprana sobre omisiones de ingresos o retenciones inconsistentes antes de revisiones electrónicas del SAT.
-* **Sustento para Declaraciones Complementarias:** Base de cálculo precisa para corregir periodos con inconsistencias.
+> [!IMPORTANT]
+> **Utilidad Preventiva:** Este módulo detecta discrepancias fiscales entre lo timbrado en CFDI por clientes/proveedores y lo presentado en el portal del SAT, evitando cartas invitación, multas o diferencias en revisiones electrónicas de la autoridad.

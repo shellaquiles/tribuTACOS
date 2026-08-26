@@ -1,14 +1,18 @@
 # tribuTACOS — Manual de Usuario
 
-# Capítulo 09: Roadmap y Evolución Modular
+# Capítulo 09: Arquitectura y Componentes Modulares
 
-Estructura modular del sistema, arquitectura por capas, roadmap de versiones y plan de expansión funcional.
+[![Arquitectura](https://img.shields.io/badge/Arquitectura-Modular%20Desacoplada-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.0%20%28Producción%29-emerald.svg?style=flat-square)](#)
+[![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-indigo.svg?style=flat-square)](#)
+
+Estructura modular del sistema, arquitectura por capas, catálogo de componentes y flujo de datos fiscal.
 
 ---
 
 ## 1. Arquitectura Modular del Sistema
 
-tribuTACOS está diseñado bajo un modelo desacoplado y extensible:
+tribuTACOS está diseñado bajo un modelo desacoplado, determinista y de alto rendimiento organizado en tres capas independientes:
 
 ```mermaid
 flowchart TD
@@ -50,30 +54,24 @@ flowchart TD
 
 ---
 
-## 2. Roadmap Evolutivo de Versiones
+## 2. Catálogo de Módulos Funcionales del Sistema
 
-### Versión 1.0 (Completada): Núcleo de Simulación y Análisis
-* [x] Parser universal de comprobantes fiscales CFDI 3.3 y 4.0.
-* [x] Calculadoras deterministas para Sueldos (Art. 96), Honorarios (Art. 106) y Declaración Anual (Art. 152).
-* [x] Ingesta masiva por drag-and-drop y descompresión de archivos ZIP.
-* [x] Taxonomía en 8 rubros con más de 52,000 claves del catálogo SAT.
-* [x] Módulo de Conciliación y Auditoría de PDFs oficiales del SAT.
+| Módulo | Responsabilidad Fiscal y Contable | Tecnologías y Motores |
+| :--- | :--- | :--- |
+| **1. Tablero Global** | KPIs financieros consolidados, mix de ingresos y saldo estimado. | FastAPI `/api/summary` + React 19 |
+| **2. Pre-Declaración Mensual** | Matriz de 12 meses, pagos provisionales ISR (Art. 106) y arrastre de IVA (Art. 5/6). | Motor fiscal de flujo de efectivo |
+| **3. Pre-Declaración Anual** | Cascada de 5 pasos conforme al Art. 152 LISR y tasas efectivas. | Tarifa progresiva oficial multianual |
+| **4. Egresos Operativos** | Clasificación en 8 rubros de 52,547 claves SAT y auditoría de bancarización. | Catálogo `c_ClaveProdServ` SAT |
+| **5. Deducciones Personales** | Termómetro del Art. 151 LISR (15% vs 5 UMAs) y subtope PPR (10%). | Validador de topes y constancias |
+| **6. Sueldos y Salarios** | Percepciones gravadas/exentas (Art. 93) y recibos de nómina 1.2. | Complemento Nómina CFDI 1.2 |
+| **7. Honorarios y PFAE** | Facturación emitida, retenciones del 10% ISR y 10.6667% IVA. | CFDI 3.3/4.0 de Ingresos y REP |
+| **8. Auditoría SAT** | Conciliación 1 a 1 de declaraciones anuales, pagos y acuses bancarios. | Parser de PDFs oficiales del SAT |
 
-### Versión 2.0 (Completada): Interfaz Next.js 15 y Multi-Ejercicio
-* [x] Migración integral a Next.js 15 (App Router) con React 19 y Tailwind CSS.
-* [x] Soporte multianual instantáneo (2021 a 2026) con recálculo en menos de 15 ms.
-* [x] Modales de borrador oficial del SAT para pagos provisionales de ISR e IVA.
-* [x] Optimizador de deducciones personales con límites independientes para PPR (Fracc. V).
-* [x] Generador de reportes CSV listos para Microsoft Excel con codificación UTF-8 BOM.
+---
 
-### Versión 2.5 (Próxima): Automatización y Alertas Tempranas
-* [ ] Conector directo vía API de descarga masiva del SAT (Web Scraping / WS SAT con CIEC o e.firma).
-* [ ] Sistema de alertas automáticas para deducciones en riesgo de tope legal o facturas no bancarizadas.
-* [ ] Generador de proyecciones fiscales a futuro para planeación patrimonial.
-* [ ] Soporte para Régimen Simplificado de Confianza (RESICO - Art. 113-E).
+## 3. Principios de Diseño del Sistema
 
-### Versión 3.0 (Planificada): Suite Corporativa y Multi-Tenant
-* [ ] Modo multi-usuario con roles diferenciados (Contador, Asistente, Cliente).
-* [ ] Panel de control para despachos contables con visión multi-empresa.
-* [ ] Integración bancaria mediante Open Banking para conciliación automática de estados de cuenta.
-* [ ] Exportación de declaraciones en formato XML oficial para carga en el portal del SAT.
+* **Determinismo Puro:** Mismas entradas (CFDIs y PDFs) producen invariablemente los mismos resultados fiscales al centavo, sin redondeos arbitrarios.
+* **Flujo de Efectivo Estricto:** La causación de ISR e IVA se computa por fecha efectiva de pago (`fecha_pago`), respetando la legislación aplicable a personas físicas.
+* **Privacidad Local:** El procesamiento y la persistencia residen exclusivamente en la máquina del usuario (`backend/tributacos.db`), garantizando la soberanía de la información financiera.
+* **Interoperabilidad:** Exportación instantánea en formatos abiertos estándar (CSV con UTF-8 BOM y PDF).
