@@ -1,59 +1,46 @@
-# Capítulo 5: Módulo 2 — Pre-Declaración Anual (Art. 152 LISR)
+# tribuTACOS — Manual de Usuario
 
-## 🏛️ Propósito del Módulo
+# Capítulo 05: Módulo de Declaración Anual
 
-La **Pre-Declaración Anual** calcula la liquidación fiscal de Personas Físicas bajo la tarifa progresiva del **Artículo 152 de la Ley del Impuesto sobre la Renta (LISR)**.
-
-Integra todos los regímenes fiscales del contribuyente, proyecta el **Saldo a Favor** (Devolución del SAT) o **Impuesto a Cargo**, optimiza el uso de **Deducciones Personales (Art. 151 LISR)** y permite exportar el papel de trabajo contable completo en formato CSV.
+Determinación del Impuesto Sobre la Renta anual conforme al Artículo 152 de la LISR, desglose en cascada de cinco pasos, cálculo de tasas y gestión de devoluciones.
 
 ---
 
-## 🖥️ Secciones Detalladas de la Pantalla
+## 1. Visión General de la Determinación Anual
+
+El módulo de **Declaración Anual** integra todos los ingresos acumulables del contribuyente (Sueldos y Salarios + Honorarios/PFAE + Intereses) y computa el impuesto del ejercicio contra la tarifa progresiva del **Art. 152 LISR**.
+
+![Declaración Anual y Cascada de Determinación](img/05_predeclaracion_anual.png)
 
 ---
 
-### 1. Gran Hero Card: Saldo Proyectado y Cascada Oficial
+## 2. La Cascada Fiscal de Cinco Pasos
 
-![Gran Hero Card de Saldo Anual Proyectado y Cascada Fiscal Oficial](img/05_anual_01_hero_saldo_proyectado.png)
+La plataforma visualiza el cálculo en cinco etapas transparentes y auditables:
 
-#### Características del Hero Card:
-- **Semáforo Visual Dinámico:** 
-  - **Fondo Verde / Esmeralda:** Si el resultado proyectado es un **Saldo a Favor (Devolución del SAT)**.
-  - **Fondo Rojo / Borgoña:** Si el resultado proyectado es un **Impuesto Anual a Cargo**.
-- **Monto Gigante:** Cifra en pesos mexicanos calculada con precisión milimétrica.
-- **Botón "📊 Exportar Papel de Trabajo (CSV)":** Descarga un archivo estructurado con todos los renglones y fórmulas para abrirse en Excel o integrarse a auditorías contables.
-- **Cascada Oficial (Panel Derecho):**
-  1. *Ingresos Acumulables Totales*
-  2. *Deducciones Personales Aplicadas*
-  3. *Base Gravable del Ejercicio*
-  4. *ISR Causado Anual (Tarifa Art. 152)*
-  5. *Pagos Provisionales Acreditables*
-  6. *Retenciones Totales de Nómina y Clientes*
+```mermaid
+flowchart TD
+    P1["1. Ingresos Acumulables Totales\n(Nómina + PFAE + Intereses)"] --> P2["2. Menos: Deducciones Personales Aceptadas\n(Art. 151 LISR - Sujetas a Topes)"]
+    P2 --> P3["3. Igual: Base Gravable Anual\n(Monto sujeto a Tarifa Art. 152)"]
+    P3 --> P4["4. Igual: ISR Determinado del Ejercicio\n(Cuota Fija + Excedente x Tasa Marginal)"]
+    P4 --> P5["5. Menos: Pagos Provisionales & Retenciones\n(Nómina + Honorarios + Pagos Realizados)"]
+    P5 --> Res["Resultado Final\n• Saldo a Favor (Devolución SAT)\n• Saldo a Cargo (Línea de Captura)"]
 
----
+    classDef blueBox fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
+    classDef amberBox fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#78350f;
+    classDef greenBox fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#064e3b;
 
-### 2. Origen de Ingresos Acumulables y Desglose de Patrones
-
-![Desglose de Origen de Ingresos Acumulables por Régimen y Empleadores](img/05_anual_02_origen_ingresos_y_patrones.png)
-
-Al hacer scroll hacia abajo, la pantalla desglosa el origen de los ingresos gravables:
-- **👔 Sueldos y Salarios:** Muestra los ingresos gravados de nómina y las retenciones de patrones.
-- **💼 Honorarios / Actividad Empresarial:** Despliega la facturación total y la utilidad neta una vez restadas las deducciones autorizadas.
-- **📈 Intereses Financieros:** Muestra los rendimientos reales acumulables reportados por bancos.
-- **Lista de Patrones de Nómina (Toggle):** Detalla cada empleador con su nombre, RFC, número de recibos timbrados, ingreso gravado y retención de ISR quincena por quincena.
+    class P1,P2,P3,P4,P5 blueBox;
+    class Res greenBox;
+```
 
 ---
 
-### 3. Optimizador de Deducciones Personales y Tope Legal (Art. 151 LISR)
+## 3. Métricas Financieras del Ejercicio
 
-![Optimizador de Deducciones Personales, Tope Legal y Remanente Libre](img/05_anual_03_optimizador_deducciones_personales.png)
-
-El SAT impone un límite estricto a las deducciones personales. El sistema calcula en tiempo real el valor que resulte **menor** entre:
-1. El **15% del total de ingresos brutos** del contribuyente.
-2. **5 veces el valor de la UMA anual**.
-
-#### Métricas del Optimizador:
-- **Tope Legal Máximo:** Límite monetario exacto para el ejercicio fiscal consultado.
-- **Deducciones Aplicadas:** Suma de comprobantes válidos (D01 a D10).
-- **Remanente Libre para Deducir:** Monto en pesos que el contribuyente todavía puede gastar en salud, seguros o retiro antes del 31 de diciembre para aumentar su devolución.
-- **Aprovechamiento del Tope:** Porcentaje del límite legal utilizado hasta el momento.
+* **Tasa Efectiva de Impuesto:** Porcentaje real del ingreso que representa el impuesto determinado ($\text{ISR Determinado} / \text{Ingresos Totales}$).
+* **Tasa Marginal:** Porcentaje aplicable al último tramo de la tarifa en el que se ubica la base gravable (hasta el 35%).
+* **Evolución Multianual de Saldos:**
+  - **2021-2022:** Saldos a cargo por salto de tarifa del Art. 152.
+  - **2023:** Inicio de estrategia fiscal con Planes Personales de Retiro (PPR) y Seguro de Gastos Médicos Mayores (SGMM), reduciendo el saldo a cargo.
+  - **2024-2026:** Consolidación con **Saldos a Favor recurrentes** (de $2,358 a $9,105 MXN) sujetos a devolución automática del SAT a cuenta CLABE.

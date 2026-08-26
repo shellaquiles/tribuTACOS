@@ -402,19 +402,17 @@ const App = () => {
             </ErrorBoundary>
           </div>
         </div>
-      </main>
 
-      {/* Footer con Aviso Legal / Disclaimer */}
-      <footer className="mt-12 border-t border-slate-200 bg-white py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-600">
-            Aviso Legal / Simulación Informativa
-          </p>
-          <p className="max-w-4xl mx-auto leading-relaxed">
-            tribuTACOS es una herramienta de análisis, proyección y simulación fiscal basada en comprobantes digitales (CFDI) y las disposiciones de la LISR y LIVA. Los resultados y determinaciones presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal ni reemplazan las declaraciones oficiales presentadas ante el Servicio de Administración Tributaria (SAT).
-          </p>
-        </div>
-      </footer>
+        {/* Footer Fijo al Pie de Página */}
+        <footer className="bg-white/95 backdrop-blur-xs border-t border-slate-200 px-6 py-2 flex-shrink-0 z-20">
+          <div className="max-w-5xl mx-auto text-center text-[11px] leading-tight text-slate-500">
+            <span className="font-semibold text-slate-700 mr-1.5">Aviso Legal:</span>
+            <span className="text-slate-400">
+              tribuTACOS es una herramienta analítica de simulación y proyección fiscal estimativa (LISR/LIVA). No constituye asesoría vinculante ni reemplaza las declaraciones oficiales presentadas ante el SAT.
+            </span>
+          </div>
+        </footer>
+      </main>
 
       {/* Modal de Subida de Archivos */}
       <UploadModal

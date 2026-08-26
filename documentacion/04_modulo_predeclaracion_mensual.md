@@ -1,84 +1,55 @@
-# Capítulo 4: Módulo 2 — Pre-Declaración Mensual (Pagos Provisionales)
+# tribuTACOS — Manual de Usuario
 
-## 📅 Propósito del Módulo
+# Capítulo 04: Módulo de Pre-Declaración Mensual (ISR e IVA)
 
-El módulo de **Pre-Declaración Mensual** automatiza por completo el cumplimiento de las obligaciones fiscales de cada mes (antes del día 17) para Personas Físicas con Actividad Empresarial y Servicios Profesionales (Honorarios):
-1. **ISR Provisional (Formulario R122 - Art. 106 LISR):** Aplica la mecánica de acumulación de ingresos y deducciones del ejercicio, deduciendo el ISR retenido y los pagos provisionales efectuados en meses anteriores.
-2. **IVA Definitivo (Formulario R21 - Art. 5 y 6 LIVA):** Determina el IVA cobrado al 16%, resta el IVA acreditable de compras deducibles y aplica saldos a favor de meses previos.
-3. **Generador de Borrador Espejo SAT:** Un formulario emergente que reproduce renglón por renglón el formulario oficial de la plataforma del SAT, listo para copiar y pegar sin errores.
+Matriz analítica de los 12 meses del ejercicio, pagos provisionales acumulativos de ISR, acreditamiento de IVA y generación del borrador oficial SAT.
 
 ---
 
-## 🖥️ Secciones de la Pantalla y Análisis Paso a Paso
+## 1. Fundamento Legal y Flujo de Efectivo
+
+El módulo opera bajo el principio de **flujo de efectivo** exigido por la legislación tributaria para personas físicas con Actividad Empresarial y Profesional:
+* **Ingresos Computables:** Facturas emitidas con método `PUE` (Pago en una Sola Exhibición) y complementos de pago `PPD` efectivamente cobrados en el mes (`fecha_pago`).
+* **Gastos Deducibles:** Facturas recibidas `PUE` y complementos de pago efectivamente erogados mediante medios bancarizados.
+* **Pagos Provisionales de ISR (Art. 106 LISR):** Cálculo acumulativo desde enero hasta el mes de causación.
+* **Determinación de IVA (Art. 5 y 6 LIVA):** Impuesto definitivo mensual con acreditamiento de saldos a favor arrastrables.
+
+![Matriz de Pre-Declaración Mensual](img/03_predeclaracion_mensual.png)
 
 ---
 
-### 1. Encabezado y 4 KPIs Ejecutivos de Pagos Provisionales
+## 2. Matriz Comparativa de 12 Meses
 
-![Encabezado y Cuatro KPIs Ejecutivos de Pagos Provisionales Mensuales](img/04_mensual_01_header_y_kpis.png)
-
-#### Indicadores del Panel Superior:
-- **Ingresos Facturados (Honorarios):** Total de ingresos acumulados en el año derivados de facturas emitidas y cobradas.
-- **Gastos Deducibles Bancarizados:** Compras y gastos pagados por medios electrónicos (tarjeta, transferencia, cheque). Si se detectan gastos en efectivo mayores a $2,000, el sistema muestra una alerta de no deducibilidad.
-- **ISR Provisional a Pagar:** Suma de los pagos provisionales de ISR acumulables para la declaración anual.
-- **IVA Definitivo a Pagar:** Total del impuesto al valor agregado liquidado al SAT tras acreditar el IVA de proveedores.
-- **Total Pagos Provisionales:** Cifra global acumulada en la esquina superior derecha.
-
----
-
-### 2. Matriz Interactiva de Pre-Declaración (12 Meses)
-
-![Matriz Interactiva de 12 Meses - Primer Semestre y Columnas Fiscales](img/04_mensual_02_matriz_12meses.png)
-
-![Matriz Interactiva de 12 Meses - Segundo Semestre y Totales Anuales](img/04_mensual_03_matriz_segundo_semestre.png)
-
-#### Columnas y Lógica de la Matriz:
-| Columna | Significado Fiscal |
-| :--- | :--- |
-| **Mes** | Periodo fiscal (01. Enero a 12. Diciembre) con semáforos de volumen. |
-| **Ingreso Facturado** | Subtotal de facturas PUE y recibos de pago cobrados en el mes. |
-| **Gasto Deducible** | Egresos y compras deducibles pagados por medios bancarios. |
-| **Flujo / Utilidad** | Margen operativo del mes (`Ingresos - Gastos`). Destaca en verde (`+Utilidad`) o rojo (`-Déficit`). |
-| **ISR Retenido** | Retención del 10% aplicada por clientes personas morales. |
-| **ISR a Pagar** | Impuesto sobre la renta determinado conforme a la tarifa acumulativa del Art. 106 de la LISR. |
-| **IVA Cobrado (16%)** | Impuesto al valor agregado trasladado a clientes. |
-| **IVA Acreditable** | Impuesto trasladado por proveedores en compras deducibles efectivamente pagadas. |
-| **IVA a Pagar** | Impuesto definitivo a liquidar al SAT. |
-| **Total Impuestos** | Suma total líquida a pagar en ventanilla bancaria (`ISR a Pagar + IVA a Pagar`). |
-| **Borrador SAT** | Botón para abrir el formulario espejo oficial listo para copiar. |
+La tabla principal desglosa para cada uno de los meses del año (Enero a Diciembre):
+1. **Ingresos PFAE Efectivos:** Monto cobrado en el mes.
+2. **Gastos Operativos Efectivos:** Monto pagado deducible.
+3. **Utilidad / Pérdida del Periodo:** Semáforo visual en verde (utilidad) o rojo (pérdida).
+4. **ISR Retenido (10% PM):** Retenciones aplicadas por personas morales en el periodo.
+5. **ISR a Pagar Proyectado:** Determinación del pago provisional tras descontar retenciones y pagos anteriores.
+6. **IVA a Pagar / Remanente:** IVA cobrado menos IVA acreditable, retención de IVA y remanentes anteriores.
+7. **Acción Borrador:** Botón para abrir el desglose oficial del mes.
 
 ---
 
-### 3. Modal "Borrador Espejo SAT" (Listo para Copiar)
+## 3. Modal de Borrador Oficial SAT (ISR e IVA)
 
-Al presionar el botón **"📋 Borrador SAT"** en cualquier mes, se abre un modal con el desglose exacto que solicita el portal web del SAT:
+Al hacer clic en el botón **"Borrador"** de cualquier mes, se abre la ventana emergente con el borrador interactivo:
 
-#### A. Sección R122: Determinación del Impuesto Sobre la Renta (ISR)
+![Modal de Borrador Oficial SAT](img/04_borrador_sat_modal.png)
 
-![Modal Borrador SAT - Sección R122 Determinación de ISR Provisional](img/04_mensual_04_modal_borrador_sat_isr.png)
+### 3.1 Pestaña ISR (Régimen 122 - Art. 106):
+* Ingresos acumulados del ejercicio al mes corriente.
+* Deducciones acumuladas del ejercicio al mes corriente.
+* Base gravable provisional acumulada.
+* ISR causado acumulado según tarifa mensual del SAT.
+* Menos: Pagos provisionales realizados en meses anteriores del mismo ejercicio.
+* Menos: Retenciones de ISR efectuadas por personas morales acumuladas.
+* **ISR a Pagar en el Periodo**.
 
-Contiene los 8 renglones oficiales:
-1. *Ingresos del Periodo*
-2. *Total de Ingresos Acumulables*
-3. *Compras y Gastos del Periodo (Deducibles)*
-4. *Total de Deducciones Autorizadas Acumuladas*
-5. *Base Gravable del Pago Provisional*
-6. *ISR Causado Acumulado*
-7. *Total Impuesto Retenido Acumulado*
-8. *ISR a Cargo del Mes*
-
----
-
-#### B. Sección R21: Determinación del Impuesto al Valor Agregado (IVA)
-
-![Modal Borrador SAT - Sección R21 Determinación de IVA Definitivo](img/04_mensual_05_modal_borrador_sat_iva.png)
-
-Contiene los renglones oficiales de IVA:
-1. *Actividades Gravadas a la Tasa del 16%*
-2. *IVA Cobrado del Periodo (16%)*
-3. *IVA Acreditable del Periodo (Gastos)*
-4. *IVA Retenido por Terceros*
-5. *Acreditamiento de Saldo a Favor de Meses Anteriores (Art. 6 LIVA)*
-6. *IVA a Cargo del Mes / IVA a Favor Generado*
-7. *Remanente de IVA a Favor Acumulado para Meses Futuros*
-8. *Cantidad Total a Pagar Calculada*
+### 3.2 Pestaña IVA (Régimen 21 - Art. 5/6 LIVA):
+* Total de actos o actividades gravados al 16%.
+* IVA trasladado cobrado en el mes.
+* Menos: IVA acreditable pagado en gastos del mes.
+* Menos: IVA retenido por personas morales en el mes (10.6667%).
+* Menos: Remanente de saldo a favor de IVA arrastrado de periodos anteriores.
+* **Impuesto a Cargo o Nuevo Saldo a Favor de IVA**.
