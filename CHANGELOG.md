@@ -4,6 +4,18 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-26
+
+### Mejorado
+- **Rediseño Editorial y Minimalismo Estilo Suizo**:
+  - Implementación de retícula geométrica con bordes finos de 1px y eliminación de sombras difusas (*no drop shadows*).
+  - Tipografía con números tabulares de gran escala (`tabular-nums`) y micro-etiquetas en mayúsculas sobrias para máxima legibilidad contable.
+  - Paleta de color viva, moderna y equilibrada: Azul Eléctrico (`#2563EB`) para Nómina/Sueldos, Verde Esmeralda Vibrante (`#10B981`) para Honorarios/Ingresos, Ámbar Cálido (`#F59E0B`) para totales/deducciones y Rosa Coral para saldos a cargo.
+  - Tooltips limpios con efecto *backdrop-blur* y gráficos de barras / pastel estilizados con Recharts.
+- **Configuración y Entorno**:
+  - Alineación de `.env.example` con el dataset demo oficial (`Sheila Shellaquiles Ortega` / `SHLL250825XYZ`) y rutas canónicas relativas (`./backend/tributacos.db`, `./cfdi_emitidos`, `./cfdi_recibidos`).
+  - Actualización de versión del paquete frontend a `1.0.1`.
+
 ## [1.0.0] - 2026-08-26
 
 ### Añadido

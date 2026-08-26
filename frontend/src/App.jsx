@@ -16,8 +16,7 @@ import {
   Upload,
   RefreshCw,
   ChevronDown,
-  Building,
-  CheckCircle2
+  Building
 } from 'lucide-react';
 import {
   DashboardSection,
@@ -48,9 +47,9 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6 bg-red-50 border border-red-200 rounded-xl my-4 text-red-900 text-sm">
-          <div className="font-semibold mb-1">Error al procesar esta sección:</div>
-          <code className="text-xs bg-red-100/70 p-2 rounded block mt-2 font-mono text-red-800">
+        <div className="p-6 bg-rose-50 border border-rose-200 my-4 text-rose-950 text-xs font-mono">
+          <div className="font-bold uppercase tracking-wider mb-1">Error al procesar esta sección:</div>
+          <code className="bg-white p-3 border border-rose-200 block mt-2 text-rose-900 overflow-x-auto">
             {this.state.error?.message}
           </code>
         </div>
@@ -120,30 +119,30 @@ const App = () => {
 
   const currentClientInfo = clients.find(c => c.id === currentClientId) || data?.client;
 
-  // ─── Estructura de Navegación Profesional y Limpia ───────────────────────────
+  // ─── Estructura de Navegación Editorial Suiza ───────────────────────────
   const navGroups = [
     {
-      title: 'Resumen',
+      title: 'RESUMEN Y AUDITORÍA',
       tabs: [
         { id: 'dashboard', label: 'Dashboard Principal', icon: LayoutDashboard },
       ]
     },
     {
-      title: 'Pre-Declaraciones SAT',
+      title: 'PRE-DECLARACIONES SAT',
       tabs: [
         { id: 'pre_mensual', label: 'Pagos Provisionales (Mensual)', icon: CalendarCheck },
         { id: 'pre_anual',   label: 'Declaración Anual',              icon: Landmark },
       ]
     },
     {
-      title: 'Egresos y Deducciones',
+      title: 'EGRESOS Y DEDUCCIONES',
       tabs: [
         { id: 'egresos_mes', label: 'Gastos y Facturas Recibidas', icon: Receipt },
         { id: 'deducciones', label: 'Deducciones Personales',      icon: HeartHandshake },
       ]
     },
     {
-      title: 'Ingresos y Nómina',
+      title: 'INGRESOS Y NÓMINA',
       tabs: [
         { id: 'nomina',        label: 'Sueldos y Salarios',        icon: Users },
         { id: 'nomina_detalle',label: 'Detalle de Recibos',        icon: FileSpreadsheet },
@@ -152,9 +151,9 @@ const App = () => {
       ]
     },
     {
-      title: 'Auditoría SAT',
+      title: 'CONCILIACIÓN OFICIAL',
       tabs: [
-        { id: 'conciliacion_sat', label: 'Conciliación Oficial (PDFs)', icon: ShieldCheck },
+        { id: 'conciliacion_sat', label: 'Conciliación SAT (PDFs)', icon: ShieldCheck },
       ]
     },
   ];
@@ -163,111 +162,104 @@ const App = () => {
   const activeTabObj = allTabs.find(t => t.id === activeTab);
 
   if (loading && !data) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800">
-      <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md mb-4">
-        🌮
-      </div>
-      <div className="text-lg font-bold text-slate-900 tracking-tight mb-1">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-zinc-900 font-mono">
+      <div className="text-2xl font-black tracking-tight mb-1">
         tribuTACOS
       </div>
-      <div className="text-xs text-slate-500 mb-4">
-        un proyecto de <span className="font-semibold text-blue-600">shellaquiles.org</span>
+      <div className="text-[11px] text-zinc-400 uppercase tracking-widest mb-6">
+        SISTEMA DE INTELIGENCIA FISCAL • SHELLAQUILES.ORG
       </div>
-      <p className="text-slate-600 text-xs text-center max-w-sm mb-4">
-        Procesando y recalculando declaraciones fiscales del ejercicio {year}...
+      <p className="text-zinc-600 text-xs text-center max-w-sm mb-6 uppercase tracking-wider">
+        Procesando ejercicio fiscal {year}...
       </p>
-      <div className="w-36 h-1 bg-slate-200 rounded-full overflow-hidden">
-        <div className="h-full bg-blue-600 rounded-full animate-[pulse_1s_infinite]" />
+      <div className="w-32 h-[2px] bg-zinc-200 overflow-hidden">
+        <div className="h-full bg-zinc-900 animate-[pulse_1s_infinite]" />
       </div>
     </div>
   );
 
   if (error && !data) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800 text-center">
-      <div className="w-12 h-12 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold text-xl mb-4 border border-red-200">
-        !
-      </div>
-      <h3 className="text-base font-bold text-slate-900 mb-1">No se pudo conectar con el servidor fiscal</h3>
-      <div className="text-xs text-slate-500 mb-4">shellaquiles.org • tribuTACOS</div>
-      <p className="text-slate-600 text-xs max-w-md mb-6 font-mono bg-white p-3 rounded-lg border border-slate-200 text-left overflow-x-auto">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-zinc-900 font-mono text-center">
+      <div className="text-xs font-bold uppercase tracking-widest text-rose-800 mb-2">ERROR DE CONEXIÓN FISCAL</div>
+      <h3 className="text-base font-bold text-zinc-950 mb-1">Servidor API no disponible (:8010)</h3>
+      <div className="text-[11px] text-zinc-400 mb-6 uppercase tracking-wider">shellaquiles.org • tribuTACOS</div>
+      <p className="text-zinc-600 text-xs max-w-md mb-6 font-mono bg-zinc-50 p-4 border border-zinc-300 text-left overflow-x-auto">
         <code>{error}</code>
       </p>
       <button
         onClick={() => loadData(true)}
-        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
+        className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-mono font-bold uppercase tracking-wider border border-zinc-900 transition-colors cursor-pointer"
       >
         Reintentar conexión
       </button>
     </div>
   );
 
-  const { sections, summary } = data || {};
+  const { sections } = data || {};
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
+    <div className="flex h-screen overflow-hidden bg-white text-zinc-900 font-sans">
       
-      {/* ── SIDEBAR LUMINOSO Y LIMPIO (Light Theme) ── */}
-      <aside className="w-64 bg-white text-slate-700 flex flex-col border-r border-slate-200 shadow-xs flex-shrink-0 z-30">
+      {/* ── SIDEBAR SUIZO MINIMALISTA (1px Grid Border, Monospace Accents) ── */}
+      <aside className="w-64 bg-white text-zinc-800 flex flex-col border-r border-zinc-300 flex-shrink-0 z-30">
         
         {/* Brand Header */}
-        <div className="p-4 border-b border-slate-100">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-base font-black shadow-sm">
-              🌮
-            </div>
+        <div className="p-5 border-b border-zinc-200">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+              <div className="text-sm font-black text-zinc-950 tracking-tight font-mono">
                 tribuTACOS
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">
-                by <span className="text-blue-600 font-semibold">shellaquiles.org</span>
+              <div className="text-[10px] text-zinc-400 font-mono uppercase tracking-widest">
+                shellaquiles.org
               </div>
             </div>
+            <div className="w-2 h-2 bg-emerald-800" title="Sistema Activo" />
           </div>
           
-          <div className="mt-3 flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 text-[11px]">
-            <span className="text-slate-400 font-medium">RFC:</span>
-            <span className="font-mono font-bold text-slate-800">
-              {currentClientInfo?.rfc || 'RFC ACTIVO'}
+          <div className="mt-3 flex items-center justify-between bg-zinc-50 px-2.5 py-1.5 border border-zinc-200 text-[10px] font-mono">
+            <span className="text-zinc-400 uppercase">RFC:</span>
+            <span className="font-bold text-zinc-900">
+              {currentClientInfo?.rfc || 'ACTIVO'}
             </span>
           </div>
         </div>
 
-        {/* Accion Principal: Importar / Desmenuzar XMLs */}
-        <div className="p-3 border-b border-slate-100">
+        {/* Acción Principal: Cargar XMLs */}
+        <div className="p-3 border-b border-zinc-200">
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-mono font-bold uppercase tracking-wider border border-zinc-900 transition-colors cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>Cargar Comprobantes XML</span>
+            <span>CARGAR CFDIs (XML)</span>
           </button>
         </div>
 
         {/* Controles: Contribuyente & Ejercicio Fiscal */}
-        <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-2.5">
+        <div className="p-3 border-b border-zinc-200 bg-zinc-50/50 flex flex-col gap-2.5 font-mono">
           {clients.length > 1 && (
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
                 Contribuyente
               </label>
               <div className="relative">
                 <select
                   value={currentClientId}
                   onChange={(e) => setCurrentClientId(e.target.value)}
-                  className="w-full bg-white text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none pr-7 shadow-xs"
+                  className="w-full bg-white text-zinc-900 text-xs font-mono rounded-none px-2.5 py-1.5 border border-zinc-300 focus:outline-none focus:border-zinc-900 cursor-pointer appearance-none pr-7"
                 >
                   {clients.map(c => (
                     <option key={c.id} value={c.id}>{c.rfc} - {c.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 absolute right-2 top-2 pointer-events-none" />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-1">
               Ejercicio Fiscal
             </label>
             <div className="flex gap-1.5">
@@ -275,7 +267,7 @@ const App = () => {
                 <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-full bg-white text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none pr-7 shadow-xs"
+                  className="w-full bg-white text-zinc-900 text-xs font-mono rounded-none px-2.5 py-1.5 border border-zinc-300 focus:outline-none focus:border-zinc-900 cursor-pointer appearance-none pr-7"
                 >
                   <option value="2021">2021</option>
                   <option value="2022">2022</option>
@@ -284,26 +276,26 @@ const App = () => {
                   <option value="2025">2025</option>
                   <option value="2026">2026</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-500 absolute right-2 top-2 pointer-events-none" />
               </div>
 
               <button
                 onClick={handleSync}
                 disabled={syncing}
                 title="Sincronizar y recalcular"
-                className="p-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 border border-slate-200 transition-colors cursor-pointer shadow-xs disabled:cursor-wait"
+                className="px-2.5 py-1.5 bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-300 transition-colors cursor-pointer disabled:cursor-wait"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-blue-600' : ''}`} />
+                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-zinc-900' : ''}`} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Navegación */}
-        <nav className="flex-1 overflow-y-auto p-2.5 space-y-4">
+        {/* Navegación por grupos */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-5">
           {navGroups.map((group) => (
             <div key={group.title}>
-              <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              <div className="px-2 text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-400 mb-1.5">
                 {group.title}
               </div>
               <div className="space-y-0.5">
@@ -314,14 +306,14 @@ const App = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left ${
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 text-xs font-mono transition-colors cursor-pointer text-left border ${
                         isActive
-                          ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200/60 shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                          ? 'bg-zinc-900 text-white font-bold border-zinc-900'
+                          : 'text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 border-transparent'
                       }`}
                     >
-                      <IconComponent className={`w-4 h-4 ${
-                        isActive ? 'text-blue-600' : 'text-slate-400'
+                      <IconComponent className={`w-3.5 h-3.5 ${
+                        isActive ? 'text-white' : 'text-zinc-500'
                       }`} />
                       <span className="truncate">{tab.label}</span>
                     </button>
@@ -333,40 +325,40 @@ const App = () => {
         </nav>
 
         {/* Footer institucional */}
-        <div className="p-3 border-t border-slate-100 text-[10px] text-slate-500 flex items-center justify-between bg-slate-50/50">
-          <span>shellaquiles.org</span>
-          <span className="font-mono text-slate-700 font-medium">
+        <div className="p-3 border-t border-zinc-200 text-[10px] font-mono text-zinc-500 flex items-center justify-between bg-zinc-50">
+          <span>v2.5 • STABLE</span>
+          <span className="text-zinc-800 font-bold">
             {(sections?.reporte_gastos?.length || 0) + (sections?.honorarios?.detalle?.length || 0)} CFDIs
           </span>
         </div>
       </aside>
 
       {/* ── CONTENIDO PRINCIPAL ── */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-zinc-50/40">
         
         {/* Top Navbar */}
-        <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-20">
-          <div className="flex items-center gap-3">
-            <h1 className="text-base font-bold text-slate-900 tracking-tight">
+        <header className="h-14 bg-white border-b border-zinc-300 px-8 flex items-center justify-between flex-shrink-0 z-20">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xs font-mono font-bold uppercase tracking-widest text-zinc-900">
               {activeTabObj?.label}
             </h1>
-            <span className="bg-slate-100 text-slate-700 text-xs font-medium px-2 py-0.5 rounded border border-slate-200">
-              Ejercicio {year}
+            <span className="font-mono text-[11px] font-bold text-zinc-700 bg-zinc-100 px-2 py-0.5 border border-zinc-200">
+              EJERCICIO {year}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 font-mono">
             {currentClientInfo && (
-              <div className="hidden sm:flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 text-xs">
-                <Building className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-medium text-slate-700">{currentClientInfo.name || currentClientInfo.rfc}</span>
+              <div className="hidden sm:flex items-center gap-2 bg-white px-3 py-1 border border-zinc-300 text-xs">
+                <Building className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="font-bold text-zinc-800">{currentClientInfo.name || currentClientInfo.rfc}</span>
               </div>
             )}
           </div>
         </header>
 
         {/* Contenedor con Scroll */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-50">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8">
           <div className="max-w-7xl mx-auto pb-12">
             <ErrorBoundary>
               {activeTab === 'dashboard' && (
@@ -403,14 +395,13 @@ const App = () => {
           </div>
         </div>
 
-        {/* Footer Fijo al Pie de Página */}
-        <footer className="bg-white/95 backdrop-blur-xs border-t border-slate-200 px-6 py-2 flex-shrink-0 z-20">
-          <div className="max-w-5xl mx-auto text-center text-[11px] leading-tight text-slate-500">
-            <span className="font-semibold text-slate-700 mr-1.5">Aviso Legal:</span>
-            <span className="text-slate-400">
-              tribuTACOS es una herramienta analítica de simulación y proyección fiscal estimativa (LISR/LIVA). No constituye asesoría vinculante ni reemplaza las declaraciones oficiales presentadas ante el SAT.
-            </span>
+        {/* Footer Editorial Suizo */}
+        <footer className="bg-white border-t border-zinc-300 px-8 py-2.5 flex-shrink-0 z-20 font-mono text-[10px] text-zinc-500 flex justify-between items-center">
+          <div>
+            <span className="font-bold text-zinc-800 uppercase mr-2">AVISO LEGAL:</span>
+            <span>SIMULACIÓN FISCAL ESTIMATIVA (LISR/LIVA). NO SUSTITUYE PRESENTACIONES ANTE EL SAT.</span>
           </div>
+          <span className="text-zinc-400">tribuTACOS • shellaquiles.org</span>
         </footer>
       </main>
 
@@ -429,3 +420,4 @@ const App = () => {
 };
 
 export default App;
+
