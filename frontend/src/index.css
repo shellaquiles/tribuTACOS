@@ -1,21 +1,22 @@
-/* ─── Design Tokens ─────────────────────────────────────────────────────── */
+/* ─── Design Tokens (Swiss Minimalist System) ───────────────────────── */
 :root {
-  --blue:       #1a4f8a;
-  --blue-light: #e8f0f9;
-  --blue-mid:   #2c6abf;
-  --green:      #1a7a4a;
-  --green-light:#e6f5ee;
-  --red:        #c0392b;
-  --red-light:  #fdf0ef;
+  --blue:       #1e3a8a;
+  --blue-light: #eff6ff;
+  --blue-mid:   #2563eb;
+  --green:      #046a38;
+  --green-light:#ecfdf5;
+  --green-dark: #064e3b;
+  --red:        #991b1b;
+  --red-light:  #fef2f2;
   --amber:      #b45309;
-  --amber-light:#fef3c7;
+  --amber-light:#fffbeb;
   --gray:       #64748b;
-  --gray-light: #f1f5f9;
+  --gray-light: #f8fafc;
   --border:     #e2e8f0;
-  --text:       #1e293b;
-  --text-2:     #475569;
+  --text:       #09090b;
+  --text-2:     #52525b;
   --white:      #ffffff;
-  --shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow:     none;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────── */
@@ -23,11 +24,12 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
-  background: #f0f4f8;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #ffffff;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: -0.01em;
 }
 
 /* ─── App Shell (Dashboard Sidebar Layout) ────────────────────────────────── */
