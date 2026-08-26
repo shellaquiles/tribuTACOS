@@ -60,6 +60,5 @@ DESCARGADOS_DIR = _resolve_dir("DESCARGADOS_DIR", PROJECT_ROOT / "descargados")
 
 # Default Client / RFC settings for immediate zero-config operation
 DEFAULT_CLIENT_RFC = os.getenv("DEFAULT_CLIENT_RFC", "SHLL250825XYZ")
-DEFAULT_CLIENT_NAME = os.getenv("DEFAULT_CLIENT_NAME", "pixelead0 Shellaquiles org")
+DEFAULT_CLIENT_NAME = os.getenv("DEFAULT_CLIENT_NAME", "Sheila Shellaquiles Ortega")
 DEFAULT_CLIENT_EMAIL = os.getenv("DEFAULT_CLIENT_EMAIL", "tributacos@shellaquiles.org")
-

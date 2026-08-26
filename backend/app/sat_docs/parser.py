@@ -41,13 +41,13 @@ def parse_declaracion_anual(pdf_path: str) -> Dict[str, Any]:
         'archivo': fn,
         'tipo': 'Declaracion_Anual',
         'rfc': 'SHLL250825XYZ',
-        'nombre': 'pixelead0 Shellaquiles org',
+        'nombre': 'SHELLAQUILES ORTEGA SHEILA',
         'curp': '',
         'ejercicio': '',
         'num_operacion': '',
         'fecha_presentacion': '',
         'tipo_declaracion': 'Normal',
-        
+
         # Determinación de ISR Anual
         'ingresos_acumulables_totales': 0.0,
         'ingresos_no_acumulables': 0.0,
@@ -168,7 +168,7 @@ def parse_pago_provisional(pdf_path: str) -> Dict[str, Any]:
         'num_operacion': '',
         'fecha_presentacion': '',
         'tipo_declaracion': 'Normal',
-        
+
         # ── 1. ISR: SECCIÓN R122 ACTIVIDAD EMPRESARIAL Y PROFESIONAL ──
         'isr_ingresos_periodos_anteriores': 0.0,
         'isr_ingresos_periodo': 0.0,
