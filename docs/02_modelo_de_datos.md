@@ -191,7 +191,7 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
   "emisor_rfc": "STM180415AA1",
   "emisor_nombre": "SOLUCIONES TECNOLÓGICAS DE MÉXICO S.A. DE C.V.",
   "receptor_rfc": "SHLL250825XYZ",
-  "receptor_nombre": "pixelead0 Shellaquiles org",
+  "receptor_nombre": "Sheila Shellaquiles Ortega",
   "regimen_fiscal_emisor": "601",
   "regimen_fiscal_receptor": "605",
   "conceptos": [
@@ -232,4 +232,4 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
 * **Eventos de Invalidación:**
   * Al subir o eliminar un CFDI (`Cfdi`).
   * Al sincronizar una declaración oficial del SAT (`PagoProvisionalSAT` / `DeclaracionAnualSAT`).
-  * Al ejecutar cualquier script de anonimización o recálculo (`anonymize.py`, `recalcular_nomina.py`, `recalcular_pfae.py`).
+  * Al ejecutar cualquier comando de recálculo o refresco de base de datos (`make db-fresh`, `make recreate-db`).
