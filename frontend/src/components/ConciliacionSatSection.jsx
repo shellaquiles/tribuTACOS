@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { FileText, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 const formatMoney = (val) => {
   if (val === undefined || val === null || isNaN(val)) return '$0.00';
@@ -10,7 +13,7 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState('tabla'); // 'tabla' o 'tarjetas'
+  const [viewMode, setViewMode] = useState('tabla'); // 'tabla' | 'tarjetas'
   const [selectedMonthModal, setSelectedMonthModal] = useState(null);
 
   useEffect(() => {
@@ -44,15 +47,15 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
 
   if (error || !data) {
     return (
-      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', padding: '1.5rem', borderRadius: '16px', fontWeight: 600 }}>
-        ⚠️ {error || "Sin información disponible"}
+      <div className="bg-red-50 border border-red-200 text-red-800 p-6 rounded-xl text-xs font-medium">
+        {error || "Sin información disponible"}
       </div>
     );
   }
 
   const anual = data.declaracion_anual_oficial;
   const meses = data.matriz_pagos_provisionales || [];
-  const aniosDisponibles = data.anios_con_anual_disponible || ['2021', '2022', '2023', '2024', '2025'];
+  const aniosDisponibles = data.anios_con_anual_disponible || ['2021', '2022', '2023', '2024', '2025', '2026'];
 
   // Totales Anuales de Pagos Provisionales
   const totalPagadoEnMeses = meses.reduce((s, m) => s + (m.isr_a_cargo_sat || 0) + (m.iva_a_cargo_sat || 0), 0);
@@ -63,16 +66,16 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
   const esSaldoFavor = anual && anual.saldo_a_favor > 0;
 
   return (
-    <div className="flex flex-col gap-7">
+    <div className="flex flex-col gap-6 text-slate-800">
       
-      {/* ── BARRA SUPERIOR: SELECTOR DE AÑOS Y VISTA ── */}
+      {/* ── BARRA SUPERIOR: SELECTOR DE AÑOS ── */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h2 className="text-base font-bold text-slate-900 tracking-tight">
             Auditoría Oficial SAT • Ejercicio {year}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Liquidación anual oficial del SAT y desglose de pagos provisionales de ISR e IVA.
+            Liquidación anual oficial del SAT y desglose de pagos provisionales de ISR e IVA derivados de acuses y declaraciones.
           </p>
         </div>
 
@@ -98,7 +101,7 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
         </div>
       </div>
 
-      {/* ── 1. RESUMEN ANUAL DEFINITIVO (Clean Card) ── */}
+      {/* ── 1. RESUMEN ANUAL DEFINITIVO ── */}
       {anual ? (
         <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
           <div className="flex flex-wrap justify-between items-center gap-2 pb-4 border-b border-slate-100 mb-6">
@@ -171,11 +174,10 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
           </div>
         </div>
       ) : (
-        <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '20px', padding: '1.75rem 2rem', color: '#92400e', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <span style={{ fontSize: '3rem' }}>⏳</span>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-amber-900 flex items-center gap-4 text-xs">
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#78350f' }}>Declaración Anual {year} en Proceso</h3>
-            <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.9rem', color: '#b45309' }}>
+            <h3 className="font-bold text-amber-950 text-sm">Declaración Anual {year} en Proceso</h3>
+            <p className="mt-1 text-amber-800">
               No se encontró un acuse PDF oficial para el ejercicio {year}. Puedes consultar el detalle de los 12 pagos provisionales abajo.
             </p>
           </div>
@@ -184,50 +186,50 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
 
       {/* ── 2. DESGLOSE DE INGRESOS DECLARADOS Y NÓMINA DE PATRONES ── */}
       {anual && (
-        <div style={{ background: 'white', borderRadius: '20px', padding: '1.75rem 2rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>👔</span> ¿De dónde salen los {formatMoney(anual.ingresos_acumulables_totales)} declarados al SAT?
+              <h3 className="text-sm font-bold text-slate-900">
+                Origen de Ingresos Declarados ({formatMoney(anual.ingresos_acumulables_totales)})
               </h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-                Integración de Sueldos y Salarios por empleador vs Actividad Empresarial e Intereses.
+              <p className="text-xs text-slate-500 mt-0.5">
+                Integración de Sueldos y Salarios por empleador vs Actividad Profesional e Intereses.
               </p>
             </div>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', background: '#dbeafe', padding: '4px 12px', borderRadius: '8px' }}>
+            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
               Base Acumulable Oficial
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {/* Sueldos */}
-            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase' }}>👔 Sueldos y Salarios</span>
-                <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sueldos y Salarios</span>
+                <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-medium">
                   {(data.sections?.sueldos?.detalle || []).length} Empleador{(data.sections?.sueldos?.detalle || []).length !== 1 ? 'es' : ''}
                 </span>
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+              <div className="text-xl font-bold text-slate-900 font-mono mt-1">
                 {formatMoney(data.sections?.sueldos?.gravado || anual.ingresos_acumulables_totales)}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-                ISR Retenido por Patrones: <strong style={{ color: '#059669' }}>{formatMoney(anual.isr_retenido_total)}</strong>
+              <div className="text-xs text-slate-500 mt-1">
+                ISR Retenido por Patrones: <span className="font-mono font-semibold text-emerald-700">{formatMoney(anual.isr_retenido_total)}</span>
               </div>
             </div>
 
             {/* Honorarios */}
-            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>💼 Honorarios / Actividad</span>
-                <span style={{ fontSize: '0.75rem', background: '#d1fae5', color: '#065f46', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Honorarios / Actividad</span>
+                <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-medium">
                   Facturado: {formatMoney(data.sections?.honorarios?.ingresos || 0)}
                 </span>
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+              <div className="text-xl font-bold text-slate-900 font-mono mt-1">
                 {formatMoney(Math.max(0, (data.sections?.honorarios?.ingresos || 0) - (data.sections?.honorarios?.deducciones_autorizadas || 0)))}
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
+              <div className="text-xs text-slate-500 mt-1">
                 Utilidad Gravable Acumulable (Absorbida por gastos deducibles)
               </div>
             </div>
@@ -235,37 +237,27 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
 
           {/* Lista de Empleadores */}
           {(data.sections?.sueldos?.detalle || []).length > 0 && (
-            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.85rem', color: '#475569', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div className="border-t border-slate-200 pt-3 mt-2">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2.5">
                 Desglose de Recibos y Retenciones de Nómina por Empleador ({year})
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div className="space-y-2">
                 {data.sections.sueldos.detalle.map((p, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '0.75rem 1rem',
-                    background: '#f8fafc',
-                    borderRadius: '10px',
-                    border: '1px solid #e2e8f0',
-                    flexWrap: 'wrap',
-                    gap: '0.75rem'
-                  }}>
+                  <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex-wrap gap-2">
                     <div>
-                      <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>🏢 {p.nombre}</strong>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                        RFC: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.rfc}</span> • {p.recibos?.length || 0} recibos de nómina timbrados
+                      <div className="font-bold text-slate-900">{p.nombre}</div>
+                      <div className="text-slate-500 font-mono text-[11px]">
+                        RFC: {p.rfc} • {p.recibos?.length || 0} recibos de nómina timbrados
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ingreso Gravado</span>
-                        <strong style={{ color: '#0f172a', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.gravado)}</strong>
+                    <div className="flex gap-6 items-center">
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-500 uppercase block font-semibold">Ingreso Gravado</span>
+                        <span className="font-mono font-bold text-slate-900">{formatMoney(p.gravado)}</span>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>ISR Retenido</span>
-                        <strong style={{ color: '#059669', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.isr)}</strong>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-500 uppercase block font-semibold">ISR Retenido</span>
+                        <span className="font-mono font-bold text-emerald-700">{formatMoney(p.isr)}</span>
                       </div>
                     </div>
                   </div>
@@ -276,219 +268,148 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
         </div>
       )}
 
-      {/* ── 2. CUADRO RESUMEN DE PAGOS PROVISIONALES ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Meses Presentados</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '4px' }}>
-            {data.meses_presentados_count} <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>/ 12 meses</span>
+      {/* ── 3. CUADRO RESUMEN DE PAGOS PROVISIONALES ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Meses Presentados</div>
+          <div className="text-xl font-bold text-slate-900 font-mono">
+            {data.meses_presentados_count} <span className="text-xs font-normal text-slate-500">/ 12 meses</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700, marginTop: '4px' }}>✓ 100% al corriente ante el SAT</div>
+          <div className="text-[11px] text-emerald-700 font-medium mt-1">100% al corriente ante el SAT</div>
         </div>
 
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Pagado en el Año (Meses)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: totalPagadoEnMeses > 0 ? '#dc2626' : '#059669', marginTop: '4px' }}>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Pagado en el Año</div>
+          <div className={`text-xl font-bold font-mono ${totalPagadoEnMeses > 0 ? 'text-red-700' : 'text-slate-900'}`}>
             {formatMoney(totalPagadoEnMeses)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>
-            {totalPagadoEnMeses === 0 ? '🟢 Todos los meses salieron en $0' : `🔴 ISR: ${formatMoney(totalIsrPagadoMeses)} | IVA: ${formatMoney(totalIvaPagadoMeses)}`}
+          <div className="text-[11px] text-slate-500 mt-1">
+            {totalPagadoEnMeses === 0 ? 'Todos los meses salieron en $0' : `ISR: ${formatMoney(totalIsrPagadoMeses)} | IVA: ${formatMoney(totalIvaPagadoMeses)}`}
           </div>
         </div>
 
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Ingresos Facturados (Honorarios)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1d4ed8', marginTop: '4px' }}>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Ingresos Facturados (Honorarios)</div>
+          <div className="text-xl font-bold text-slate-900 font-mono">
             {formatMoney(totalIngresosMeses)}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Facturación emitida con CFDI</div>
+          <div className="text-[11px] text-slate-500 mt-1">Facturación emitida con CFDI</div>
         </div>
 
-        <div style={{ background: 'white', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>IVA Acreditable en Compras</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#047857', marginTop: '4px' }}>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">IVA Acreditable en Compras</div>
+          <div className="text-xl font-bold text-slate-900 font-mono">
             {formatMoney(meses.reduce((s, m) => s + (m.iva_acreditable_sat || 0), 0))}
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>IVA deducido en declaraciones</div>
+          <div className="text-[11px] text-slate-500 mt-1">IVA deducido en declaraciones</div>
         </div>
       </div>
 
-      {/* ── 3. TABLA EJECUTIVA: DETALLE MES POR MES (12 MESES) ── */}
-      <div style={{ background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+      {/* ── 4. TABLA EJECUTIVA: DETALLE MES POR MES (12 MESES) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex justify-between items-center flex-wrap gap-2">
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-              📅 Detalle Mensual de Declaraciones ({year})
+            <h3 className="text-sm font-bold text-slate-900">
+              Detalle Mensual de Declaraciones ({year})
             </h3>
-            <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+            <p className="text-xs text-slate-500 mt-0.5">
               Ingresos, gastos, determinación de impuestos y pagos efectivos realizados al SAT.
             </p>
           </div>
 
-          <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px' }}>
+          <div className="flex bg-slate-100 p-0.5 rounded-lg gap-1 border border-slate-200">
             <button
               onClick={() => setViewMode('tabla')}
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-                background: viewMode === 'tabla' ? 'white' : 'transparent',
-                color: viewMode === 'tabla' ? '#0f172a' : '#64748b',
-                boxShadow: viewMode === 'tabla' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none'
-              }}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                viewMode === 'tabla' ? 'bg-white text-slate-900 shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              📊 Vista Tabla
+              Vista Tabla
             </button>
             <button
               onClick={() => setViewMode('tarjetas')}
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-                background: viewMode === 'tarjetas' ? 'white' : 'transparent',
-                color: viewMode === 'tarjetas' ? '#0f172a' : '#64748b',
-                boxShadow: viewMode === 'tarjetas' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none'
-              }}
+              className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                viewMode === 'tarjetas' ? 'bg-white text-slate-900 shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              🗂️ Vista Tarjetas
+              Vista Tarjetas
             </button>
           </div>
         </div>
 
         {viewMode === 'tabla' ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <th style={{ padding: '12px 16px' }}>Mes</th>
-                  <th style={{ padding: '12px 16px' }}>Estatus SAT</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Ingreso Facturado</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>ISR Retenido</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>IVA Cobrado (16%)</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>IVA Acreditable (Gastos)</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Pago Efectivo al SAT</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'right' }}>Folio SAT</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center' }}>Acción</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                  <th className="p-3">Mes</th>
+                  <th className="p-3">Estatus SAT</th>
+                  <th className="p-3 text-right">Ingreso Facturado</th>
+                  <th className="p-3 text-right">ISR Retenido</th>
+                  <th className="p-3 text-right">IVA Cobrado (16%)</th>
+                  <th className="p-3 text-right">IVA Acreditable</th>
+                  <th className="p-3 text-right">Pago Efectivo</th>
+                  <th className="p-3 text-center">Folio SAT</th>
+                  <th className="p-3 text-center">Acción</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100">
                 {meses.map((m) => {
                   const isPresentada = m.estatus === 'Presentada';
                   const totalPagoMes = m.total_pago_efectivo || ((m.isr_a_cargo_sat || 0) + (m.iva_a_cargo_sat || 0));
 
                   return (
-                    <tr
-                      key={m.mes_numero}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                        background: totalPagoMes > 0 ? '#fffafa' : (isPresentada ? 'white' : '#f8fafc'),
-                        transition: 'background 0.15s ease'
-                      }}
-                    >
-                      <td style={{ padding: '12px 16px', fontWeight: 800, color: '#0f172a' }}>
+                    <tr key={m.mes_numero} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3 font-semibold text-slate-900">
                         {m.mes_numero.toString().padStart(2, '0')}. {m.mes_nombre}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        {isPresentada ? (
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            background: m.tiene_complementaria ? '#fef3c7' : '#ecfdf5',
-                            color: m.tiene_complementaria ? '#92400e' : '#065f46',
-                            border: `1px solid ${m.tiene_complementaria ? '#fde68a' : '#a7f3d0'}`,
-                            fontSize: '0.7rem',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '999px'
-                          }}>
-                            ✓ {m.tiene_complementaria ? 'Complementaria' : 'Normal'}
+                      <td className="p-3">
+                        {m.tipo_declaracion === 'Complementaria' ? (
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-800 rounded border border-amber-200">
+                            Complementaria
                           </span>
                         ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>{m.estatus}</span>
+                          <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-800 rounded border border-emerald-200">
+                            Normal
+                          </span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontWeight: 700, color: (m.xml_ingresos_facturados || m.isr_ingresos_mes) > 0 ? '#0f172a' : '#94a3b8' }}>
+                      <td className="p-3 text-right font-mono font-medium text-slate-900">
                         {formatMoney(m.xml_ingresos_facturados || m.isr_ingresos_mes || 0)}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: m.isr_retenido_sat > 0 ? '#059669' : '#94a3b8' }}>
-                        {m.isr_retenido_sat > 0 ? `-${formatMoney(m.isr_retenido_sat)}` : '$0.00'}
+                      <td className="p-3 text-right font-mono text-slate-600">
+                        {formatMoney(m.isr_retenido_sat || 0)}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: m.iva_cobrado_sat > 0 ? '#1d4ed8' : '#94a3b8' }}>
-                        {formatMoney(m.iva_cobrado_sat)}
+                      <td className="p-3 text-right font-mono text-slate-600">
+                        {formatMoney(m.iva_cobrado_sat || 0)}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', color: m.iva_acreditable_sat > 0 ? '#059669' : '#94a3b8' }}>
-                        {m.iva_acreditable_sat > 0 ? `-${formatMoney(m.iva_acreditable_sat)}` : '$0.00'}
+                      <td className="p-3 text-right font-mono text-slate-600">
+                        {formatMoney(m.iva_acreditable_sat || 0)}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                        {isPresentada ? (
-                          totalPagoMes > 0 ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                              <span style={{
-                                background: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1px solid #fecaca',
-                                padding: '4px 10px',
-                                borderRadius: '8px',
-                                fontWeight: 900,
-                                fontSize: '0.8rem',
-                                fontFamily: 'monospace'
-                              }}>
-                                🔴 Pagaste: {formatMoney(totalPagoMes)}
-                              </span>
-                              {m.tiene_acuse_pago && (
-                                <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 800 }}>
-                                  ✓ Acuse de Pago SAT
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span style={{
-                              background: '#f0fdf4',
-                              color: '#166534',
-                              border: '1px solid #bbf7d0',
-                              padding: '4px 10px',
-                              borderRadius: '8px',
-                              fontWeight: 800,
-                              fontSize: '0.75rem'
-                            }}>
-                              🟢 $0.00 (Sin Pago)
-                            </span>
-                          )
+                      <td className="p-3 text-right font-mono">
+                        {totalPagoMes > 0 ? (
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Pagaste: {formatMoney(totalPagoMes)}
+                          </span>
                         ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
+                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                            $0.00 (Sin Pago)
+                          </span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>
+                      <td className="p-3 text-center font-mono text-slate-600 text-[11px]">
                         {m.num_operacion ? `Op. ${m.num_operacion}` : '—'}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        {isPresentada && m.detalle_oficial_completo && (
+                      <td className="p-3 text-center">
+                        {isPresentada && m.detalle_oficial_completo ? (
                           <button
                             onClick={() => setSelectedMonthModal(m)}
-                            style={{
-                              background: '#f1f5f9',
-                              border: '1px solid #cbd5e1',
-                              color: '#1e293b',
-                              fontSize: '0.75rem',
-                              fontWeight: 800,
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              transition: 'all 0.15s ease'
-                            }}
+                            className="px-2.5 py-1 text-[11px] font-medium rounded border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
                           >
-                            <span>🔍</span> Ver Detalle SAT
+                            Ver Detalle SAT
                           </button>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
                         )}
                       </td>
                     </tr>
@@ -496,25 +417,23 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0', fontWeight: 900, color: '#0f172a' }}>
-                  <td style={{ padding: '14px 16px' }}>TOTAL ANUAL</td>
-                  <td style={{ padding: '14px 16px', color: '#059669' }}>12 Presentadas</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', color: '#0f172a' }}>{formatMoney(totalIngresosMeses)}</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', color: '#059669' }}>-{formatMoney(meses.reduce((s, m) => s + (m.isr_retenido_sat || 0), 0))}</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', color: '#1d4ed8' }}>{formatMoney(meses.reduce((s, m) => s + (m.iva_cobrado_sat || 0), 0))}</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', color: '#059669' }}>-{formatMoney(meses.reduce((s, m) => s + (m.iva_acreditable_sat || 0), 0))}</td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', fontFamily: 'monospace', color: totalPagadoEnMeses > 0 ? '#dc2626' : '#059669' }}>
-                    {formatMoney(totalPagadoEnMeses)}
-                  </td>
-                  <td style={{ padding: '14px 16px', textAlign: 'right', color: '#64748b' }}>—</td>
-                  <td style={{ padding: '14px 16px' }}></td>
+                <tr className="bg-slate-50 border-t-2 border-slate-200 font-bold text-slate-900 text-xs">
+                  <td className="p-3">TOTAL ANUAL</td>
+                  <td className="p-3 text-emerald-700 font-semibold">{data.meses_presentados_count} Presentadas</td>
+                  <td className="p-3 text-right font-mono">{formatMoney(totalIngresosMeses)}</td>
+                  <td className="p-3 text-right font-mono">-{formatMoney(meses.reduce((s, m) => s + (m.isr_retenido_sat || 0), 0))}</td>
+                  <td className="p-3 text-right font-mono">{formatMoney(meses.reduce((s, m) => s + (m.iva_cobrado_sat || 0), 0))}</td>
+                  <td className="p-3 text-right font-mono">-{formatMoney(meses.reduce((s, m) => s + (m.iva_acreditable_sat || 0), 0))}</td>
+                  <td className="p-3 text-right font-mono font-black">{formatMoney(totalPagadoEnMeses)}</td>
+                  <td className="p-3 text-center">—</td>
+                  <td className="p-3"></td>
                 </tr>
               </tfoot>
             </table>
           </div>
         ) : (
           /* Vista Tarjetas */
-          <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {meses.map((m) => {
               const isPresentada = m.estatus === 'Presentada';
               const totalPagoMes = m.total_pago_efectivo || ((m.isr_a_cargo_sat || 0) + (m.iva_a_cargo_sat || 0));
@@ -522,74 +441,53 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
               return (
                 <div
                   key={m.mes_numero}
-                  style={{
-                    background: isPresentada ? 'white' : '#f8fafc',
-                    border: `1px solid ${isPresentada ? '#e2e8f0' : '#f1f5f9'}`,
-                    borderRadius: '16px',
-                    padding: '1.25rem',
-                    boxShadow: isPresentada ? '0 2px 6px rgba(0,0,0,0.03)' : 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem'
-                  }}
+                  className={`p-4 rounded-xl border flex flex-col justify-between ${
+                    isPresentada ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200'
+                  }`}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-                      {m.mes_numero.toString().padStart(2, '0')}. {m.mes_nombre}
-                    </div>
-                    {isPresentada ? (
-                      totalPagoMes > 0 ? (
-                        <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontSize: '0.75rem', fontWeight: 900, padding: '2px 8px', borderRadius: '999px' }}>
-                          🔴 Pago: {formatMoney(totalPagoMes)}
+                  <div>
+                    <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-2.5">
+                      <span className="font-bold text-xs text-slate-900">
+                        {m.mes_numero.toString().padStart(2, '0')}. {m.mes_nombre}
+                      </span>
+                      {totalPagoMes > 0 ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-rose-50 text-rose-700 rounded border border-rose-200 font-mono">
+                          Pago: {formatMoney(totalPagoMes)}
                         </span>
                       ) : (
-                        <span style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', fontSize: '0.75rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px' }}>
-                          🟢 Pago $0.00
+                        <span className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700 rounded">
+                          Pago $0.00
                         </span>
-                      )
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>{m.estatus}</span>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between text-slate-600">
+                        <span>Ingreso Facturado:</span>
+                        <b className="font-mono text-slate-900">{formatMoney(m.xml_ingresos_facturados || m.isr_ingresos_mes || 0)}</b>
+                      </div>
+                      <div className="flex justify-between text-slate-600">
+                        <span>IVA Cobrado (16%):</span>
+                        <span className="font-mono text-slate-700">{formatMoney(m.iva_cobrado_sat)}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-600">
+                        <span>IVA Deducido (Gastos):</span>
+                        <span className="font-mono text-slate-700">-{formatMoney(m.iva_acreditable_sat)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 mt-3 flex justify-between items-center text-xs">
+                    <span className="text-[11px] text-slate-500 font-mono">Op. {m.num_operacion || 'N/A'}</span>
+                    {isPresentada && m.detalle_oficial_completo && (
+                      <button
+                        onClick={() => setSelectedMonthModal(m)}
+                        className="px-2.5 py-1 text-[11px] font-medium rounded border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
+                      >
+                        Ver Detalle SAT
+                      </button>
                     )}
                   </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.8rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Ingreso Facturado:</span>
-                      <b style={{ color: '#0f172a', fontFamily: 'monospace' }}>{formatMoney(m.xml_ingresos_facturados || m.isr_ingresos_mes || 0)}</b>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>IVA Cobrado (16%):</span>
-                      <span style={{ color: '#1d4ed8', fontFamily: 'monospace' }}>{formatMoney(m.iva_cobrado_sat)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>IVA Deducido (Gastos):</span>
-                      <span style={{ color: '#059669', fontFamily: 'monospace' }}>-{formatMoney(m.iva_acreditable_sat)}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f8fafc', paddingTop: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
-                    <span>Folio SAT:</span>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#475569' }}>Op. {m.num_operacion || 'N/A'}</span>
-                  </div>
-
-                  {isPresentada && m.detalle_oficial_completo && (
-                    <button
-                      onClick={() => setSelectedMonthModal(m)}
-                      style={{
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        color: '#334155',
-                        fontSize: '0.75rem',
-                        fontWeight: 800,
-                        padding: '6px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        marginTop: '4px'
-                      }}
-                    >
-                      🔍 Ver Desglose Oficial SAT
-                    </button>
-                  )}
                 </div>
               );
             })}
@@ -597,73 +495,54 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
         )}
       </div>
 
-      {/* ── 4. MODAL DETALLE EXHAUSTIVO OFICIAL DEL SAT (FORMULARIO SAT COMPLETO) ── */}
+      {/* ── 5. MODAL DETALLE EXHAUSTIVO OFICIAL DEL SAT (Clean Light Theme) ── */}
       {selectedMonthModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1.5rem'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '24px',
-            maxWidth: '850px',
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            
             {/* Header del Modal */}
-            <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', color: 'white', borderTopLeftRadius: '24px', borderTopRightRadius: '24px' }}>
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
               <div>
-                <div style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 800 }}>
-                  DECLARACIÓN PROVISIONAL DE IMPUESTOS FEDERALES • SAT OFICIAL
-                </div>
-                <h2 style={{ margin: '4px 0 0 0', fontSize: '1.35rem', fontWeight: 900 }}>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">
+                  Declaración Provisional SAT • Oficial
+                </span>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
                   {selectedMonthModal.mes_nombre} {year} ({selectedMonthModal.tipo_declaracion})
-                </h2>
+                </h3>
               </div>
               <button
                 onClick={() => setSelectedMonthModal(null)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 800 }}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Contenido del Modal con todos los campos */}
-            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            <div className="p-6 overflow-y-auto space-y-5 text-xs">
               
               {/* Metadatos Generales */}
-              <div style={{ background: '#f8fafc', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', fontSize: '0.85rem' }}>
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, display: 'block' }}>NÚMERO DE OPERACIÓN:</span>
-                  <b style={{ fontFamily: 'monospace', fontSize: '0.95rem' }}>{selectedMonthModal.num_operacion}</b>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase block">Número de Operación</span>
+                  <b className="font-mono text-slate-900 text-xs">{selectedMonthModal.num_operacion}</b>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, display: 'block' }}>FECHA DE PRESENTACIÓN:</span>
-                  <b>{selectedMonthModal.fecha_presentacion || 'N/A'}</b>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase block">Fecha de Presentación</span>
+                  <span className="font-medium text-slate-800 text-xs">{selectedMonthModal.fecha_presentacion || 'N/A'}</span>
                 </div>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, display: 'block' }}>RFC / CURP:</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{selectedMonthModal.detalle_oficial_completo?.rfc || 'SHLL250825XYZ'}</span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase block">RFC Registrado</span>
+                  <span className="font-mono font-bold text-slate-800 text-xs">{selectedMonthModal.detalle_oficial_completo?.rfc || 'SHLL250825XYZ'}</span>
                 </div>
               </div>
 
               {/* Sección R122: ISR */}
-              <div>
-                <h4 style={{ margin: '0 0 0.75rem 0', color: '#1e40af', fontSize: '0.95rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🟦</span> DETERMINACIÓN DEL IMPUESTO SOBRE LA RENTA (ISR R122)
-                </h4>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', fontSize: '0.85rem' }}>
+              <div className="bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-2.5 bg-slate-100/70 border-b border-slate-200 font-bold text-slate-900 text-xs">
+                  Determinación del Impuesto Sobre la Renta (ISR R122)
+                </div>
+                <div className="divide-y divide-slate-100 text-xs">
                   {[
                     ['Ingresos de Periodos Anteriores', selectedMonthModal.detalle_oficial_completo?.isr_ingresos_periodos_anteriores],
                     ['Ingresos del Periodo', selectedMonthModal.detalle_oficial_completo?.isr_ingresos_periodo],
@@ -678,9 +557,9 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
                     ['Total Impuesto Retenido Acumulado', selectedMonthModal.detalle_oficial_completo?.isr_impuesto_retenido_total],
                     ['ISR a Cargo del Mes', selectedMonthModal.detalle_oficial_completo?.isr_a_cargo]
                   ].map(([label, val], idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', background: idx % 2 === 0 ? 'white' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                      <span style={{ color: '#475569' }}>{label}</span>
-                      <b style={{ fontFamily: 'monospace', color: (val || 0) > 0 ? '#0f172a' : '#94a3b8' }}>
+                    <div key={idx} className="flex justify-between px-4 py-2 hover:bg-white transition-colors">
+                      <span className="text-slate-600">{label}</span>
+                      <b className="font-mono text-slate-900">
                         {formatMoney(val || 0)}
                       </b>
                     </div>
@@ -689,11 +568,11 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
               </div>
 
               {/* Sección R21: IVA */}
-              <div>
-                <h4 style={{ margin: '0 0 0.75rem 0', color: '#065f46', fontSize: '0.95rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🟩</span> DETERMINACIÓN DEL IMPUESTO AL VALOR AGREGADO (IVA R21)
-                </h4>
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', fontSize: '0.85rem' }}>
+              <div className="bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-2.5 bg-slate-100/70 border-b border-slate-200 font-bold text-slate-900 text-xs">
+                  Determinación del Impuesto al Valor Agregado (IVA R21)
+                </div>
+                <div className="divide-y divide-slate-100 text-xs">
                   {[
                     ['Actividades Gravadas a la Tasa del 16%', selectedMonthModal.detalle_oficial_completo?.iva_base_gravada_16],
                     ['IVA Cobrado del Periodo a la Tasa del 16%', selectedMonthModal.detalle_oficial_completo?.iva_cobrado_16],
@@ -701,9 +580,9 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
                     ['IVA Retenido por Terceros', selectedMonthModal.detalle_oficial_completo?.iva_retenido],
                     ['IVA a Cargo del Mes', selectedMonthModal.detalle_oficial_completo?.iva_a_cargo]
                   ].map(([label, val], idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 14px', background: idx % 2 === 0 ? 'white' : '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                      <span style={{ color: '#475569' }}>{label}</span>
-                      <b style={{ fontFamily: 'monospace', color: (val || 0) > 0 ? '#0f172a' : '#94a3b8' }}>
+                    <div key={idx} className="flex justify-between px-4 py-2 hover:bg-white transition-colors">
+                      <span className="text-slate-600">{label}</span>
+                      <b className="font-mono text-slate-900">
                         {formatMoney(val || 0)}
                       </b>
                     </div>
@@ -712,17 +591,20 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
               </div>
 
               {/* Resumen Total Pagado */}
-              <div style={{ background: '#0f172a', color: 'white', padding: '1.25rem 1.5rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center flex-wrap gap-2">
                 <div>
-                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase' }}>CANTIDAD TOTAL A PAGAR EN ESTE MES:</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: (selectedMonthModal.total_pago_efectivo || 0) > 0 ? '#f87171' : '#34d399' }}>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Cantidad Total a Pagar en este Mes:
+                  </span>
+                  <div className={`text-xl font-bold font-mono ${(selectedMonthModal.total_pago_efectivo || 0) > 0 ? 'text-red-700' : 'text-slate-900'}`}>
                     {formatMoney(selectedMonthModal.total_pago_efectivo || 0)}
                   </div>
                 </div>
                 {selectedMonthModal.tiene_acuse_pago && (
-                  <div style={{ background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', padding: '6px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, color: '#6ee7b7' }}>
-                    ✓ Acuse de Recibo Bancario SAT Validado
-                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-md border border-emerald-200 text-xs font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Acuse de Pago SAT Validado
+                  </span>
                 )}
               </div>
 
