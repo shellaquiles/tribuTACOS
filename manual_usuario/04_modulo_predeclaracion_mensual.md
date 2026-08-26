@@ -37,9 +37,19 @@ La tabla principal desglosa cronológicamente el comportamiento fiscal del ejerc
 | **ISR a Pagar** | Pago provisional | Monto resultante tras acreditar pagos previos y retenciones. |
 | **IVA a Pagar / Favor** | Impuesto definitivo | IVA trasladado menos IVA acreditable, retenciones y arrastres. |
 | **Acción** | Botón interactivo | Acceso al borrador oficial mediante <kbd>📄 Borrador</kbd>. |
+ 
+![Matriz Completa de 12 Meses y Totales Anuales](img/03_predeclaracion_mensual_scroll_tabla.png)
+
+### 2.1 Cierre y Totales Anuales Acumulados:
+Al desplazarse por la matriz se aprecian los meses del segundo semestre y el renglón de **Totales Anuales**, el cual consolida:
+* **Ingresos y Gastos Acumulados:** Total de facturación percibida y deducciones autorizadas operativas efectivamente erogadas.
+* **Flujo Neto del Ejercicio:** Determinación de la utilidad o déficit financiero anual bajo flujo de efectivo.
+* **Total Pagos Provisionales de ISR:** Sumatoria exacta de pagos a cuenta del impuesto sobre la renta enterados mes a mes, listos para acreditarse en la anual.
+* **IVA Definitivo Anual:** Total de IVA cobrado frente a IVA acreditable e impuestos netos a cargo liquidados.
 
 > [!IMPORTANT]
 > **Arrastre Automático de IVA:** Cuando un mes genera saldo a favor de IVA, tribuTACOS lo arrastra de forma automática como remanente acreditable para los meses siguientes, optimizando el flujo de caja del contribuyente sin requerir cálculos manuales.
+
 
 ---
 

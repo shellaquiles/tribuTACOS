@@ -47,5 +47,14 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 * **Tabla Comparativa Mensual:** Desglose mes a mes de los ingresos acumulados declarados ante el SAT, retenciones de ISR y montos de IVA reportados vs lo calculado por tribuTACOS.
 * **Verificación de Acuses Bancarios:** Validación de comprobantes bancarios emitidos por la institución financiera con su respectiva línea de captura y sello digital.
 
+![Detalle Mensual de Declaraciones Oficiales, Folios SAT y Pagos Efectivos](img/12_auditoria_scroll_matriz_declarada_y_bancos.png)
+
+### 3.3 Detalle Mensual de Declaraciones y Folios SAT:
+* **Estatus SAT de Presentación:** Etiqueta oficial indicando declaración `Normal` o `Complementaria`.
+* **Cifras de Flujo Declaradas:** Ingresos facturados reportados, ISR retenido, IVA cobrado e IVA acreditable.
+* **Pago Efectivo Realizado:** Monto transferido con línea de captura bancaria asociada.
+* **Folio SAT Oficial:** Número de operación de 10 a 14 dígitos verificado y botón de auditoría <kbd>Ver Detalle SAT</kbd>.
+
 > [!IMPORTANT]
 > **Utilidad Preventiva:** Este módulo detecta discrepancias fiscales entre lo timbrado en CFDI por clientes/proveedores y lo presentado en el portal del SAT, evitando cartas invitación, multas o diferencias en revisiones electrónicas de la autoridad.
+

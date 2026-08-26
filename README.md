@@ -1,6 +1,6 @@
 # tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=flat-square)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg?style=flat-square)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_15_App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
@@ -11,6 +11,7 @@
 [![Tests](https://img.shields.io/badge/Tests-11_Passed_Pytest-449C44?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 
 **tribuTACOS** es una plataforma de análisis, proyección y simulación fiscal que procesa Comprobantes Fiscales Digitales por Internet (**CFDI 3.3 y 4.0 en XML**) y declaraciones oficiales del **SAT en PDF**, calculando de forma anticipada, transparente y determinista los **Pagos Provisionales Mensuales (ISR e IVA)** y la **Declaración Anual** para personas físicas en México (Sueldos y Salarios y Actividad Empresarial / Servicios Profesionales).
+
 
 ---
 

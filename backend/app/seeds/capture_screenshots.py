@@ -3,7 +3,8 @@ import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
-OUTPUT_DIR = Path('/home/kubrick/www/declara/documentacion/img')
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+OUTPUT_DIR = PROJECT_ROOT / 'manual_usuario' / 'img'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def run():
@@ -15,7 +16,7 @@ def run():
         )
         page = context.new_page()
 
-        print("1. Loading application at http://localhost:3000...")
+        print(f"1. Loading application at http://localhost:3000... (Saving to {OUTPUT_DIR})")
         page.goto('http://localhost:3000', wait_until='networkidle')
         time.sleep(2)
 
@@ -33,10 +34,9 @@ def run():
         # 2. Upload Modal
         print("Capturing 02_upload_modal.png...")
         try:
-            page.locator('button:has-text("Cargar Comprobantes XML")').click()
+            page.locator('button:has-text("CARGAR CFDIs")').click()
             time.sleep(0.8)
             page.screenshot(path=str(OUTPUT_DIR / '02_upload_modal.png'))
-            # Close modal by clicking X button
             page.locator('div.fixed button:has(svg)').first.click()
             time.sleep(0.8)
         except Exception as e:
@@ -105,12 +105,13 @@ def run():
 
         # 12. Conciliación Oficial (PDFs)
         print("Capturing 12_auditoria_sat_oficial.png...")
-        page.locator('button:has-text("Conciliación Oficial (PDFs)")').click()
+        page.locator('button:has-text("Conciliación SAT (PDFs)")').click()
         time.sleep(1)
         page.screenshot(path=str(OUTPUT_DIR / '12_auditoria_sat_oficial.png'))
 
         browser.close()
-        print("ALL 12 SCREENSHOTS CAPTURED SUCCESSFULLY!")
+        print("ALL SCREENSHOTS CAPTURED AND UPDATED SUCCESSFULLY!")
 
 if __name__ == '__main__':
     run()
+

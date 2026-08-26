@@ -6,14 +6,14 @@
 
 ## Tabla de Contenidos
 
-1. [Capítulo 01: Introducción y Propuesta de Valor](#capítulo-01-introducción-y-propuesta-de-valor)
+1. [Capítulo 01: Introducción y Propuesta de Valor](#capítulo-01-introducci-n-y-propuesta-de-valor)
 2. [Capítulo 02: Primeros Pasos e Ingesta de Comprobantes](#capítulo-02-primeros-pasos-e-ingesta-de-comprobantes)
-3. [Capítulo 03: Módulo Dashboard Principal](#capítulo-03-módulo-dashboard-principal)
-4. [Capítulo 04: Módulo de Pre-Declaración Mensual (ISR e IVA)](#capítulo-04-módulo-de-pre-declaración-mensual-isr-e-iva)
-5. [Capítulo 05: Módulo de Declaración Anual](#capítulo-05-módulo-de-declaración-anual)
-6. [Capítulo 06: Módulo de Egresos y Deducciones](#capítulo-06-módulo-de-egresos-y-deducciones)
-7. [Capítulo 07: Módulo de Ingresos y Nómina](#capítulo-07-módulo-de-ingresos-y-nómina)
-8. [Capítulo 08: Módulo de Auditoría SAT y Conciliación Oficial](#capítulo-08-módulo-de-auditoría-sat-y-conciliación-oficial)
+3. [Capítulo 03: Módulo Dashboard Principal](#capítulo-03-m-dulo-dashboard-principal)
+4. [Capítulo 04: Módulo de Pre-Declaración Mensual (ISR e IVA)](#capítulo-04-m-dulo-de-pre-declaraci-n-mensual-isr-e-iva-)
+5. [Capítulo 05: Módulo de Declaración Anual](#capítulo-05-m-dulo-de-declaraci-n-anual)
+6. [Capítulo 06: Módulo de Egresos y Deducciones](#capítulo-06-m-dulo-de-egresos-y-deducciones)
+7. [Capítulo 07: Módulo de Ingresos y Nómina](#capítulo-07-m-dulo-de-ingresos-y-n-mina)
+8. [Capítulo 08: Módulo de Auditoría SAT y Conciliación Oficial](#capítulo-08-m-dulo-de-auditor-a-sat-y-conciliaci-n-oficial)
 9. [Capítulo 09: Arquitectura y Componentes Modulares](#capítulo-09-arquitectura-y-componentes-modulares)
 
 ---
@@ -77,6 +77,7 @@ flowchart TD
 
 > [!IMPORTANT]
 > **Aviso Legal:** tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos y resultados presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal ni reemplazan las declaraciones oficiales presentadas ante el Servicio de Administración Tributaria (SAT).
+
 
 ---
 
@@ -178,6 +179,7 @@ flowchart TD
 > [!NOTE]
 > La ingesta es estrictamente **idempotente**: cargar el mismo comprobante en múltiples ocasiones no generará duplicidades ni distorsionará los saldos calculados.
 
+
 ---
 
 # Capítulo 03: Módulo Dashboard Principal
@@ -225,9 +227,19 @@ El **Dashboard Principal** es la pantalla de bienvenida y centro de mando del co
 
 ## 3. Mix y Distribución de Ingresos
 
-Gráfico de distribución interactivo que contrasta visualmente el peso relativo de las fuentes de ingreso del contribuyente:
+Gráfico de distribución interactivo y desglose tabular que contrasta visualmente el peso relativo de las fuentes de ingreso del contribuyente:
 * **Sueldos y Salarios (Capítulo I):** Percepciones ordinarias, asimilados, aguinaldo y primas vacacionales.
 * **Servicios Profesionales / PFAE (Capítulo II):** Facturas timbradas por honorarios y actividades empresariales independientes.
+
+![Composición de Fuentes, Desglose Tabular y Retenciones Fiscales](img/01_dashboard_scroll_graficas_y_retenciones.png)
+
+### 3.1 Componentes de la Sección Inferior:
+* **Evolución Mensual (Gráfico de Barras y Línea):** Curva comparativa de sueldos de nómina (azul) frente a honorarios facturados (verde) con el trazo de ingresos totales acumulados mes a mes (línea ámbar).
+* **Composición de Fuentes (Gráfico de Dona):** Porcentaje y monto consolidado aportado por cada régimen en el ejercicio.
+* **Desglose Mensual Tabular:** Matriz numérica exacta con cifras tabulares alineadas que permite auditar el flujo mensual de cada concepto.
+* **Retenciones Fiscales e Impuestos Indirectos:** Cruce de retenciones de ISR por origen (patrones en nómina, clientes personas morales e intereses bancarios) junto con el balance de IVA trasladado e IVA retenido.
+
+
 
 ---
 
@@ -268,9 +280,19 @@ La tabla principal desglosa cronológicamente el comportamiento fiscal del ejerc
 | **ISR a Pagar** | Pago provisional | Monto resultante tras acreditar pagos previos y retenciones. |
 | **IVA a Pagar / Favor** | Impuesto definitivo | IVA trasladado menos IVA acreditable, retenciones y arrastres. |
 | **Acción** | Botón interactivo | Acceso al borrador oficial mediante <kbd>📄 Borrador</kbd>. |
+ 
+![Matriz Completa de 12 Meses y Totales Anuales](img/03_predeclaracion_mensual_scroll_tabla.png)
+
+### 2.1 Cierre y Totales Anuales Acumulados:
+Al desplazarse por la matriz se aprecian los meses del segundo semestre y el renglón de **Totales Anuales**, el cual consolida:
+* **Ingresos y Gastos Acumulados:** Total de facturación percibida y deducciones autorizadas operativas efectivamente erogadas.
+* **Flujo Neto del Ejercicio:** Determinación de la utilidad o déficit financiero anual bajo flujo de efectivo.
+* **Total Pagos Provisionales de ISR:** Sumatoria exacta de pagos a cuenta del impuesto sobre la renta enterados mes a mes, listos para acreditarse en la anual.
+* **IVA Definitivo Anual:** Total de IVA cobrado frente a IVA acreditable e impuestos netos a cargo liquidados.
 
 > [!IMPORTANT]
 > **Arrastre Automático de IVA:** Cuando un mes genera saldo a favor de IVA, tribuTACOS lo arrastra de forma automática como remanente acreditable para los meses siguientes, optimizando el flujo de caja del contribuyente sin requerir cálculos manuales.
+
 
 ---
 
@@ -299,6 +321,7 @@ Al hacer clic en el botón <kbd>📄 Borrador</kbd> de cualquier mes, se desplie
 
 > [!TIP]
 > **Llenado Directo en el SAT:** Los campos del borrador replican el orden y nomenclatura del servicio de *Declaraciones y Pagos* del SAT, permitiendo copiar y pegar las cifras con absoluta tranquilidad durante la presentación mensual.
+
 
 ---
 
@@ -361,8 +384,17 @@ flowchart TD
   - **Saldo a Favor (Devolución SAT):** Se origina cuando el total de retenciones e impuestos pagados provisionalmente durante el ejercicio excede el ISR anual causado, indicando el importe disponible para solicitar devolución automática con CLABE interbancaria o compensación contra ejercicios futuros.
   - **Saldo a Cargo (Línea de Captura):** Se origina cuando el impuesto anual determinado es superior a los anticipos y retenciones acumuladas en el año, señalando el importe a enterar a la autoridad fiscal.
 
+![Deducciones Personales, Tope Legal y Conciliación Oficial SAT](img/05_predeclaracion_anual_scroll_deducciones_y_conciliacion.png)
+
+### 3.1 Termómetro de Deducciones y Conciliación Directa:
+En la parte inferior del módulo se aprecian:
+* **Termómetro del Tope Legal (Art. 151 LISR):** Tarjetas con el desglose de deducciones aplicadas, remanente disponible y porcentaje de aprovechamiento del tope con barra de progreso.
+* **Conciliación Simulación vs Declaración Oficial SAT:** Comparativa 1 a 1 de Ingresos Acumulables, ISR Causado Anual y Saldo Final contra el acuse timbrado ante el SAT.
+
 > [!TIP]
 > **Estrategia Fiscal:** Aprovechar al máximo las deducciones del Artículo 151 (gastos médicos, colegiaturas, SGMM y aportaciones complementarias de retiro PPR) permite reducir la base gravable anual y maximizar el saldo a favor devuelto por el SAT.
+
+
 
 ---
 
@@ -388,8 +420,32 @@ Este módulo procesa todas las facturas recibidas de proveedores, verificando su
 * **Tratamiento de Notas de Crédito:** Descuentos y devoluciones emitidos por proveedores que restan el monto de gastos deducibles.
 * **Explorador Maestro-Detalle:** Visualización de cada partida individual de la factura con su clave UNSPSC y tasa de IVA correspondiente.
 
+![Concentración por Proveedor, Deducibilidad y Matriz de Egresos](img/06_gastos_scroll_categorias_y_grafica.png)
+
+### 1.2 Analítica de Proveedores y Matriz de Egresos:
+* **Gráfica de Barras Mensual:** Distribución del subtotal deducible frente al IVA acreditable erogado mes con mes.
+* **Concentración por Proveedor (Gráfico de Dona):** Ranking de los principales emisores con montos y porcentajes de participación en el presupuesto de compras.
+* **Deducibilidad e IVA Acreditable:** Semáforo del cumplimiento estricto del Art. 27 LISR y monto total de IVA listo para acreditar.
+* **Matriz de Egresos Mensuales (12 Meses):** Desglose cronológico de comprobantes válidos, deducibles, no deducibles y totales liquidados con botón de auditoría <kbd>Ver Mes</kbd>.
+
+### 1.3 Explorador Multimodal y Botones Interactivos:
+El explorador de egresos cuenta con 3 modos de visualización y herramientas avanzadas de auditoría:
+1. **Selector de Vistas:**
+   - <kbd>📁 Por Rubro / Categoría</kbd>: Agrupa los comprobantes por partidas y artículos en los 8 rubros SAT (servicios, tecnología, mantenimiento, etc.).
+   - <kbd>🏢 Por Proveedor</kbd>: Agrupa el gasto por emisor comercial / RFC, mostrando el volumen y total acumulado por empresa.
+   - <kbd>📋 Lista Cronológica</kbd>: Tabla plana de todas las facturas del periodo ordenadas por fecha con badges de estatus de deducibilidad.
+2. **Pestañas Superiores de Filtro (<kbd>Pills</kbd>):** Permite aislar rápidamente las facturas de un mes específico (`Ene`...`Dic`) o ver el consolidado `Todo el Año`.
+3. **Buscador Instantáneo:** Filtro reactivo en tiempo real por nombre de artículo, clave de producto SAT (`c_ClaveProdServ`), razón social del proveedor o UUID.
+4. **Exportación de Datos (<kbd>📥 Exportar (CSV)</kbd>):** Descarga inmediata de un archivo CSV codificado con UTF-8 BOM listo para abrir en Microsoft Excel o importar a software contable.
+5. **Inspectores de Comprobante por Fila:**
+   - **Clic en UUID:** Abre el visor detallado del CFDI con los datos del emisor, receptor, conceptos, impuestos y sellos fiscales.
+   - **Botón <kbd>JSON</kbd>:** Abre el modal interactivo con el árbol estructurado de propiedades del comprobante para depuración técnica.
+   - **Botón <kbd>XML</kbd>:** Permite descargar directamente el archivo XML original timbrado.
+
+
 > [!WARNING]
 > **Regla Estricta de Bancarización (Art. 27 Fracc. III LISR):** Los pagos de gastos operativos que excedan los `$2,000.00 MXN` deben realizarse obligatoriamente mediante cheque nominativo, transferencia electrónica (SPEI), tarjeta de crédito, débito o servicios. Cualquier pago en efectivo por encima de dicho umbral es descalificado automáticamente.
+
 
 ---
 
@@ -424,6 +480,7 @@ El módulo de **Deducciones Personales** analiza las facturas con uso `D01` a `D
 * `D09`: Depósitos en cuentas personales especiales para el ahorro.
 * `D10`: Pagos por servicios educativos (colegiaturas con tope por nivel escolar).
 
+
 ---
 
 # Capítulo 07: Módulo de Ingresos y Nómina
@@ -451,42 +508,62 @@ El módulo de **Sueldos y Salarios** procesa los complementos de nómina 1.2 tim
 | **Percepciones Exentas** | Art. 93 LISR | Aguinaldo (hasta 30 UMAs), prima vacacional (hasta 15 UMAs) y previsión social. |
 | **Retenciones de ISR Nómina** | Art. 96 LISR | Impuesto retenido por el patrón acumulable para acreditar en la declaración anual. |
 
+![Evolución Mensual de Nómina, Percepciones y Deducciones Timbradas](img/08_sueldos_scroll_patrones_y_exentos.png)
+
+### 1.2 Flujo Mensual y Catálogo de Conceptos:
+* **Evolución Mensual (Gráfico Compuesto):** Curva de masa salarial bruta frente a los montos de neto depositado, retenciones de ISR y cuotas IMSS de enero a diciembre.
+* **Percepciones Detectadas:** Tarjetas desglosadas por clave oficial del complemento de nómina (`001 Sueldo Base`, `029 Vales de Despensa`, `002 Gratificación Anual / Aguinaldo`, `021 Prima Vacacional`) con el desglose exacto de montos gravados y exentos.
+* **Deducciones y Retenciones:** Auditoría de `002 ISR Retenido Art. 96` y `001 Cuota Obrera IMSS`.
+
+
 ---
 
 ## 2. Detalle de Recibos de Nómina
+ 
+ Visualización interactiva quincena por quincena de los recibos de nómina timbrados:
+ 
+ ![Detalle de Recibos de Nómina](img/09_recibos_nomina_detalle.png)
+ 
+-* **Desglose de Percepciones:** Sueldo base, bono de productividad, aguinaldo y prima vacacional.
+-* **Desglose de Deducciones:** Retención de ISR del periodo y cuotas obreras de seguridad social IMSS.
+-* **Auditoría de Vigencia:** Fecha de inicio, fecha de fin y días laborados efectivamente liquidados.
++### 2.1 Acciones Interactivas en Recibos de Nómina:
++* **Acordeón Expandible (<kbd>▼</kbd>):** Al hacer clic sobre cualquier recibo quincenal se despliega el desglose pormenorizado de percepciones (gravadas y exentas) y deducciones (ISR y cuotas obreras IMSS).
++* **Visor CFDI (Clic en UUID):** Abre el modal con la estructura completa del comprobante.
++* **Botón <kbd>JSON</kbd>:** Abre el visor de metadatos estructurados JSON para auditoría técnica.
++* **Botón <kbd>XML</kbd>:** Descarga inmediata del archivo XML del complemento de nómina 1.2.
+ 
+ ---
+ 
+ ## 3. Honorarios y Facturación Emitida (Capítulo II LISR)
+ 
+ El módulo de **Honorarios / Act. Prof.** analiza los ingresos generados por prestación de servicios profesionales y proyectos independientes:
+ 
+ ![Módulo de Honorarios y Facturación Emitida](img/10_honorarios_emitidos.png)
+ 
+-### 3.1 Métricas de Facturación:
++### 3.1 Métricas y Filtros por Cliente:
++* **Selector de Portafolio (<kbd>Portafolio Global</kbd> / Botones por Cliente):** Permite filtrar los ingresos, IVA trasladado y retenciones exclusivamente para un cliente específico o ver la totalidad de la cartera.
+ * **Total Facturado:** Subtotal de facturas de ingresos emitidas en el ejercicio antes de impuestos.
+ * **Retenciones de ISR Sufridas:** `10%` retenido por clientes personas morales conforme al Art. 106 LISR.
+ * **Retenciones de IVA Sufridas:** `10.6667%` (dos terceras partes del IVA) retenido por personas morales conforme al Art. 1-A LIVA.
+-* **Mix de Servicios por Clave SAT:** Clasificación de facturación según el catálogo `c_ClaveProdServ`.
++* **Tarjetas de Conceptos Facturados:** Resumen por clave de producto/servicio del catálogo del SAT con badges distintivos y montos acumulados.
+ 
+ ---
+ 
+ ## 4. Explorador de Facturas Emitidas
+ 
+ Visualizador estructurado de cada comprobante emitido a clientes:
+ 
+ ![Explorador de Facturas Emitidas](img/11_facturas_clientes.png)
+ 
+-* **Búsqueda Instantánea:** Filtrado por folio, RFC de cliente, método de pago (`PUE` / `PPD`) y estatus fiscal.
+-* **Exportación de Datos:** Descarga de reportes estructurados en formato CSV para conciliación contable externa.
++* **Botón <kbd>Exportar Facturas (CSV)</kbd>:** Genera el reporte consolidado de facturación de ingresos con formato tabular y codificación internacional.
++* **Inspección de Factura:** Visualización de folios fiscales, RFC de receptores, desglose de impuestos trasladados (IVA 16%) y retenciones con botones de acceso directo a visores <kbd>JSON</kbd> y descarga de <kbd>XML</kbd>.
 
-Visualización interactiva quincena por quincena de los recibos de nómina timbrados:
 
-![Detalle de Recibos de Nómina](img/09_recibos_nomina_detalle.png)
-
-* **Desglose de Percepciones:** Sueldo base, bono de productividad, aguinaldo y prima vacacional.
-* **Desglose de Deducciones:** Retención de ISR del periodo y cuotas obreras de seguridad social IMSS.
-* **Auditoría de Vigencia:** Fecha de inicio, fecha de fin y días laborados efectivamente liquidados.
-
----
-
-## 3. Honorarios y Facturación Emitida (Capítulo II LISR)
-
-El módulo de **Honorarios / Act. Prof.** analiza los ingresos generados por prestación de servicios profesionales y proyectos independientes:
-
-![Módulo de Honorarios y Facturación Emitida](img/10_honorarios_emitidos.png)
-
-### 3.1 Métricas de Facturación:
-* **Total Facturado:** Subtotal de facturas de ingresos emitidas en el ejercicio antes de impuestos.
-* **Retenciones de ISR Sufridas:** `10%` retenido por clientes personas morales conforme al Art. 106 LISR.
-* **Retenciones de IVA Sufridas:** `10.6667%` (dos terceras partes del IVA) retenido por personas morales conforme al Art. 1-A LIVA.
-* **Mix de Servicios por Clave SAT:** Clasificación de facturación según el catálogo `c_ClaveProdServ`.
-
----
-
-## 4. Explorador de Facturas Emitidas
-
-Visualizador estructurado de cada comprobante emitido a clientes:
-
-![Explorador de Facturas Emitidas](img/11_facturas_clientes.png)
-
-* **Búsqueda Instantánea:** Filtrado por folio, RFC de cliente, método de pago (`PUE` / `PPD`) y estatus fiscal.
-* **Exportación de Datos:** Descarga de reportes estructurados en formato CSV para conciliación contable externa.
 
 ---
 
@@ -537,8 +614,18 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 * **Tabla Comparativa Mensual:** Desglose mes a mes de los ingresos acumulados declarados ante el SAT, retenciones de ISR y montos de IVA reportados vs lo calculado por tribuTACOS.
 * **Verificación de Acuses Bancarios:** Validación de comprobantes bancarios emitidos por la institución financiera con su respectiva línea de captura y sello digital.
 
+![Detalle Mensual de Declaraciones Oficiales, Folios SAT y Pagos Efectivos](img/12_auditoria_scroll_matriz_declarada_y_bancos.png)
+
+### 3.3 Detalle Mensual de Declaraciones y Folios SAT:
+* **Estatus SAT de Presentación:** Etiqueta oficial indicando declaración `Normal` o `Complementaria`.
+* **Cifras de Flujo Declaradas:** Ingresos facturados reportados, ISR retenido, IVA cobrado e IVA acreditable.
+* **Pago Efectivo Realizado:** Monto transferido con línea de captura bancaria asociada.
+* **Folio SAT Oficial:** Número de operación de 10 a 14 dígitos verificado y botón de auditoría <kbd>Ver Detalle SAT</kbd>.
+
 > [!IMPORTANT]
 > **Utilidad Preventiva:** Este módulo detecta discrepancias fiscales entre lo timbrado en CFDI por clientes/proveedores y lo presentado en el portal del SAT, evitando cartas invitación, multas o diferencias en revisiones electrónicas de la autoridad.
+
+
 
 ---
 
@@ -617,5 +704,6 @@ flowchart TD
 * **Flujo de Efectivo Estricto:** La causación de ISR e IVA se computa por fecha efectiva de pago (`fecha_pago`), respetando la legislación aplicable a personas físicas.
 * **Privacidad Local:** El procesamiento y la persistencia residen exclusivamente en la máquina del usuario (`backend/tributacos.db`), garantizando la soberanía de la información financiera.
 * **Interoperabilidad:** Exportación instantánea en formatos abiertos estándar (CSV con UTF-8 BOM y PDF).
+
 
 ---

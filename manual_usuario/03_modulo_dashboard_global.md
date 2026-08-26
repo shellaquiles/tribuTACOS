@@ -45,6 +45,15 @@ El **Dashboard Principal** es la pantalla de bienvenida y centro de mando del co
 
 ## 3. Mix y Distribución de Ingresos
 
-Gráfico de distribución interactivo que contrasta visualmente el peso relativo de las fuentes de ingreso del contribuyente:
+Gráfico de distribución interactivo y desglose tabular que contrasta visualmente el peso relativo de las fuentes de ingreso del contribuyente:
 * **Sueldos y Salarios (Capítulo I):** Percepciones ordinarias, asimilados, aguinaldo y primas vacacionales.
 * **Servicios Profesionales / PFAE (Capítulo II):** Facturas timbradas por honorarios y actividades empresariales independientes.
+
+![Composición de Fuentes, Desglose Tabular y Retenciones Fiscales](img/01_dashboard_scroll_graficas_y_retenciones.png)
+
+### 3.1 Componentes de la Sección Inferior:
+* **Evolución Mensual (Gráfico de Barras y Línea):** Curva comparativa de sueldos de nómina (azul) frente a honorarios facturados (verde) con el trazo de ingresos totales acumulados mes a mes (línea ámbar).
+* **Composición de Fuentes (Gráfico de Dona):** Porcentaje y monto consolidado aportado por cada régimen en el ejercicio.
+* **Desglose Mensual Tabular:** Matriz numérica exacta con cifras tabulares alineadas que permite auditar el flujo mensual de cada concepto.
+* **Retenciones Fiscales e Impuestos Indirectos:** Cruce de retenciones de ISR por origen (patrones en nómina, clientes personas morales e intereses bancarios) junto con el balance de IVA trasladado e IVA retenido.
+
