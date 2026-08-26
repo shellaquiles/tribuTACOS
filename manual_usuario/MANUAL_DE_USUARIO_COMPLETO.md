@@ -1,6 +1,12 @@
 # tribuTACOS — Manual de Usuario Completo
 
+[![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
+
 > **Plataforma de Inteligencia Fiscal, Conciliación de Comprobantes Digitales (CFDI 3.3/4.0) y Simulación Analítica de Pre-Declaración Mensual y Anual para Personas Físicas en México.**
+
+> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.0.1 STABLE**.
+
+> *Documento y manuales generados con **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**.*
 
 ---
 
@@ -20,12 +26,15 @@
 
 # Capítulo 01: Introducción y Propuesta de Valor
 
-[![Versión](https://img.shields.io/badge/Versión-2.2.0-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
 [![CFDI](https://img.shields.io/badge/CFDI-3.3%20%7C%204.0-emerald.svg?style=flat-square)](#)
 [![Régimen](https://img.shields.io/badge/Régimen-PFAE%20%7C%20Sueldos%20y%20Salarios-indigo.svg?style=flat-square)](#)
 [![Legislación](https://img.shields.io/badge/Legislación-LISR%20%7C%20LIVA%20%7C%20CFF-purple.svg?style=flat-square)](#)
 
+> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.0.1 STABLE** (Frontend Next.js 15 / Backend FastAPI).
+
 Plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3 y 4.0 en XML) y pre-declaración automática para personas físicas en México.
+
 
 ---
 
@@ -70,6 +79,10 @@ flowchart TD
 
 > [!NOTE]
 > **Soberanía y Privacidad Local:** tribuTACOS opera bajo una estricta política de privacidad local. La información contable, UUIDs fiscales, cadenas originales y montos financieros residen exclusivamente en la base de datos relacional local (`backend/tributacos.db`), sin transmisión a servidores externos ni intermediarios terceros.
+>
+> **Documentación Oficial PDF:** Toda la documentación técnica y manuales de usuario descargables en formato PDF son generados y maquetados mediante **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**.
+
+
 
 ---
 

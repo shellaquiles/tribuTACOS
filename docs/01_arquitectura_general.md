@@ -1,6 +1,12 @@
 # tribuTACOS — 01. Arquitectura General y Ecosistema Técnico
 
+[![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
+[![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-emerald.svg?style=flat-square)](#)
+
+> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.0.1 STABLE**.
+
 Especificación formal de la arquitectura del sistema, componentes de software, pipeline de procesamiento de datos y estructura de directorios.
+
 
 ---
 
@@ -66,7 +72,10 @@ flowchart TD
 | **Motor de Parsing PDF** | `pdfplumber` + `PyPDF2` | Extracción estructurada de tablas, metadatos y valores fiscales de documentos oficiales SAT. |
 | **Frontend** | Next.js 15 + React 19 | Arquitectura App Router para renderizado eficiente de interfaces analíticas complejas. |
 | **Diseño y Estilos** | Tailwind CSS | Sistema de utilidades CSS con tipografía formal, alto contraste y paletas semánticas estructuradas. |
-| **Exportación** | Vanilla JavaScript (`csvExport.js`) | Generación en cliente de archivos CSV con codificación UTF-8 BOM para compatibilidad total con hojas de cálculo. |
+| **Exportación de Datos** | Vanilla JavaScript (`csvExport.js`) | Generación en cliente de archivos CSV con codificación UTF-8 BOM para compatibilidad total con hojas de cálculo. |
+| **Generador de PDFs** | Pandocquiles by shellaquiles.org | Pipeline de compilación Markdown a PDF con renderizado de diagramas Mermaid, incrustación de recursos Base64 y tematización CSS editorial. |
+
+
 
 ---
 

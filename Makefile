@@ -22,13 +22,14 @@ DB_FILE        := $(BACKEND_DIR)/tributacos.db
 PORT           ?= 8010
 HOST           ?= 0.0.0.0
 
-# --- Rutas de Documentación y PDFs ---
+# --- Rutas de Documentación y PDFs (Pandocquiles by shellaquiles.org) ---
 BUILD_DOCS     := cd utils/pandocquiles && ./bin/build.sh
-DIST_DOCS      := utils/dist_docs
+DIST_DOCS      := utils/pandocquiles/documentacion
 PDF_DOCS_SRC   := $(DIST_DOCS)/pandocquiles.pdf
 PDF_USER_SRC   := $(DIST_DOCS)/manual_usuario.pdf
 PDF_DOCS_OUT   := docs/tribuTACOS_documentacion_tecnica.pdf
 PDF_USER_OUT   := manual_usuario/tribuTACOS_manual_usuario.pdf
+
 
 # --- Estilos ANSI ---
 BOLD           := \033[1m
@@ -63,7 +64,7 @@ help:
 	@printf "  $(GREEN)make lint$(RESET)              Valida tipado y linteo del Frontend\n"
 	@printf "  $(GREEN)make build$(RESET)             Compila el bundle de producción de Next.js\n"
 	@echo ""
-	@echo "$(BOLD)Generación de Documentación (Pandocquiles):$(RESET)"
+	@echo "$(BOLD)Generación de Documentación (Pandocquiles by shellaquiles.org):$(RESET)"
 	@printf "  $(GREEN)make pdf$(RESET)               Compila ambos documentos oficiales en PDF\n"
 	@printf "  $(GREEN)make pdf-user$(RESET)          Compila $(PDF_USER_OUT)\n"
 	@printf "  $(GREEN)make pdf-docs$(RESET)          Compila $(PDF_DOCS_OUT)\n"
@@ -149,31 +150,45 @@ build:
 	@cd $(FRONTEND_DIR) && $(NPM) run build
 
 # ==============================================================================
-# DOCUMENTACIÓN OFICIAL (PANDOCQUILES)
+# DOCUMENTACIÓN OFICIAL (PANDOCQUILES BY SHELLAQUILES.ORG)
 # ==============================================================================
 
-pdf: pdf-docs pdf-user
-	@echo "\n$(BOLD)$(GREEN)🎉 Documentación oficial generada exitosamente:$(RESET)"
+pdf: pdf-check-submodule pdf-docs pdf-user
+	@echo "\n$(BOLD)$(GREEN)🎉 Documentación oficial generada exitosamente con Pandocquiles by shellaquiles.org:$(RESET)"
 	@echo "  📄 $(BOLD)$(PDF_DOCS_OUT)$(RESET)"
 	@echo "  📘 $(BOLD)$(PDF_USER_OUT)$(RESET)\n"
 
-pdf-docs:
-	@echo "$(BOLD)$(CYAN)Compilando documentación técnica en PDF...$(RESET)"
+pdf-check-submodule:
+	@if [ ! -f "utils/pandocquiles/bin/build.sh" ]; then \
+		echo "$(BOLD)$(YELLOW)⚠️  El generador Pandocquiles by shellaquiles.org no está inicializado en utils/pandocquiles.$(RESET)"; \
+		echo "$(CYAN)Inicializando submódulo git...$(RESET)"; \
+		git submodule update --init --recursive; \
+	fi
+	@if [ ! -f "utils/pandocquiles/.env" ] && [ -f "utils/pandocquiles.env" ]; then \
+		echo "$(CYAN)Aplicando configuración de Pandocquiles (utils/pandocquiles.env -> utils/pandocquiles/.env)...$(RESET)"; \
+		cp utils/pandocquiles.env utils/pandocquiles/.env; \
+	fi
+
+
+pdf-docs: pdf-check-submodule
+	@echo "$(BOLD)$(CYAN)Compilando documentación técnica en PDF con Pandocquiles by shellaquiles.org...$(RESET)"
 	@$(BUILD_DOCS) --pdf-only ../../docs
 	@cp $(PDF_DOCS_SRC) $(PDF_DOCS_OUT)
-	@echo "$(BOLD)$(GREEN)✅ Generado: $(PDF_DOCS_OUT)$(RESET)"
+	@echo "$(BOLD)$(GREEN)✅ Generado con Pandocquiles by shellaquiles.org: $(PDF_DOCS_OUT)$(RESET)"
 
-pdf-user:
-	@echo "$(BOLD)$(CYAN)Compilando manual de usuario en PDF...$(RESET)"
+pdf-user: pdf-check-submodule
+	@echo "$(BOLD)$(CYAN)Compilando manual de usuario en PDF con Pandocquiles by shellaquiles.org...$(RESET)"
 	@$(BUILD_DOCS) --pdf-only ../../manual_usuario
 	@cp $(PDF_USER_SRC) $(PDF_USER_OUT)
-	@echo "$(BOLD)$(GREEN)✅ Generado: $(PDF_USER_OUT)$(RESET)"
+	@echo "$(BOLD)$(GREEN)✅ Generado con Pandocquiles by shellaquiles.org: $(PDF_USER_OUT)$(RESET)"
 
-docs-all:
-	@echo "$(BOLD)$(CYAN)Compilando documentación en todos los formatos (PDF, Word, HTML)...$(RESET)"
+docs-all: pdf-check-submodule
+	@echo "$(BOLD)$(CYAN)Compilando documentación en todos los formatos (PDF, Word, HTML) con Pandocquiles by shellaquiles.org...$(RESET)"
 	@$(BUILD_DOCS) ../../docs ../../manual_usuario
 	@cp $(PDF_DOCS_SRC) $(PDF_DOCS_OUT) 2>/dev/null || true
 	@cp $(PDF_USER_SRC) $(PDF_USER_OUT) 2>/dev/null || true
+
+
 
 # ==============================================================================
 # LIMPIEZA

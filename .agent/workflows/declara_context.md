@@ -81,6 +81,8 @@ tributacos/
 | `make test` | Corre los 11 tests unitarios de cálculo fiscal con Pytest. |
 | `make db-fresh` | Recrea la base de datos limpia e importa `demo_dataset.json.gz`. |
 | `make build` | Compila el bundle optimizado de producción en Next.js. |
-| `make pdf` | Compila la documentación técnica y el manual de usuario en PDF usando el submódulo Pandocquiles (requiere `git submodule update --init --recursive`). |
+| `make pdf` | Compila la documentación técnica y el manual de usuario en PDF usando Pandocquiles by shellaquiles.org (inicializa el submódulo y aprovisiona automáticamente `utils/pandocquiles/.env` desde `utils/pandocquiles.env`). |
+
+
 
 

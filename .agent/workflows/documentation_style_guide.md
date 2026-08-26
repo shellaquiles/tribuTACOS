@@ -44,7 +44,15 @@ Utilizar bloques de alerta para destacar aspectos críticos:
 
 ## 3. Estándar de Badges e Imágenes
 
-- **Badges de Capítulo:** Incluir al inicio de cada capítulo badges de estilo `flat-square` referenciando las leyes o módulos aplicables:
+- **Badge de Versión Obligatorio:** En el capítulo 1 y en el documento unificado / docs técnicos, incluir el badge de versión exacto:
+  ```markdown
+  [![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
+  ```
+- **Declaración Explícita de Versión de Referencia:** Justo debajo de los badges principales, declarar en blockquote:
+  ```markdown
+  > **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS vX.Y.Z STABLE**.
+  ```
+- **Badges Normativos de Capítulo:** Incluir al inicio de cada capítulo badges de estilo `flat-square` referenciando las leyes o módulos aplicables:
   ```markdown
   [![Marco Legal](https://img.shields.io/badge/LISR-Art.%20106%20%28PFAE%29-blue.svg?style=flat-square)](#)
   [![IVA](https://img.shields.io/badge/LIVA-Art.%205%20%7C%206-emerald.svg?style=flat-square)](#)
@@ -55,10 +63,12 @@ Utilizar bloques de alerta para destacar aspectos críticos:
 
 ## 4. Estructura Estándar de un Capítulo del Manual
 
-1. **Encabezado y Badges:** Título del módulo y badges normativos.
-2. **Propuesta de Valor:** Resumen en 1 o 2 párrafos del propósito del módulo.
-3. **Captura Superior:** Captura de la vista superior (KPIs / Tarjetas Hero).
-4. **Tabla de Indicadores / Métricas:** Tabla en markdown con `Indicador | Fundamento Legal / Descripción | Impacto`.
-5. **Captura Inferior (Scroll):** Imagen de la parte inferior (tablas matrices, gráficos o desglose).
-6. **Explorador y Acciones Interactivas:** Documentación de filtros, pestañas, inspectores y exportaciones.
-7. **Callouts de Alerta:** Notas, advertencias y recomendaciones fiscales.
+1. **Encabezado y Badges:** Título del módulo, badge de versión (en capítulo 1) y badges normativos.
+2. **Declaración de Versión de Referencia:** (En capítulo 1 y manual unificado).
+3. **Propuesta de Valor:** Resumen en 1 o 2 párrafos del propósito del módulo.
+4. **Captura Superior:** Captura de la vista superior (KPIs / Tarjetas Hero).
+5. **Tabla de Indicadores / Métricas:** Tabla en markdown con `Indicador | Fundamento Legal / Descripción | Impacto`.
+6. **Captura Inferior (Scroll):** Imagen de la parte inferior (tablas matrices, gráficos o desglose).
+7. **Explorador y Acciones Interactivas:** Documentación de filtros, pestañas, inspectores y exportaciones.
+8. **Callouts de Alerta:** Notas, advertencias y recomendaciones fiscales.
+

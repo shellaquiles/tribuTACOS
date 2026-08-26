@@ -24,8 +24,11 @@ Al cambiar de versión, se deben sincronizar **en el mismo commit/PR** los sigui
 2. **`backend/app/config.py`**: `VERSION: str = "X.Y.Z"`
 3. **`frontend/src/App.jsx`**: Badge de versión visible en el footer / sidebar (`vX.Y.Z STABLE`).
 4. **`CHANGELOG.md`**: Entrada superior con fecha ISO y desglose por categorías (`### Agregado`, `### Modificado`, `### Corregido`).
-5. **`README.md`**: Badges de versión y referencias de capturas.
-6. **`manual_usuario/`**: Actualizar referencias de versión y recompilar `MANUAL_DE_USUARIO_COMPLETO.md`.
+5. **`README.md`**: Badges de versión (`vX.Y.Z STABLE`), tabla de documentación y referencias de capturas.
+6. **`manual_usuario/01_introduccion_y_propuesta_de_valor.md`**: Badge de versión y bloque `> **Versión de Referencia:** Este documento y sus guías visuales corresponden a tribuTACOS vX.Y.Z STABLE.`
+7. **`docs/01_arquitectura_general.md`**: Badge de versión y bloque `> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de tribuTACOS vX.Y.Z STABLE.`
+8. **`manual_usuario/MANUAL_DE_USUARIO_COMPLETO.md`**: Recompilar el documento integral con la nueva versión declarada.
+9. **Compilación de PDFs Oficiales (`make pdf`)**: Regenerar `docs/tribuTACOS_documentacion_tecnica.pdf` y `manual_usuario/tribuTACOS_manual_usuario.pdf` con **Pandocquiles by shellaquiles.org**.
 
 ---
 
@@ -42,6 +45,9 @@ cd frontend && npm run build
 
 # 3. Validar regeneración de capturas si hubo cambios en UI
 node frontend/scripts/capture_screenshots.js
+
+# 4. Recompilar manual unificado y PDFs oficiales con Pandocquiles
+make pdf
 ```
 
 ---
@@ -51,6 +57,8 @@ node frontend/scripts/capture_screenshots.js
 - [ ] Todos los tests de backend pasan (`11 passed`).
 - [ ] El frontend compila sin errores de lint o TypeScript/JSX (`npm run build`).
 - [ ] `CHANGELOG.md` documenta los cambios con la versión exacta.
-- [ ] `README.md` y `manual_usuario/` están alineados con las capturas de la versión.
+- [ ] `README.md`, `manual_usuario/` y `docs/` declaran la versión exacta `vX.Y.Z STABLE`.
+- [ ] Los PDFs oficiales (`docs/` y `manual_usuario/`) fueron regenerados con `make pdf`.
 - [ ] El branch sigue el formato `feature/vX.Y.Z-descripcion` o `release/vX.Y.Z`.
 - [ ] Título del PR: `Release vX.Y.Z: Resumen conciso`.
+

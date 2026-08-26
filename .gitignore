@@ -1,9 +1,12 @@
 *.xml
 *.zip
 *.pdf
+!manual_usuario/*.pdf
+!docs/*.pdf
 *~
 utils/dist_docs/
 dist_docs/
+
 .fuse_hidden*
 .directory
 .Trash-*
