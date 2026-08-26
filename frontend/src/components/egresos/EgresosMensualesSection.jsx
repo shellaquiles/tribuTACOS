@@ -337,40 +337,26 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
 
       {/* ── 0. SELECTOR PRINCIPAL: GASTOS VS NOTAS DE CRÉDITO ── */}
       {notasCreditoData && (notasCreditoData.total > 0 || (notasCreditoData.detalle && notasCreditoData.detalle.length > 0)) && (
-        <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '14px', width: 'fit-content' }}>
+        <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
           <button
             onClick={() => setActiveSubTab('gastos')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '10px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              transition: 'all 0.2s ease',
-              background: activeSubTab === 'gastos' ? '#0f172a' : 'transparent',
-              color: activeSubTab === 'gastos' ? '#ffffff' : '#64748b',
-              boxShadow: activeSubTab === 'gastos' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeSubTab === 'gastos'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            📉 Compras y Gastos ({rawList.length})
+            Compras y Gastos ({rawList.length})
           </button>
           <button
             onClick={() => setActiveSubTab('notas_credito')}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '10px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              transition: 'all 0.2s ease',
-              background: activeSubTab === 'notas_credito' ? '#0f172a' : 'transparent',
-              color: activeSubTab === 'notas_credito' ? '#ffffff' : '#64748b',
-              boxShadow: activeSubTab === 'notas_credito' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeSubTab === 'notas_credito'
+                ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            💵 Devoluciones y Reembolsos ({notasCreditoData.detalle?.length || 0}) • {fmt(notasCreditoData.total || 0)}
+            Devoluciones y Reembolsos ({notasCreditoData.detalle?.length || 0}) • {fmt(notasCreditoData.total || 0)}
           </button>
         </div>
       )}
@@ -378,7 +364,6 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
       {activeSubTab === 'notas_credito' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '16px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span style={{ fontSize: '2.25rem' }}>💵</span>
             <div>
               <h4 style={{ margin: 0, color: '#166534', fontSize: '1.05rem', fontWeight: 800 }}>Notas de Crédito y Devoluciones de Proveedores</h4>
               <p style={{ margin: '4px 0 0 0', color: '#15803d', fontSize: '0.85rem' }}>
@@ -418,7 +403,7 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
 
           {/* Tabla Detallada */}
           <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', fontWeight: 800, color: '#0f172a' }}>
+            <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', fontWeight: 800, color: '#1e293b' }}>
               Comprobantes Fiscales de Reembolso / Descuento ({year})
             </div>
             <table className="sat-table" style={{ margin: 0 }}>
@@ -436,7 +421,7 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
                 {(notasCreditoData.detalle || []).map((item, idx) => (
                   <tr key={idx}>
                     <td style={{ fontFamily: 'monospace' }}>{item.fecha}</td>
-                    <td><strong style={{ color: '#0f172a' }}>{item.emisor}</strong></td>
+                    <td><strong style={{ color: '#1e293b' }}>{item.emisor}</strong></td>
                     <td style={{ color: '#475569', fontSize: '0.85rem' }}>
                       {item.conceptos?.[0]?.desc || 'Devolución / Descuento'}
                     </td>
@@ -457,10 +442,10 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
           <div style={{ background: 'white', padding: '1.25rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
-                📅 Seleccionar Periodo Mensual:
+                Seleccionar Periodo Mensual:
               </div>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                Periodo Activo: <strong style={{ color: '#0f172a' }}>{activeMonthName}</strong> ({displayItems.length} comprobantes)
+                Periodo Activo: <strong style={{ color: '#1e293b' }}>{activeMonthName}</strong> ({displayItems.length} comprobantes)
               </div>
             </div>
 
@@ -483,7 +468,7 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
               gap: '6px'
             }}
           >
-            <span>🗓️ Todo el Año</span>
+            <span>Todo el Año</span>
             <span style={{ background: selectedMonth === 'Global' ? 'rgba(255,255,255,0.25)' : '#e2e8f0', padding: '1px 6px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
               {rawList.length}
             </span>
@@ -533,69 +518,75 @@ export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasC
         </div>
       </div>
 
-      {/* ── 2. KPIS SUPERIORES ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-        {[
-          {
-            label: selectedMonth === 'Global' ? 'Egresos Pagados (Anual)' : `Egresos Pagados (${activeMonthName})`,
-            value: fmt(currentTotal),
-            color: '#ef4444',
-            icon: '💳',
-            sub: `${displayItems.length} comprobantes en periodo`
-          },
-          {
-            label: 'Gasto Neto Deducible (Base)',
-            value: fmt(currentSubtotal),
-            color: '#3b82f6',
-            icon: '📉',
-            sub: `Subtotal sin IVA trasladado`
-          },
-          {
-            label: 'IVA Acreditable Acumulado',
-            value: fmt(currentIva),
-            color: '#f59e0b',
-            icon: '🏛️',
-            sub: `${currentSubtotal > 0 ? ((currentIva / currentSubtotal) * 100).toFixed(1) : 0}% efectividad fiscal`
-          },
-          {
-            label: selectedMonth === 'Global' ? 'Promedio Mensual' : 'Mes Pico Anual',
-            value: selectedMonth === 'Global' ? fmt(promedioMensual.total) : `${mesPico.shortName}: ${fmt(mesPico.total)}`,
-            color: '#10b981',
-            icon: '📊',
-            sub: selectedMonth === 'Global' ? `Pico: ${mesPico.shortName} (${fmt(mesPico.total)})` : `Mayor volumen de gasto anual`
-          }
-        ].map((kpi, idx) => (
-          <div key={idx} style={{
-            background: 'white',
-            borderRadius: '16px',
-            padding: '1.25rem 1.5rem',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.03)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>
-                {kpi.label}
-              </span>
-              <span style={{ fontSize: '1.25rem' }}>{kpi.icon}</span>
-            </div>
-            <div style={{ fontSize: '1.65rem', fontWeight: 900, color: kpi.color, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
-              {kpi.value}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-              {kpi.sub}
+      {/* ── 2. KPIS SUPERIORES CON BORDES CODIFICADOS POR COLOR ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 1. Egresos Totales Pagados */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-rose-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-900 block mb-1">
+              {selectedMonth === 'Global' ? 'Egresos Pagados (Anual)' : `Egresos Pagados (${activeMonthName})`}
+            </span>
+            <div className="text-2xl font-black text-rose-700 font-mono tracking-tight mb-1">
+              {fmt(currentTotal)}
             </div>
           </div>
-        ))}
+          <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+            {displayItems.length} comprobantes en periodo
+          </div>
+        </div>
+
+        {/* 2. Gasto Neto Deducible */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-blue-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900 block mb-1">
+              Gasto Neto Deducible (Base)
+            </span>
+            <div className="text-2xl font-black text-blue-700 font-mono tracking-tight mb-1">
+              {fmt(currentSubtotal)}
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+            Subtotal sin IVA trasladado
+          </div>
+        </div>
+
+        {/* 3. IVA Acreditable Acumulado */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-amber-500 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 block mb-1">
+              IVA Acreditable Acumulado
+            </span>
+            <div className="text-2xl font-black text-amber-700 font-mono tracking-tight mb-1">
+              {fmt(currentIva)}
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+            {currentSubtotal > 0 ? ((currentIva / currentSubtotal) * 100).toFixed(1) : 0}% efectividad fiscal
+          </div>
+        </div>
+
+        {/* 4. Promedio Mensual */}
+        <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-emerald-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+          <div>
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-900 block mb-1">
+              {selectedMonth === 'Global' ? 'Promedio Mensual' : 'Mes Pico Anual'}
+            </span>
+            <div className="text-2xl font-black text-emerald-700 font-mono tracking-tight mb-1">
+              {selectedMonth === 'Global' ? fmt(promedioMensual.total) : `${mesPico.shortName}: ${fmt(mesPico.total)}`}
+            </div>
+          </div>
+          <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+            {selectedMonth === 'Global' ? `Pico: ${mesPico.shortName} (${fmt(mesPico.total)})` : `Mayor volumen de gasto anual`}
+          </div>
+        </div>
       </div>
 
       {/* ── 3. GRÁFICA DE EVOLUCIÓN MENSUAL DE EGRESOS ── */}
       <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', fontWeight: 700 }}>
-              📈 Evolución y Flujo de Egresos por Mes ({year})
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', fontWeight: 700 }}>
+              Evolución y Flujo de Egresos por Mes ({year})
             </h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
               Subtotal Deducible + IVA Acreditable pagado en cada periodo. Haz clic en una barra para filtrar ese mes.

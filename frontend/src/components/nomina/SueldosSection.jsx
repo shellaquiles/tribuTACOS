@@ -5,7 +5,8 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { SectionCard, KpiRow, ConceptCard, fmt } from '../ui/Primitives';
+import { ConceptCard, fmt } from '../ui/Primitives';
+import { TrendingUp, ShieldCheck, DollarSign, Receipt } from 'lucide-react';
 
 export const SueldosSection = ({ data, sueldos, year }) => {
   const [selectedEmployer, setSelectedEmployer] = useState('Global');
@@ -20,30 +21,11 @@ export const SueldosSection = ({ data, sueldos, year }) => {
   }
 
   const currentViewData = useMemo(() => {
-    if (selectedEmployer === 'Global') {
-      return {
-        totalBruto: currentData.total_bruto || (currentData.gravado + currentData.exento),
-        totalDeducciones: currentData.total_deducciones || currentData.isr_retenido,
-        totalVales: currentData.total_vales || 0,
-        neto: currentData.neto || (currentData.total_ingresos - currentData.isr_retenido),
-        percepcionesPorTipo: currentData.percepciones_por_tipo || [],
-        deduccionesPorTipo: currentData.deducciones_por_tipo || [],
-        nominaMensualData: currentData.nomina_mensual_resumen || [],
-        meses: currentData.meses_laborados || 12,
-        kpiData: {
-          ingresos: currentData.total_ingresos,
-          gravado: currentData.gravado,
-          exento: currentData.exento,
-          isr: currentData.isr_retenido
-        },
-        salarios: { sbc: null, sdi: null, sd: null }
-      };
-    }
+    const isGlobal = selectedEmployer === 'Global';
+    const targetRecibos = isGlobal
+      ? (currentData.detalle || []).flatMap(e => e.recibos || [])
+      : ((currentData.detalle || []).find(e => e.nombre === selectedEmployer || e.rfc === selectedEmployer)?.recibos || []);
 
-    const emp = (currentData.detalle || []).find(e => e.nombre === selectedEmployer);
-    if (!emp) return { percepcionesPorTipo: [], deduccionesPorTipo: [], nominaMensualData: [] };
-
-    const targetRecibos = emp.recibos || [];
     const allPercs = targetRecibos.flatMap(r => r.percepciones || []).filter(Boolean);
     const allDeds = targetRecibos.flatMap(r => r.deducciones || []).filter(Boolean);
 
@@ -51,29 +33,51 @@ export const SueldosSection = ({ data, sueldos, year }) => {
       allPercs.reduce((acc, p) => {
         if (!p) return acc;
         const tipoClave = p.tipo || 'S/C';
-        if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, gravado: 0, exento: 0, items: [] };
-        acc[tipoClave].total += (p.total || (p.gravado + p.exento) || 0);
-        acc[tipoClave].gravado += p.gravado || 0;
-        acc[tipoClave].exento += p.exento || 0;
-        if (p.concepto) acc[tipoClave].items.push(p.concepto.trim());
+        if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, gravado: 0, exento: 0, items: new Set() };
+        acc[tipoClave].total += (p.total || ((p.gravado || 0) + (p.exento || 0)) || 0);
+        acc[tipoClave].gravado += (p.gravado || 0);
+        acc[tipoClave].exento += (p.exento || 0);
+        if (p.concepto) acc[tipoClave].items.add(p.concepto.trim());
         return acc;
       }, {})
-    ).sort((a, b) => b.total - a.total);
+    ).map(c => ({
+      ...c,
+      items: Array.from(c.items)
+    })).sort((a, b) => b.total - a.total);
 
     const calcDeds = Object.values(
       allDeds.reduce((acc, d) => {
         if (!d) return acc;
         const tipoClave = d.tipo || 'S/C';
-        if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, items: [] };
+        if (!acc[tipoClave]) acc[tipoClave] = { clave: tipoClave, total: 0, items: new Set() };
         acc[tipoClave].total += (d.importe || d.total || 0);
-        if (d.concepto) acc[tipoClave].items.push(d.concepto.trim());
+        if (d.concepto) acc[tipoClave].items.add(d.concepto.trim());
         return acc;
       }, {})
-    ).sort((a, b) => b.total - a.total);
+    ).map(c => ({
+      ...c,
+      items: Array.from(c.items)
+    })).sort((a, b) => b.total - a.total);
 
-    const tBruto = calcPercs.reduce((acc, p) => acc + p.total, 0);
+    const tBruto = isGlobal
+      ? (currentData.total_bruto || currentData.total_ingresos || calcPercs.reduce((acc, p) => acc + p.total, 0))
+      : calcPercs.reduce((acc, p) => acc + p.total, 0);
+
+    const tGravado = isGlobal
+      ? (currentData.gravado || calcPercs.reduce((acc, p) => acc + p.gravado, 0))
+      : calcPercs.reduce((acc, p) => acc + p.gravado, 0);
+
+    const tExento = isGlobal
+      ? (currentData.exento || calcPercs.reduce((acc, p) => acc + p.exento, 0))
+      : calcPercs.reduce((acc, p) => acc + p.exento, 0);
+
+    const tIsr = isGlobal
+      ? (currentData.isr_retenido || targetRecibos.reduce((s, r) => s + (r.isr_retenido || 0), 0))
+      : targetRecibos.reduce((s, r) => s + (r.isr_retenido || 0), 0);
+
     const tDed = calcDeds.reduce((acc, d) => acc + d.total, 0);
     const tVales = calcPercs.find(p => p.clave === '029')?.total || 0;
+    const tNeto = targetRecibos.reduce((s, r) => s + (r.neto || (r.total_bruto - (r.isr_retenido || 0)) || 0), 0);
 
     const mLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const nominaMensualData = mLabels.map((m, idx) => {
@@ -82,9 +86,9 @@ export const SueldosSection = ({ data, sueldos, year }) => {
         const rm = parseInt((r.fecha || '').split('-')[1]);
         return rm === mesNum;
       });
-      const brutoMes = recibosMes.reduce((s, r) => s + (r.total_bruto || (r.gravado + r.exento) || 0), 0);
+      const brutoMes = recibosMes.reduce((s, r) => s + (r.total_bruto || ((r.gravado || 0) + (r.exento || 0)) || 0), 0);
       const isrMes = recibosMes.reduce((s, r) => s + (r.isr_retenido || 0), 0);
-      const netoMes = recibosMes.reduce((s, r) => s + (r.neto || (r.total_bruto - r.isr_retenido) || 0), 0);
+      const netoMes = recibosMes.reduce((s, r) => s + (r.neto || (r.total_bruto - (r.isr_retenido || 0)) || 0), 0);
       const otrasDed = Math.max(0, Math.round((brutoMes - isrMes - netoMes) * 100) / 100);
       return {
         name: m,
@@ -97,49 +101,44 @@ export const SueldosSection = ({ data, sueldos, year }) => {
 
     return {
       totalBruto: tBruto,
+      gravado: tGravado,
+      exento: tExento,
+      isr: tIsr,
       totalDeducciones: tDed,
       totalVales: tVales,
-      neto: tBruto - tDed - tVales,
+      neto: tNeto,
       percepcionesPorTipo: calcPercs,
       deduccionesPorTipo: calcDeds,
       nominaMensualData,
-      meses: targetRecibos.length > 0 ? (targetRecibos.length / 2).toFixed(1) : '1',
-      kpiData: {
-        ingresos: emp.gravado + emp.exento,
-        gravado: emp.gravado,
-        exento: emp.exento,
-        isr: emp.isr
-      },
-      salarios: {
-        sbc: targetRecibos[0]?.salario_base_cot_apor,
-        sdi: targetRecibos[0]?.salario_diario_integrado,
-        sd: targetRecibos[0]?.dias_pagados > 0 ? (tBruto / (targetRecibos.length * 15)).toFixed(2) : '-'
-      }
+      recibosCount: targetRecibos.length
     };
   }, [currentData, selectedEmployer]);
 
-  const { totalBruto, totalDeducciones, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, nominaMensualData, meses } = currentViewData;
+  const { totalBruto, gravado, exento, isr, percepcionesPorTipo, deduccionesPorTipo, nominaMensualData, recibosCount } = currentViewData;
 
   return (
     <div className="flex flex-col gap-6 text-slate-800">
 
       {/* ── Encabezado y Selector de Empleador ── */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex justify-between items-center flex-wrap gap-4 pb-4 border-b border-slate-100 mb-6">
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex justify-between items-center flex-wrap gap-4 pb-5 border-b border-slate-200 mb-6">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block mb-0.5">
               Régimen de Sueldos y Salarios • Ejercicio {year}
             </span>
-            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
               Ingresos y Retenciones de Nómina
             </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Desglose de comprobantes de nómina timbrados, percepciones gravadas/exentas y retenciones de ISR.
+            </p>
           </div>
 
           {currentData.detalle && currentData.detalle.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <div className="flex gap-1.5 flex-wrap bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
                 onClick={() => setSelectedEmployer('Global')}
-                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                   selectedEmployer === 'Global'
                     ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                     : 'text-slate-600 hover:text-slate-900'
@@ -151,7 +150,7 @@ export const SueldosSection = ({ data, sueldos, year }) => {
                 <button
                   key={i}
                   onClick={() => setSelectedEmployer(emp.nombre)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                     selectedEmployer === emp.nombre
                       ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
                       : 'text-slate-600 hover:text-slate-900'
@@ -164,53 +163,88 @@ export const SueldosSection = ({ data, sueldos, year }) => {
           )}
         </div>
 
-        {/* Resumen de Flujo de Nómina */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Masa Bruta Anual</span>
-            <div className="text-2xl font-bold text-slate-900 font-mono mt-1">
-              {fmt(totalBruto)}
-            </div>
-            {Number(meses) > 0 && (
-              <div className="text-xs text-slate-500 mt-1">
-                Promedio mensual: {fmt(totalBruto / Number(meses))}
+        {/* ── 4 Tarjetas de Métricas Clave Autodescriptivas con Color Distinctivo ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* 1. Total Ingresos Nómina (Azul Royal) */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-blue-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-900">Total Ingresos Nómina</span>
+                <span className="p-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                </span>
               </div>
-            )}
-          </div>
-
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Deducciones y Retenciones</span>
-            <div className="text-2xl font-bold text-red-700 font-mono mt-1">
-              {fmt(totalDeducciones)}
+              <div className="text-2xl font-black text-blue-700 font-mono tracking-tight mb-1">
+                {fmt(totalBruto)}
+              </div>
             </div>
-            <div className="text-xs text-slate-500 mt-1">
-              ISR Retenido: {fmt(kpiData.isr)}
+            <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2 font-mono">
+              Comprobantes: <span className="font-semibold text-slate-700">{recibosCount} recibos</span>
             </div>
           </div>
 
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Neto Depositado</span>
-            <div className="text-2xl font-bold text-emerald-700 font-mono mt-1">
-              {fmt(neto)}
+          {/* 2. Ingresos Gravados (Índigo) */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-indigo-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-900">Ingresos Gravados</span>
+                <span className="p-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <DollarSign className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-2xl font-black text-indigo-700 font-mono tracking-tight mb-1">
+                {fmt(gravado)}
+              </div>
             </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Total percibido en cuenta bancaria
+            <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+              Base para el cálculo del ISR anual
             </div>
           </div>
+
+          {/* 3. Ingresos Exentos (Verde Esmeralda) */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-emerald-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-900">Ingresos Exentos</span>
+                <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-2xl font-black text-emerald-700 font-mono tracking-tight mb-1">
+                {fmt(exento)}
+              </div>
+            </div>
+            <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+              Aguinaldo, PTU y primas exentas
+            </div>
+          </div>
+
+          {/* 4. ISR Retenido en Nómina (Rojo Coral) */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200 border-t-4 border-t-rose-600 shadow-xs flex flex-col justify-between hover:shadow-md transition-all">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-900">ISR Retenido en Nómina</span>
+                <span className="p-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200">
+                  <Receipt className="w-3.5 h-3.5" />
+                </span>
+              </div>
+              <div className="text-2xl font-black text-rose-700 font-mono tracking-tight mb-1">
+                {fmt(isr)}
+              </div>
+            </div>
+            <div className="text-xs text-slate-500 pt-2.5 border-t border-slate-100 mt-2">
+              Enterado por tus empleadores al SAT
+            </div>
+          </div>
+
         </div>
-
-        <KpiRow items={[
-          { label: 'Total ingresos por nómina', value: kpiData.ingresos, help: 'Bruto percibido' },
-          { label: 'Ingresos gravados', value: kpiData.gravado, accent: 'kpi-accent', help: 'Base para cálculo del ISR anual' },
-          { label: 'Ingresos exentos', value: kpiData.exento, accent: 'kpi-success', help: 'Aguinaldo, PTU y primas exentas' },
-          { label: 'ISR retenido en nómina', value: kpiData.isr, accent: 'kpi-danger', help: 'Enterado por tu empleador al SAT' },
-        ]} />
       </div>
 
-      {/* Gráfica de Serie Mensual */}
-      {nominaMensualData && nominaMensualData.length > 0 && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">
+      {/* ── Gráfica de Serie Mensual ── */}
+      {nominaMensualData && nominaMensualData.some(d => (d['Sueldo Bruto'] || 0) > 0) && (
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
+          <h3 className="text-base font-bold text-slate-900 mb-4">
             Flujo de Nómina Mensual — Neto vs Retenciones ({year})
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -229,18 +263,21 @@ export const SueldosSection = ({ data, sueldos, year }) => {
         </div>
       )}
 
-      {/* Desglose de Percepciones y Deducciones */}
+      {/* ── Desglose de Percepciones y Deducciones con Tarjetas Vivas ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+        
+        {/* Percepciones */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Percepciones Detectadas</h3>
-              <p className="text-xs text-slate-500">Desglose de ingresos timbrados en nómina</p>
+              <h3 className="text-base font-bold text-slate-900">Percepciones Detectadas</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Desglose de conceptos e ingresos percibidos</p>
             </div>
-            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 font-mono">
+            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 font-mono">
               {percepcionesPorTipo.length} conceptos
             </span>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {percepcionesPorTipo.map((it, idx) => (
               <ConceptCard
@@ -256,16 +293,18 @@ export const SueldosSection = ({ data, sueldos, year }) => {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+        {/* Deducciones */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Deducciones y Retenciones</h3>
-              <p className="text-xs text-slate-500">Descuentos y retenciones aplicados en nómina</p>
+              <h3 className="text-base font-bold text-slate-900">Deducciones y Retenciones</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Descuentos y retenciones aplicados por empleadores</p>
             </div>
-            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200 font-mono">
+            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 font-mono">
               {deduccionesPorTipo.length} conceptos
             </span>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {deduccionesPorTipo.map((it, idx) => (
               <ConceptCard
@@ -278,6 +317,7 @@ export const SueldosSection = ({ data, sueldos, year }) => {
             ))}
           </div>
         </div>
+
       </div>
 
     </div>

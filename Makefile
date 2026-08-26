@@ -1,9 +1,12 @@
 # ==============================================================================
-# 🌮 tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
+# tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 # ==============================================================================
 
 .DEFAULT_GOAL := help
-.PHONY: help dev backend frontend install test test-cov build init-db reset-db recreate-db seed-demo export-demo sync sync-docs seed-sat clean clean-all
+.PHONY: help setup dev backend frontend build test test-cov lint \
+        db-fresh db-empty db-import-xml db-import-pdf db-export \
+        clean clean-all \
+        reset-db recreate-db init-db seed-demo export-demo sync sync-docs seed-sat
 
 # --- Configuración y Rutas ---
 PYTHON        := python3
@@ -27,148 +30,155 @@ CYAN          := \033[36m
 GREEN         := \033[32m
 YELLOW        := \033[33m
 BLUE          := \033[34m
-MAGENTA       := \033[35m
+DIM           := \033[2m
 
 # ==============================================================================
-# 📖 AYUDA / MENÚ PRINCIPAL
+# AYUDA / MENÚ PRINCIPAL
 # ==============================================================================
 
 help:
 	@echo ""
-	@echo "$(BOLD)$(CYAN)  🌮 tribuTACOS — Suite de Comandos de Desarrollo$(RESET)"
-	@echo "$(CYAN)  ==============================================================$(RESET)"
+	@echo "$(BOLD)$(CYAN)  tribuTACOS — Comandos del Sistema$(RESET)"
+	@echo "$(DIM)  --------------------------------------------------------------$(RESET)"
 	@echo ""
-	@echo "$(BOLD)$(YELLOW)🚀 Servidores y Desarrollo:$(RESET)"
-	@printf "  $(GREEN)make dev$(RESET)            Inicia Backend (FastAPI :$(PORT)) y Frontend (Next.js) en paralelo\n"
-	@printf "  $(GREEN)make backend$(RESET)        Inicia únicamente el servidor Backend con Hot-Reload\n"
-	@printf "  $(GREEN)make frontend$(RESET)       Inicia únicamente el servidor de desarrollo Frontend (Next.js)\n"
-	@printf "  $(GREEN)make build$(RESET)          Compila el bundle de producción del Frontend (Next.js build)\n"
+	@echo "$(BOLD)Puesta en Marcha (Setup Inicial):$(RESET)"
+	@printf "  $(GREEN)make setup$(RESET)             Configura venv, dependencias npm y crea la BD con datos de prueba\n"
+	@printf "  $(GREEN)make install$(RESET)           Instala dependencias de Backend (Python) y Frontend (npm)\n"
 	@echo ""
-	@echo "$(BOLD)$(YELLOW)📦 Instalación y Dependencias:$(RESET)"
-	@printf "  $(GREEN)make install$(RESET)        Configura el entorno virtual de Python e instala npm packages\n"
+	@echo "$(BOLD)Servidores de Desarrollo:$(RESET)"
+	@printf "  $(GREEN)make dev$(RESET)               Inicia Backend (FastAPI :$(PORT)) y Frontend (Next.js :3000) en paralelo\n"
+	@printf "  $(GREEN)make backend$(RESET)           Inicia únicamente el servidor Backend (FastAPI con hot-reload)\n"
+	@printf "  $(GREEN)make frontend$(RESET)          Inicia únicamente el servidor Frontend (Next.js en modo dev)\n"
 	@echo ""
-	@echo "$(BOLD)$(YELLOW)🧪 Pruebas y Calidad:$(RESET)"
-	@printf "  $(GREEN)make test$(RESET)           Ejecuta la suite completa de pruebas con Pytest\n"
+	@echo "$(BOLD)Base de Datos y Procesamiento Fiscal:$(RESET)"
+	@printf "  $(GREEN)make db-fresh$(RESET)          Reinicia la BD y carga el dataset de prueba completo (recomendado)\n"
+	@printf "  $(GREEN)make db-empty$(RESET)          Crea una base de datos limpia con catálogos SAT pero sin comprobantes\n"
+	@printf "  $(GREEN)make db-import-xml$(RESET)     Procesa e ingesta archivos XML de facturas locales\n"
+	@printf "  $(GREEN)make db-import-pdf$(RESET)     Procesa e ingesta declaraciones oficiales SAT en formato PDF\n"
+	@printf "  $(GREEN)make db-export$(RESET)         Genera un respaldo fixture de la base de datos actual\n"
 	@echo ""
-	@echo "$(BOLD)$(YELLOW)💾 Datos, Base de Datos y Gestión Fiscal:$(RESET)"
-	@printf "  $(GREEN)make reset-db$(RESET)       Elimina la BD actual y la recrea vacía con catálogos base\n"
-	@printf "  $(GREEN)make recreate-db$(RESET)    Recrea la BD limpia y carga automáticamente el dataset de prueba\n"
-	@printf "  $(GREEN)make init-db$(RESET)        Inicializa tablas relacionales y siembra parámetros SAT\n"
-	@printf "  $(GREEN)make seed-demo$(RESET)      Carga el dataset completo de prueba (CFDIs, PDFs y cachés)\n"
-	@printf "  $(GREEN)make export-demo$(RESET)    Exporta el estado actual de la BD a un fixture .json.gz\n"
-	@printf "  $(GREEN)make sync$(RESET)           Sincroniza e ingesta XMLs desde carpetas locales\n"
-	@printf "  $(GREEN)make sync-docs$(RESET)      Sincroniza y parsea PDFs oficiales del SAT (descargados/)\n"
-	@printf "  $(GREEN)make seed-sat$(RESET)       Siembra catálogo de claves y tarifas Art. 152 LISR\n"
+	@echo "$(BOLD)Calidad, Pruebas y Compilación:$(RESET)"
+	@printf "  $(GREEN)make test$(RESET)              Ejecuta la suite de pruebas unitarias y de integración (pytest)\n"
+	@printf "  $(GREEN)make build$(RESET)             Compila el bundle optimizado de producción para Next.js\n"
+	@printf "  $(GREEN)make lint$(RESET)              Ejecuta la validación de tipado y estilo de código\n"
 	@echo ""
-	@echo "$(BOLD)$(YELLOW)🧹 Mantenimiento y Limpieza:$(RESET)"
-	@printf "  $(GREEN)make clean$(RESET)          Limpia cachés de Python (__pycache__), .next y temporales\n"
-	@printf "  $(GREEN)make clean-all$(RESET)      Limpieza profunda (elimina venv y node_modules)\n"
+	@echo "$(BOLD)Limpieza y Mantenimiento:$(RESET)"
+	@printf "  $(GREEN)make clean$(RESET)             Elimina cachés de compilación, temporales y artefactos .next\n"
+	@printf "  $(GREEN)make clean-all$(RESET)         Limpieza profunda: borra venv y node_modules para reinstalación\n"
 	@echo ""
 
 # ==============================================================================
-# 🚀 SERVIDORES Y DESARROLLO
+# PUESTA EN MARCHA
 # ==============================================================================
 
-stop:
-	@echo "$(BOLD)$(YELLOW)🛑 Deteniendo procesos anteriores en puertos $(PORT), 3000 y 5173...$(RESET)"
-	@fuser -k $(PORT)/tcp 3000/tcp 5173/tcp 5174/tcp 2>/dev/null || true
-
-dev: $(VENV_DIR) stop
-	@echo "$(BOLD)$(MAGENTA)🚀 Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend Next.js)...$(RESET)"
-	@make -j 2 backend frontend
-
-backend: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)⚙️  Iniciando Backend FastAPI en http://$(HOST):$(PORT)...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
-
-frontend:
-	@echo "$(BOLD)$(BLUE)💻 Iniciando Frontend Next.js en http://localhost:3000...$(RESET)"
-	@cd $(FRONTEND_DIR) && $(NPM) run dev
-
-build:
-	@echo "$(BOLD)$(CYAN)🔨 Compilando bundle de producción del Frontend...$(RESET)"
-	@cd $(FRONTEND_DIR) && $(NPM) run build
-
-# ==============================================================================
-# 📦 INSTALACIÓN Y ENTORNO
-# ==============================================================================
+setup: install db-fresh
+	@echo ""
+	@echo "$(BOLD)$(GREEN)Entorno de tribuTACOS listo. Ejecuta 'make dev' para iniciar el sistema.$(RESET)"
+	@echo ""
 
 $(VENV_DIR):
-	@echo "$(BOLD)$(YELLOW)📦 Creando entorno virtual de Python en $(VENV_DIR)...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Creando entorno virtual de Python en $(VENV_DIR)...$(RESET)"
 	@$(PYTHON) -m venv $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)⬇️  Instalando dependencias de Backend en venv...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Instalando dependencias de Python...$(RESET)"
 	@$(VENV_PIP) install --upgrade pip
 	@$(VENV_PIP) install -r $(BACKEND_DIR)/requirements.txt
 
 install: $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)⬇️  Instalando dependencias de Frontend (npm)...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Instalando paquetes de Frontend (npm)...$(RESET)"
 	@cd $(FRONTEND_DIR) && $(NPM) install
-	@echo "$(BOLD)$(GREEN)✅ Instalación completada exitosamente.$(RESET)"
+	@echo "$(BOLD)$(GREEN)Instalación completada exitosamente.$(RESET)"
 
 # ==============================================================================
-# 🧪 PRUEBAS
+# SERVIDORES
+# ==============================================================================
+
+stop:
+	@echo "$(BOLD)$(YELLOW)Liberando puertos $(PORT) y 3000 si están en uso...$(RESET)"
+	@fuser -k $(PORT)/tcp 3000/tcp 2>/dev/null || true
+
+dev: $(VENV_DIR) stop
+	@echo "$(BOLD)$(CYAN)Iniciando tribuTACOS en modo desarrollo (Backend :$(PORT) + Frontend :3000)...$(RESET)"
+	@make -j 2 backend frontend
+
+backend: $(VENV_DIR)
+	@echo "$(BOLD)$(GREEN)Iniciando Backend FastAPI en http://$(HOST):$(PORT)...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
+
+frontend:
+	@echo "$(BOLD)$(BLUE)Iniciando Frontend Next.js en http://localhost:3000...$(RESET)"
+	@cd $(FRONTEND_DIR) && $(NPM) run dev
+
+# ==============================================================================
+# BASE DE DATOS Y GESTIÓN FISCAL
+# ==============================================================================
+
+db-empty: $(VENV_DIR)
+	@echo "$(BOLD)$(YELLOW)Eliminando base de datos actual ($(DB_FILE))...$(RESET)"
+	@rm -f $(DB_FILE)
+	@echo "$(BOLD)$(GREEN)Inicializando esquema relacional y catálogos fiscales del SAT...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli init-db
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
+	@echo "$(BOLD)$(GREEN)Base de datos limpia creada exitosamente.$(RESET)"
+
+db-fresh: db-empty
+	@echo "$(BOLD)$(CYAN)Cargando dataset demo completo (CFDIs, nómina, honorarios y declaraciones)...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-demo --fixture
+	@echo "$(BOLD)$(GREEN)Base de datos poblada al 100% con datos de prueba.$(RESET)"
+
+db-import-xml: $(VENV_DIR)
+	@echo "$(BOLD)$(BLUE)Procesando comprobantes XML locales...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync
+
+db-import-pdf: $(VENV_DIR)
+	@echo "$(BOLD)$(BLUE)Procesando declaraciones y acuses PDF oficiales del SAT...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync-sat-docs
+
+db-export: $(VENV_DIR)
+	@echo "$(BOLD)$(GREEN)Exportando dataset actual a fixture comprimido...$(RESET)"
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli export-demo
+
+# Alias retrocompatibles
+reset-db: db-empty
+recreate-db: db-fresh
+init-db: db-empty
+seed-demo: db-fresh
+export-demo: db-export
+sync: db-import-xml
+sync-docs: db-import-pdf
+seed-sat: $(VENV_DIR)
+	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
+
+# ==============================================================================
+# CALIDAD, PRUEBAS Y COMPILACIÓN
 # ==============================================================================
 
 test: $(VENV_DIR)
-	@echo "$(BOLD)$(CYAN)🧪 Ejecutando suite de pruebas unitarias y de integración...$(RESET)"
+	@echo "$(BOLD)$(CYAN)Ejecutando suite de pruebas unitarias y de integración...$(RESET)"
 	@PYTHONPATH=$(BACKEND_DIR) $(PYTEST) -v
 
-# ==============================================================================
-# 💾 GESTIÓN FISCAL, BASE DE DATOS Y SEEDING
-# ==============================================================================
+lint:
+	@echo "$(BOLD)$(CYAN)Validando tipado y linteo del Frontend...$(RESET)"
+	@cd $(FRONTEND_DIR) && $(NPM) run lint
 
-reset-db: $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)🗑️  Eliminando base de datos actual ($(DB_FILE))...$(RESET)"
-	@rm -f $(DB_FILE)
-	@echo "$(BOLD)$(GREEN)🌮 Recreando estructura relacional limpia y sembrando parámetros...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli init-db
-	@echo "$(BOLD)$(GREEN)✅ Base de datos recreada limpia exitosamente.$(RESET)"
-
-recreate-db: reset-db
-	@echo "$(BOLD)$(CYAN)🌮 Sembrando catálogo del SAT y cargando dataset de prueba completo...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-demo --fixture
-	@echo "$(BOLD)$(GREEN)✨ Base de datos recreada y poblada al 100% con datos de prueba.$(RESET)"
-
-init-db: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)🌮 Inicializando base de datos SQLite y sembrando catálogos...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli init-db
-
-seed-demo: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)🌮 Cargando dataset completo de prueba (CFDIs, PDFs y cachés)...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-demo
-
-export-demo: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)📦 Exportando fixture de prueba a demo_dataset.json.gz...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli export-demo
-
-sync: $(VENV_DIR)
-	@echo "$(BOLD)$(BLUE)🔄 Sincronizando CFDIs desde almacenamiento local...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync
-
-sync-docs: $(VENV_DIR)
-	@echo "$(BOLD)$(BLUE)🏛️ Sincronizando documentos oficiales SAT en PDF...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync-sat-docs
-
-seed-sat: $(VENV_DIR)
-	@echo "$(BOLD)$(GREEN)🌱 Sembrando catálogos del SAT y tablas de impuestos...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
+build:
+	@echo "$(BOLD)$(CYAN)Compilando bundle de producción del Frontend...$(RESET)"
+	@cd $(FRONTEND_DIR) && $(NPM) run build
 
 # ==============================================================================
-# 🧹 LIMPIEZA
+# LIMPIEZA
 # ==============================================================================
 
 clean:
-	@echo "$(BOLD)$(YELLOW)🧹 Limpiando cachés de Python y artefactos de compilación...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Limpiando cachés de compilación y temporales...$(RESET)"
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next
-	@echo "$(BOLD)$(GREEN)✨ Limpieza completada.$(RESET)"
+	@echo "$(BOLD)$(GREEN)Limpieza completada.$(RESET)"
 
 clean-all: clean
-	@echo "$(BOLD)$(YELLOW)⚠️  Eliminando $(VENV_DIR) y $(FRONTEND_DIR)/node_modules...$(RESET)"
+	@echo "$(BOLD)$(YELLOW)Eliminando $(VENV_DIR) y $(FRONTEND_DIR)/node_modules...$(RESET)"
 	@rm -rf $(VENV_DIR)
 	@rm -rf $(FRONTEND_DIR)/node_modules
-	@echo "$(BOLD)$(GREEN)✨ Limpieza profunda completada.$(RESET)"
+	@echo "$(BOLD)$(GREEN)Limpieza profunda completada.$(RESET)"
