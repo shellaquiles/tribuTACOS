@@ -1,65 +1,79 @@
-# 📚 Documentación Técnica de tribuTACOS
+# tribuTACOS — Documentación Técnica
 
-> **Suite Integral de Arquitectura, Algoritmos Fiscales, Modelo de Datos y Especificación de API para la Plataforma de Inteligencia Fiscal y Pre-Declaración Anual/Mensual.**
+Documentación técnica oficial de la arquitectura, modelo de datos, algoritmos fiscales y especificaciones de API de la plataforma tribuTACOS.
 
 ---
 
-## 🗺️ Mapa de la Documentación Técnica
+## Índice General
 
-La documentación técnica del sistema está estructurada en los siguientes módulos especializados dentro de `/docs`:
+El sistema se documenta a través de los siguientes módulos técnicos:
 
 ```mermaid
 graph TD
-    Root[📂 /docs - Documentación Técnica] --> Arch[01. Arquitectura General & Ecosistema]
-    Root --> Data[02. Modelo de Datos Relacional & ERD]
-    Root --> Fiscal[03. Motor Fiscal & Algoritmos LISR/LIVA]
-    Root --> Cat[04. Catálogos SAT & Taxonomía de 8 Rubros]
-    Root --> API[05. Especificación de API REST FastAPI]
-    Root --> Front[06. Frontend, UI/UX & Componentes React]
+    Root[Documentación Técnica] --> Arch[01. Arquitectura General y Ecosistema]
+    Root --> Data[02. Modelo de Datos Relacional]
+    Root --> Fiscal[03. Motor Fiscal y Algoritmos LISR/LIVA]
+    Root --> Cat[04. Catálogos SAT y Taxonomía]
+    Root --> API[05. Especificación de API REST]
+    Root --> Front[06. Arquitectura Frontend y Componentes]
 
-    Arch --> |Capas & Flujos| Flow[Ingesta ➔ Parser ➔ Motor ➔ UI]
-    Data --> |SQLAlchemy| DB[(tributacos.db)]
-    Fiscal --> |LISR Art. 152/106/96| Calcs[Cálculos & Proyecciones]
-    Cat --> |52,551 Claves SAT| UNSPSC[Resolución en 4 Capas]
-    API --> |JSON Schemas| Endpoints[Endpoints & Contratos]
-    Front --> |Vite + Recharts| UI[Dashboards & Matriz Mensual]
+    Arch --> Flow[Pipeline de Ingesta y Procesamiento]
+    Data --> DB[Esquema de Base de Datos]
+    Fiscal --> Calcs[Determinaciones LISR y LIVA]
+    Cat --> UNSPSC[Resolución Jerárquica UNSPSC]
+    API --> Endpoints[Contratos de Servicios REST]
+    Front --> UI[Interfaces y Visualización de Datos]
 ```
 
 ---
 
-## 📑 Índice de Módulos Técnicos
+## Módulos de Documentación
 
-| Documento | Descripción y Alcance |
-| :--- | :--- |
-| **[01. Arquitectura General](file:///home/kubrick/www/declara/docs/01_arquitectura_general.md)** | Visión global del sistema, capas de software, pipeline de ingesta de CFDIs/PDFs, ciclo de vida de peticiones y despliegue. |
-| **[02. Modelo de Datos Relacional](file:///home/kubrick/www/declara/docs/02_modelo_de_datos.md)** | Esquema SQLAlchemy en SQLite/PostgreSQL, diagramas entidad-relación (ERD), índices de alto rendimiento y tablas maestras. |
-| **[03. Motor Fiscal y Algoritmos LISR/LIVA](file:///home/kubrick/www/declara/docs/03_motor_fiscal_algoritmos.md)** | Lógica algorítmica y matemática: Art. 152 LISR (Tarifa anual), Art. 106 LISR (Provisionales), Art. 5/6 LIVA (Arrastre de IVA) y topes de deducciones Art. 151 LISR. |
-| **[04. Catálogos SAT y Taxonomía](file:///home/kubrick/www/declara/docs/04_catalogos_sat_taxonomia.md)** | Estructura de las 52,551 claves del SAT, taxonomía consolidada de 8 rubros ágiles, y algoritmo de resolución en 4 capas. |
-| **[05. Especificación de API REST](file:///home/kubrick/www/declara/docs/05_api_endpoints.md)** | Contratos OpenAPI/Swagger de FastAPI: endpoints de resumen fiscal, conciliación SAT, CRUD de clientes, carga de XMLs y exportaciones. |
-| **[06. Frontend, UI/UX y Componentes](file:///home/kubrick/www/declara/docs/06_frontend_ux_componentes.md)** | Arquitectura cliente en React (Vite), sistema de diseño con design tokens, gestión de estado en memoria y exportador CSV con formato Excel/Numbers. |
+| Módulo | Documento | Alcance y Contenido |
+| :--- | :--- | :--- |
+| **01** | [01. Arquitectura General](01_arquitectura_general.md) | Arquitectura desacoplada, pipeline de ingesta de comprobantes y flujo de datos. |
+| **02** | [02. Modelo de Datos Relacional](02_modelo_de_datos.md) | Diagramas entidad-relación, esquemas relacionales, indexación y almacenamiento de caché. |
+| **03** | [03. Motor Fiscal y Algoritmos](03_motor_fiscal_algoritmos.md) | Fundamentos matemáticos y legales: Art. 96, 106, 151 y 152 de la LISR, y Art. 5 y 6 de la LIVA. |
+| **04** | [04. Catálogos SAT y Taxonomía](04_catalogos_sat_taxonomia.md) | Clasificación de claves UNSPSC del SAT y algoritmo de resolución en 4 niveles. |
+| **05** | [05. Especificación de API REST](05_api_endpoints.md) | Contratos OpenAPI, esquemas de entrada/salida y códigos de respuesta HTTP. |
+| **06** | [06. Frontend y Componentes](06_frontend_ux_componentes.md) | Arquitectura cliente en Next.js 15, sistema de diseño semántico y exportación de datos. |
+| **Anexos** | [Documentación Funcional](funcional.md) / [Resumen Técnico](tecnico.md) | Especificaciones funcionales y resumen ejecutivo de despliegue. |
 
 ---
 
-## ⚡ Comandos Rápidos de Inicialización
+## Ejecución del Entorno de Desarrollo
 
-### Levantar Todo el Ecosistema en Desarrollo:
+### Requisitos Previos
+* Python 3.11 o superior
+* Node.js 18 o superior
+* GNU Make
+
+### Comandos de Inicialización
+
 ```bash
-# Opción 1: Con Makefile
+# Inicialización completa (instalación de dependencias y base de datos con datos de prueba)
+make setup
+
+# Ejecución de servidores de desarrollo (Backend :8010 y Frontend :3000)
 make dev
 
-# Opción 2: Script universal
-./levantar_proyecto.sh
+# Ejecución de suite de pruebas automatizadas
+make test
 ```
 
-### Backend Standalone (Puerto 8010):
+### Servicios Standalone
+
 ```bash
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8010 --reload
+# Backend FastAPI (Puerto 8010)
+cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8010 --reload
+
+# Frontend Next.js (Puerto 3000)
+cd frontend && npm run dev
 ```
 
-### Frontend Standalone (Puerto 5173):
-```bash
-cd frontend
-npm run dev
-```
+---
+
+## Aviso Legal / Disclaimer
+
+tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos, proyecciones y determinaciones presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal, contable o legal vinculante, y no sustituyen las determinaciones o declaraciones oficiales del Servicio de Administración Tributaria (SAT).
+

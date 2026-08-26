@@ -1,37 +1,37 @@
-# 🏗️ 01. Arquitectura General y Ecosistema Técnico
+# tribuTACOS — 01. Arquitectura General y Ecosistema Técnico
 
-> **Visión técnica global del sistema tribuTACOS, capas de software, pipelines de procesamiento y flujo de datos.**
+Especificación formal de la arquitectura del sistema, componentes de software, pipeline de procesamiento de datos y estructura de directorios.
 
 ---
 
 ## 1. Visión General del Sistema
 
-**tributacos** es una solución web de inteligencia fiscal y auditoría automatizada que ingesta comprobantes fiscales digitales (CFDI versión 3.3 y 4.0 en XML) y declaraciones oficiales del SAT (en PDF), procesándolos mediante un **Motor Fiscal Determinista** para calcular pre-declaraciones provisionales mensuales y la declaración anual de personas físicas bajo el marco de la legislación tributaria mexicana (**LISR**, **LIVA** y **CFF**).
+tribuTACOS es una plataforma web de inteligencia fiscal y auditoría automatizada diseñada para procesar Comprobantes Fiscales Digitales por Internet (CFDI 3.3 y 4.0 en XML) y declaraciones oficiales del Servicio de Administración Tributaria (en PDF). El sistema integra un motor fiscal determinista que calcula pre-declaraciones provisionales mensuales y la determinación anual del Impuesto Sobre la Renta (ISR) e Impuesto al Valor Agregado (IVA), en apego a la Ley del Impuesto Sobre la Renta (LISR), Ley del Impuesto al Valor Agregado (LIVA) y el Código Fiscal de la Federación (CFF).
 
 ```mermaid
 flowchart TD
-    subgraph Ingesta["📥 Fuentes de Entrada"]
+    subgraph Ingesta["Fuentes de Entrada"]
         XML_Emitidos["CFDIs Emitidos (XML)\n• Ingresos PFAE / Honorarios\n• Facturas PUE / PPD"]
-        XML_Recibidos["CFDIs Recibidos (XML)\n• Gastos Operativos\n• Deducciones Personales\n• Nómina (Recibos Timbrados)"]
-        PDF_SAT["Documentos Oficiales SAT (PDF)\n• Declaraciones Anuales\n• Pagos Provisionales (12 meses)\n• Acuses de Pago"]
+        XML_Recibidos["CFDIs Recibidos (XML)\n• Gastos Operativos\n• Deducciones Personales\n• Recibos de Nómina"]
+        PDF_SAT["Documentos Oficiales SAT (PDF)\n• Declaraciones Anuales\n• Pagos Provisionales (12 meses)\n• Acuses de Pago Bancarios"]
     end
 
-    subgraph Backend["⚙️ Backend FastAPI (Python 3.11)"]
-        Parser["📄 Parser XML & PDF\n• lxml (XPath optimizado)\n• pdfplumber / PyPDF2"]
-        DB[(🗄️ SQLite / PostgreSQL\nSQLAlchemy ORM)]
-        SatCat["📚 Catálogos SAT\n• 52,551 Claves UNSPSC\n• 8 Rubros Ágiles"]
-        Engine["🧮 Motor Fiscal Core\n• Art. 96 (Nómina)\n• Art. 106 (Provisionales)\n• Art. 5/6 (IVA Arrastre)\n• Art. 152 (Anual ISR)"]
-        Cache["⚡ SummaryCache\n(Invalidación Reactiva)"]
-        API["🌐 REST API Routers\n• /api/summary\n• /api/sat_docs\n• /api/cfdis\n• /api/clients"]
+    subgraph Backend["Capa de Servicios Backend (FastAPI :8010)"]
+        Parser["Módulo de Parsing XML/PDF\n• lxml (Motor C / XPath)\n• pdfplumber / PyPDF2"]
+        DB[(Persistencia Relacional\nSQLite / PostgreSQL)]
+        SatCat["Catálogo Maestro SAT\n• 52,547 Claves UNSPSC\n• 8 Rubros Operativos"]
+        Engine["Motor Fiscal Determinista\n• LISR Art. 96, 106, 151, 152\n• LIVA Art. 5 y 6"]
+        Cache["Caché de Resúmenes Fiscales\n(SummaryCache)"]
+        API["Enrutadores de Servicios REST\n• /api/summary\n• /api/sat_docs\n• /api/cfdis\n• /api/clients"]
     end
 
-    subgraph Frontend["💻 Frontend React + Vite"]
-        UI_Nav["🧭 Tab Navigation & Multi-Año\n(2021 a 2026)"]
-        UI_Dash["📊 Dashboard Global & KPIs"]
-        UI_Pre["📅 Pre-Declaración Mensual"]
-        UI_Egr["📉 Gastos & Rubros SAT"]
-        UI_Aud["🔍 Auditoría SAT (PDFs vs XMLs)"]
-        UI_Exp["📥 Exportador CSV / Excel"]
+    subgraph Frontend["Capa de Presentación (Next.js 15 :3000)"]
+        UI_Nav["Navegación Multianual (2021-2026)"]
+        UI_Dash["Tablero Global de Control"]
+        UI_Pre["Pre-Declaración Mensual (12 Meses)"]
+        UI_Egr["Gestión de Egresos y Clasificación"]
+        UI_Aud["Auditoría Oficial SAT"]
+        UI_Exp["Exportación de Reportes CSV/Excel"]
     end
 
     Ingesta --> Parser
@@ -47,105 +47,114 @@ flowchart TD
 
 ## 2. Stack Tecnológico
 
-| Capa | Tecnología | Propósito |
+| Capa | Componente | Justificación Técnica |
 | :--- | :--- | :--- |
-| **Backend Core** | Python 3.11+ | Lenguaje de procesamiento numérico y lógica de negocio. |
-| **API Web** | FastAPI + Uvicorn | Framework asíncrono de alto rendimiento con OpenAPI automático. |
-| **ORM & BD** | SQLAlchemy 2.0 + SQLite / PostgreSQL | Persistencia relacional indexada, migraciones y consistencia ACID. |
-| **Parsing XML** | `lxml` (C-Engine) | Parseo de CFDI 3.3/4.0 a más de 1,000 XMLs por segundo. |
-| **Parsing PDF** | `pdfplumber` + `PyPDF2` | Extracción de tablas y campos oficiales de acuses y declaraciones SAT. |
-| **Frontend** | React 18 + Vite | Interfaz gráfica reactiva de una sola página (SPA). |
-| **Gráficas** | Recharts (D3 Wrapper) | Visualizaciones dinámicas de flujo de efectivo, retenciones y compras. |
-| **Estilos** | Vanilla CSS Modular + Design Tokens | Sistema de diseño profesional, dark-mode ready y sin frameworks pesados. |
+| **Backend Core** | Python 3.11+ | Lenguaje base para ejecución de lógica contable, aritmética fiscal y transformaciones de datos. |
+| **Framework Web** | FastAPI + Uvicorn | Framework asíncrono basado en ASGI, tipado estricto con Pydantic v2 y generación de OpenAPI. |
+| **Persistencia** | SQLAlchemy 2.0 + SQLite / PostgreSQL | Capa de abstracción de datos relacional con soporte transaccional ACID e indexación optimizada. |
+| **Motor de Parsing XML** | `lxml` | Parser basado en libxml2 con optimización C para procesamiento masivo de XMLs fiscales. |
+| **Motor de Parsing PDF** | `pdfplumber` + `PyPDF2` | Extracción estructurada de tablas, metadatos y valores fiscales de documentos oficiales SAT. |
+| **Frontend** | Next.js 15 + React 19 | Arquitectura App Router para renderizado eficiente de interfaces analíticas complejas. |
+| **Diseño y Estilos** | Tailwind CSS | Sistema de utilidades CSS con tipografía formal, alto contraste y paletas semánticas estructuradas. |
+| **Exportación** | Vanilla JavaScript (`csvExport.js`) | Generación en cliente de archivos CSV con codificación UTF-8 BOM para compatibilidad total con hojas de cálculo. |
 
 ---
 
 ## 3. Pipeline de Procesamiento de Datos
 
-### Paso 1: Ingesta y Detección de Comprobantes
-1. El usuario sube o coloca archivos XML en los directorios de ingesta (`/cfdi_emitidos`, `/cfdi_recibidos`).
-2. El **Parser XML** extrae:
-   * **UUID:** Identificador Universal Único del timbre fiscal digital.
+### 3.1 Ingesta y Validación de Estructura
+1. Los archivos XML son recibidos y validados contra los esquemas estándar del SAT (CFDI versión 3.3 o 4.0).
+2. El parser extrae los atributos esenciales:
+   * **UUID:** Folio Fiscal único del Comprobante Fiscal Digital por Internet.
    * **Tipo de Comprobante:** `I` (Ingreso), `E` (Egreso), `N` (Nómina), `P` (Pago).
-   * **Método de Pago:** `PUE` (Pago en una sola exhibición) o `PPD` (Pago en parcialidades o diferido).
-   * **Partidas / Conceptos:** ClaveProdServ, descripción, importe base, impuestos trasladados (IVA 16%, 8%, 0%, Exento) y retenidos (ISR 10%, 1.25%, IVA 10.6667%).
-   * **Complemento de Nómina (1.2):** Días pagados, percepciones gravadas/exentas, deducciones y retención de ISR (código `002`).
+   * **Condiciones de Pago:** `PUE` (Pago en una sola exhibición) o `PPD` (Pago en parcialidades o diferido).
+   * **Partidas y Conceptos:** Clave de Producto o Servicio, desglose de base imponible, traslados de IVA (16%, 8%, 0%, Exento) y retenciones (ISR 10%, 1.25%, IVA 10.6667%).
+   * **Complemento de Nómina (versión 1.2):** Días laborados, percepciones gravadas y exentas (Art. 93 LISR), deducciones y retención de ISR (Art. 96 LISR).
 
-### Paso 2: Normalización y Persistencia Relacional
-* Cada CFDI se almacena en la tabla `cfdis` vinculada al `client_id` (Multi-RFC).
-* Se aplica deduplicación estricta por `UUID`.
-* La información no estructurada se serializa en `parsed_data` (JSON) para acceso de baja latencia sin perder fidelidad XML.
+### 3.2 Normalización y Persistencia Relacional
+* Cada comprobante es registrado en la tabla `cfdis` asignado a un `client_id`.
+* Se ejecuta un control de integridad para prevenir duplicados mediante restricciones de unicidad por `UUID`.
+* Los metadatos extendidos del CFDI se almacenan en formato JSON normalizado dentro del campo `parsed_data`.
 
-### Paso 3: Ejecución del Motor Fiscal
-* Al solicitar el resumen del ejercicio (`/api/summary?year=YYYY`), el motor procesa en memoria o recupera de `summary_cache`:
-  1. Sueldos y salarios consolidados por empleador y quincenas continuas.
-  2. Facturación emitida PFAE mensual.
-  3. Clasificación de egresos en los **8 rubros SAT**.
-  4. Deducciones personales sujetas a los topes del Art. 151 LISR.
-  5. Pagos provisionales mensuales de ISR (Art. 106 LISR) e IVA definitivo con arrastre de saldos a favor (Art. 5 y 6 LIVA).
-  6. Cálculo anual de ISR bajo tarifa Art. 152 LISR.
+### 3.3 Ejecución del Motor Fiscal
+Al consultar el resumen fiscal anual (`/api/summary?year=YYYY`), el motor procesa:
+1. Masa salarial anual, desglose de percepciones gravadas/exentas y retenciones de nómina.
+2. Ingresos mensuales por actividades profesionales y empresariales (PFAE).
+3. Clasificación de partidas de gasto en los 8 rubros operativos estandarizados.
+4. Determinación de deducciones personales y aplicación de los topes legales del Art. 151 LISR.
+5. Cálculo de pagos provisionales mensuales de ISR (Art. 106 LISR) y determinación de IVA mensual con arrastre de saldos a favor (Art. 5 y 6 LIVA).
+6. Determinación anual de ISR mediante la tarifa progresiva del Art. 152 LISR.
 
 ---
 
-## 4. Estructura de Directorios del Repositorio
+## 4. Estructura del Repositorio
 
-```
+```text
 declara/
-├── backend/                  # Servidor API FastAPI y Lógica de Negocio
+├── backend/                  # Servicios de Backend y Lógica de Negocio
 │   ├── app/
-│   │   ├── catalogos/        # Taxonomía y Catálogos SAT (52k claves)
-│   │   │   ├── taxonomia.py  # Definición de 8 rubros maestros y reglas
-│   │   │   ├── sat_catalogo.py # Motor de resolución en 4 capas
-│   │   │   ├── seed.py       # Sembrador de claves SAT en SQLite
-│   │   │   └── seed_fiscal.py# Sembrador de tarifas Art. 152 y factores UMA
-│   │   ├── cfdis/            # Motor Fiscal, Calculadoras y Parser XML
-│   │   │   ├── calculators/  # Calculadoras de dominio puras
-│   │   │   │   ├── tarifas.py      # Tarifa progresiva Art. 152 y breakdown
-│   │   │   │   ├── nomina.py       # Sueldos, retenciones y masa bruta
-│   │   │   │   ├── honorarios.py   # PFAE, analítica mensual y clientes
-│   │   │   │   ├── gastos.py       # Clasificación, matriz mensual y deducibilidad
-│   │   │   │   ├── deducciones.py  # Deducciones personales y topes UMA
+│   │   ├── catalogos/        # Catálogos SAT y Clasificación Taxonómica
+│   │   │   ├── taxonomia.py  # Definición de rubros y reglas de clasificación
+│   │   │   ├── sat_catalogo.py # Algoritmo de resolución jerárquica en 4 niveles
+│   │   │   ├── seed.py       # Poblado del catálogo maestro UNSPSC (52,547 claves)
+│   │   │   └── seed_fiscal.py# Poblado de tarifas del Art. 152 LISR y factores UMA
+│   │   ├── cfdis/            # Módulos del Motor Fiscal y Procesamiento CFDI
+│   │   │   ├── calculators/  # Calculadoras fiscales de dominio puro
+│   │   │   │   ├── tarifas.py      # Tarifa del Art. 152 LISR y desglose marginal
+│   │   │   │   ├── nomina.py       # Sueldos, retenciones e ingresos exentos
+│   │   │   │   ├── honorarios.py   # Ingresos PFAE y analítica de clientes
+│   │   │   │   ├── gastos.py       # Egresos deducibles y matriz mensual
+│   │   │   │   ├── deducciones.py  # Deducciones personales y topes legales
 │   │   │   │   ├── intereses.py    # Intereses reales del sistema financiero
-│   │   │   │   └── simulador_sat.py# Cascada anual (waterfall) y tasas
-│   │   │   ├── engine.py     # Despachador de agregaciones y resúmenes
-│   │   │   ├── parser.py     # Parser optimizado de CFDI 3.3/4.0
-│   │   │   ├── storage.py    # Ingesta, escaneo local y caché
-│   │   │   ├── schemas.py    # Modelos Pydantic v2
-│   │   │   └── router.py     # Endpoints REST de CFDIs y analíticas
-│   │   ├── sat_docs/         # Parser y Conciliación de PDFs Oficiales SAT
-│   │   │   ├── parser.py     # Extractor de declaraciones SAT y acuses
-│   │   │   ├── importer.py   # Ingesta de PDFs a BD relacional
-│   │   │   └── router.py     # Endpoint /api/sat_docs/summary
-│   │   ├── seeds/            # Seeding y Fixtures de Prueba
-│   │   │   ├── seed_demo.py  # Exportador/importador de datos de prueba
-│   │   │   └── demo_dataset.json.gz # Fixture empaquetado (269 KB)
-│   │   ├── auth/             # Autenticación y JWT opcional
-│   │   ├── database.py       # Conexión SQLAlchemy y SessionLocal
-│   │   ├── models.py         # Modelos relacionales ORM (Client, Cfdi, etc.)
-│   │   ├── cli.py            # CLI unificada (init-db, seed-demo, sync)
-│   │   ├── config.py         # Configuración centralizada (.env)
-│   │   └── main.py           # Instancia principal de FastAPI y CORS
-│   ├── tests/                # Suite de pruebas Pytest (11 tests)
-│   ├── tributacos.db         # Base de datos relacional SQLite
-│   ├── requirements.txt      # Dependencias Python
-│   └── anonymize.py          # Motor de sanitización determinista
-├── frontend/                 # Aplicación Cliente React (Vite)
+│   │   │   │   └── simulador_sat.py# Determinación anual y pre-declaración mensual
+│   │   │   ├── engine.py     # Orquestador del resumen fiscal consolidado
+│   │   │   ├── parser.py     # Parser de comprobantes CFDI 3.3/4.0
+│   │   │   ├── storage.py    # Gestión de almacenamiento e invalidación de caché
+│   │   │   ├── schemas.py    # Esquemas Pydantic v2 de validación
+│   │   │   └── router.py     # Endpoints REST de CFDIs y resúmenes
+│   │   ├── sat_docs/         # Módulo de Documentos Oficiales SAT (PDF)
+│   │   │   ├── parser.py     # Extractor de declaraciones y acuses SAT
+│   │   │   ├── importer.py   # Ingesta y persistencia de documentos SAT
+│   │   │   └── router.py     # Endpoints de consulta y conciliación SAT
+│   │   ├── seeds/            # Módulos de Generación y Poblado de Datos
+│   │   │   ├── seed_demo.py  # Importador y exportador de fixtures
+│   │   │   ├── recalculate_dataset.py # Generador determinista del dataset fiscal
+│   │   │   └── demo_dataset.json.gz   # Fixture comprimido de prueba
+│   │   ├── auth/             # Módulo de autenticación
+│   │   ├── database.py       # Conexión SQLAlchemy y gestión de sesiones
+│   │   ├── models.py         # Definición de modelos ORM
+│   │   ├── cli.py            # Interfaz de línea de comandos unificada
+│   │   ├── config.py         # Configuración del entorno
+│   │   └── main.py           # Inicialización de la aplicación FastAPI
+│   ├── tests/                # Suite de pruebas automatizadas Pytest
+│   ├── tributacos.db         # Base de datos SQLite
+│   └── requirements.txt      # Dependencias de Python
+├── frontend/                 # Aplicación Cliente Next.js 15
 │   ├── src/
-│   │   ├── components/       # Componentes visuales modularizados
-│   │   │   ├── ui/           # Primitives y Modals reutilizables
-│   │   │   ├── nomina/       # Sueldos, quincenas y analítica de recibos
-│   │   │   ├── honorarios/   # Facturas, clientes y mix de conceptos
-│   │   │   ├── egresos/      # Matriz mensual y reporte por rubro SAT
-│   │   │   ├── deducciones/  # Deducciones personales y determinación anual
-│   │   │   ├── PreDeclaracionMensualSection.jsx # Matriz de 12 meses
-│   │   │   └── ConciliacionSatSection.jsx      # Auditoría SAT vs XMLs
-│   │   ├── SatUI.jsx         # Barrel export modular
-│   │   ├── csvExport.js      # Motor de exportación estructurada CSV
-│   │   ├── App.jsx           # Componente raíz y navegación
-│   │   └── index.css         # Design System y CSS tokens
-│   ├── package.json
-│   └── vite.config.js        # Configuración de Vite con proxy /api
-├── docs/                     # Documentación Técnica Especializada
-├── Makefile                  # Suite de automatización de desarrollo
-└── levantar_proyecto.sh      # Script de arranque local
+│   │   ├── app/              # Enrutador App Router (layout.js, page.js, globals.css)
+│   │   ├── components/       # Componentes de interfaz de usuario
+│   │   │   ├── ui/           # Componentes base reutilizables
+│   │   │   ├── nomina/       # Vistas de nómina y recibos de sueldos
+│   │   │   ├── honorarios/   # Vistas de honorarios y facturación PFAE
+│   │   │   ├── egresos/      # Vistas de gastos y desglose de rubros
+│   │   │   ├── deducciones/  # Vistas de deducciones personales y cálculo anual
+│   │   │   ├── PreDeclaracionMensualSection.jsx # Matriz mensual de 12 meses
+│   │   │   └── ConciliacionSatSection.jsx      # Comparativa de auditoría SAT
+│   │   ├── SatUI.jsx         # Exportación modular de componentes
+│   │   ├── csvExport.js      # Módulo de exportación CSV con UTF-8 BOM
+│   │   ├── App.jsx           # Componente principal de navegación y estado
+│   │   └── index.css         # Estilos base y tokens de diseño
+│   ├── package.json          # Dependencias de Node.js
+│   └── next.config.mjs       # Configuración de Next.js
+├── docs/                     # Documentación Técnica del Sistema
+├── documentacion/            # Manuales de Usuario y Guías de Operación
+├── Makefile                  # Automatización de tareas del proyecto
+└── levantar_proyecto.sh      # Script de inicialización rápida
 ```
+
+---
+
+## 5. Aviso Legal / Disclaimer
+
+tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en comprobantes digitales (CFDI) y las leyes tributarias aplicables. Los resultados generados son de naturaleza puramente informativa y proyectiva, no representan asesoría contable o fiscal vinculante, y no reemplazan las declaraciones oficiales presentadas ante el Servicio de Administración Tributaria (SAT).
+

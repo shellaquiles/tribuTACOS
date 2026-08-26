@@ -1,6 +1,6 @@
-# 🗄️ 02. Modelo de Datos Relacional y Esquema SQLAlchemy
+# tribuTACOS — 02. Modelo de Datos Relacional y Esquema SQLAlchemy
 
-> **Diseño de base de datos relacional, diagramas entidad-relación (ERD), modelos SQLAlchemy, índices de rendimiento y diccionario de datos.**
+Diseño de base de datos relacional, diagramas entidad-relación (ERD), modelos SQLAlchemy, índices de rendimiento y diccionario de datos.
 
 ---
 
@@ -8,50 +8,50 @@
 
 ```mermaid
 erDiagram
-    CLIENT ||--o{ CFDI : "posee (Multi-RFC)"
+    CLIENT ||--o{ CFDI : "posee"
     CLIENT ||--o{ DECLARACION_ANUAL_SAT : "presenta"
     CLIENT ||--o{ PAGO_PROVISIONAL_SAT : "liquida (12 meses)"
     CLIENT ||--o{ ACUSE_PAGO_SAT : "comprueba"
-    CLIENT ||--o{ CFDI_EXCLUSION : "configura reglas/exclusiones"
+    CLIENT ||--o{ CFDI_EXCLUSION : "configura exclusiones"
     CLIENT ||--o{ CONSTANCIA_FISCAL_EXTERNA : "registra deducciones externas"
-    CLIENT ||--o{ SUMMARY_CACHE : "invalida/consulta"
+    CLIENT ||--o{ SUMMARY_CACHE : "almacena resumen compilado"
     
     CFDI }|..|{ CATALOGO_SAT_CLAVE : "clasifica por clave"
     TARIFA_ISR_ANUAL ||--o{ PARAMETRO_SAT : "parámetros del ejercicio"
 
     CLIENT {
         string id PK "default / rfc"
-        string name "Nombre del Contribuyente"
-        string rfc UK "RFC (13 pos)"
-        string email "Correo de contacto"
+        string name "Nombre o Razón Social"
+        string rfc UK "RFC (12 o 13 posiciones)"
+        string email "Correo electrónico"
         datetime created_at
     }
 
     CFDI {
         string id PK "UUID del Timbre Fiscal"
         string client_id FK "Relación al cliente"
-        string filename "Nombre del XML origen"
-        string filepath "Ruta física en disco"
+        string filename "Nombre del archivo XML"
+        string filepath "Ruta física del archivo"
         string emisor_rfc "RFC Emisor (Indexado)"
         string emisor_nombre "Razón Social Emisor"
         string receptor_rfc "RFC Receptor (Indexado)"
         string receptor_nombre "Razón Social Receptor"
-        string fecha "Fecha ISO YYYY-MM-DD"
-        string year "Año fiscal YYYY (Indexado)"
+        string fecha "Fecha de emisión (YYYY-MM-DD)"
+        string year "Ejercicio fiscal YYYY (Indexado)"
         string tipo_comprobante "I, E, N, P"
         string categoria "ingreso, egreso, nomina, pago"
-        string uso_cfdi "G01, G03, D01, CP01, etc."
+        string uso_cfdi "G01, G03, D01, D06, etc."
         string forma_pago "01, 03, 04, 99"
         string metodo_pago "PUE / PPD"
-        float subtotal "Importe sin impuestos"
-        float descuento "Descuentos aplicados"
+        float subtotal "Importe base antes de impuestos"
+        float descuento "Descuentos comerciales"
         float iva "IVA trasladado"
         float ieps "IEPS trasladado"
         float retencion_isr "ISR retenido"
         float retencion_iva "IVA retenido"
-        float total "Monto total del CFDI"
-        boolean es_deducible "Bandera de deducibilidad"
-        boolean es_nomina "Bandera de nómina"
+        float total "Total liquidado en el comprobante"
+        boolean es_deducible "Estado de deducibilidad fiscal"
+        boolean es_nomina "Bandera de comprobante de nómina"
         string parsed_data "JSON con partidas y complementos"
         datetime created_at
     }
@@ -59,8 +59,8 @@ erDiagram
     CFDI_EXCLUSION {
         int id PK "Autoincremental"
         string client_id FK "Relación al cliente"
-        string uuid "UUID a ignorar o reclasificar"
-        string motivo "Motivo de la exclusión (cancelado, duplicado)"
+        string uuid "UUID excluido del motor fiscal"
+        string motivo "Motivo de la exclusión"
         string tipo "nomina / ingreso / gasto"
         datetime created_at
     }
@@ -70,11 +70,11 @@ erDiagram
         string client_id FK "Relación al cliente"
         string year "Ejercicio fiscal YYYY"
         string uso_cfdi "D06 (PPR), D01, etc."
-        string emisor_rfc "RFC de la institución emisora"
-        string emisor_nombre "Nombre de la institución"
-        string fecha "Fecha de emisión YYYY-MM-DD"
-        float monto "Monto de la constancia"
-        string descripcion "Detalle fiscal de la aportación"
+        string emisor_rfc "RFC de la entidad financiera/emisora"
+        string emisor_nombre "Razón Social de la entidad"
+        string fecha "Fecha de emisión (YYYY-MM-DD)"
+        float monto "Importe total deducible"
+        string descripcion "Descripción de la aportación"
     }
 
     TARIFA_ISR_ANUAL {
@@ -83,94 +83,91 @@ erDiagram
         float limite_inferior "Límite inferior del tramo"
         float limite_superior "Límite superior del tramo"
         float cuota_fija "Cuota fija del tramo"
-        float porcentaje_excedente "Tasa aplicable sobre excedente"
-        int orden "Posición en la tarifa (1 a 11)"
+        float porcentaje_excedente "Tasa marginal sobre el excedente"
+        int orden "Renglón de la tarifa (1 a 11)"
     }
 
     PARAMETRO_SAT {
         string year PK "Ejercicio fiscal YYYY"
-        float uma_diaria "Valor diario UMA"
-        float uma_mensual "Valor mensual UMA"
-        float uma_anual "Valor anual UMA"
-        float uma_5_anual "Tope 5 UMAs anuales"
-        float tope_deducciones_pct "Tope 15% de ingresos"
+        float uma_diaria "Valor diario de la UMA"
+        float uma_mensual "Valor mensual de la UMA"
+        float uma_anual "Valor anual de la UMA"
+        float uma_5_anual "Tope de 5 UMAs anuales"
+        float tope_deducciones_pct "Tope del 15% de ingresos"
         float salario_minimo "Salario mínimo general"
     }
 
     DECLARACION_ANUAL_SAT {
-        string id PK "UUID"
+        string id PK "Identificador único"
         string client_id FK "Relación al cliente"
-        string year "Ejercicio YYYY (Indexado)"
-        string rfc "RFC Contribuyente"
+        string year "Ejercicio fiscal YYYY"
+        string rfc "RFC del Contribuyente"
         string tipo_declaracion "Normal / Complementaria"
-        string num_operacion "Número de operación SAT"
-        string fecha_presentacion "Fecha de envío SAT"
-        float ingresos_acumulables "Total ingresos anuales"
-        float deducciones_personales "Deducciones aplicadas"
-        float base_gravable "Base para tarifa Art 152"
-        float isr_tarifa "ISR determinado anual"
-        float pagos_provisionales_acreditados "ISR pagado en provisionales"
-        float isr_retenido "ISR retenido en el año"
+        string num_operacion "Número de operación oficial SAT"
+        string fecha_presentacion "Fecha y hora de presentación"
+        float ingresos_acumulables "Ingresos acumulables totales"
+        float deducciones_personales "Deducciones personales aplicadas"
+        float base_gravable "Base gravable para Art. 152"
+        float isr_tarifa "ISR determinado del ejercicio"
+        float pagos_provisionales_acreditados "Pagos provisionales acreditados"
+        float isr_retenido "ISR retenido acumulado"
         float saldo_a_favor "Saldo a favor determinado"
-        float saldo_a_cargo "Impuesto a pagar"
-        string destino_saldo "Devolución / Compensación"
-        string clabe "CLABE interbancaria"
-        string banco "Institución bancaria"
-        string raw_pdf_path "Ruta al PDF oficial"
+        float saldo_a_cargo "Impuesto a cargo determinado"
+        string clabe "Cuenta CLABE para devolución"
+        string banco "Institución bancaria receptora"
+        string raw_pdf_path "Ruta al archivo PDF oficial"
     }
 
     PAGO_PROVISIONAL_SAT {
-        string id PK "UUID"
+        string id PK "Identificador único"
         string client_id FK "Relación al cliente"
-        string year "Ejercicio YYYY (Indexado)"
-        int mes_numero "1 al 12 (Indexado)"
-        string mes_nombre "Enero ... Diciembre"
+        string year "Ejercicio fiscal YYYY"
+        int mes_numero "Mes del ejercicio (1 a 12)"
+        string mes_nombre "Nombre del mes"
         string tipo_declaracion "Normal / Complementaria"
-        string num_operacion "Número de operación SAT"
+        string num_operacion "Número de operación oficial SAT"
         string fecha_presentacion "Fecha de presentación"
-        float isr_ingresos_periodo "Ingresos PFAE del mes"
-        float isr_ingresos_acumulados "Ingresos acumulados año"
-        float isr_deducciones_autorizadas "Gastos deducibles mes"
-        float isr_deducciones_acumuladas "Gastos acumulados año"
-        float isr_retenido_periodo "ISR retenido en el mes"
-        float isr_a_cargo "ISR neto a pagar al SAT"
-        float iva_cobrado_16 "IVA cobrado facturas"
-        float iva_acreditable_gastos "IVA pagado en gastos"
-        float iva_retenido "IVA retenido en el mes"
-        float iva_a_cargo "IVA neto a pagar al SAT"
-        float total_pagado "Total ISR + IVA pagado"
-        boolean tiene_acuse_pago "Si cuenta con acuse bancario"
+        float isr_ingresos_periodo "Ingresos del periodo"
+        float isr_ingresos_acumulados "Ingresos acumulados del ejercicio"
+        float isr_deducciones_autorizadas "Deducciones autorizadas del mes"
+        float isr_deducciones_acumuladas "Deducciones autorizadas acumuladas"
+        float isr_retenido_periodo "ISR retenido en el periodo"
+        float isr_a_cargo "ISR neto a cargo"
+        float iva_base_gravada_16 "Base gravada para IVA"
+        float iva_cobrado_16 "IVA cobrado al 16%"
+        float iva_acreditable_gastos "IVA acreditable pagado"
+        float iva_retenido "IVA retenido por terceros"
+        float iva_a_cargo "IVA neto a cargo"
+        float total_pagado "Total pagado (ISR + IVA)"
+        boolean tiene_acuse_pago "Indicador de acuse bancario verificado"
         float total_pagado_acuse "Monto verificado en acuse"
-        string raw_pdf_path "Ruta al PDF de la declaración"
+        string raw_pdf_path "Ruta al archivo PDF oficial"
     }
 
     CATALOGO_SAT_CLAVE {
-        string clave PK "Clave SAT de 8 dígitos (Indexado)"
-        string descripcion "Descripción oficial SAT"
-        string incluye_iva_trasladado "Sí / No"
-        string incluye_ieps_trasladado "Sí / No"
-        string complemento_concepto "Complementos requeridos"
-        string fecha_inicio_vigencia "Fecha vigencia"
-        string estimulo_franja_fronteriza "0 / 1"
+        string clave PK "Clave SAT de 8 dígitos"
+        string descripcion "Descripción técnica oficial"
+        string categoria_id "Rubro operativo asignado"
+        string tipo "Tipo de producto o servicio"
     }
 
     SUMMARY_CACHE {
-        string id PK "client_id + '_' + year"
-        string client_id FK
-        string year
-        string data "JSON del resumen fiscal compilado"
+        string id PK "client_id_year"
+        string client_id FK "Relación al cliente"
+        string year "Ejercicio fiscal YYYY"
+        string data "JSON consolidado del resumen fiscal"
         datetime updated_at
     }
 ```
 
 ---
 
-## 2. Índices de Alto Rendimiento
+## 2. Índices de Rendimiento y Optimización
 
-Para garantizar tiempos de respuesta menores a **15 ms** en auditorías con miles de CFDIs, se han configurado los siguientes índices en SQLAlchemy:
+Para garantizar tiempos de respuesta inferiores a 15 ms en consultas analíticas sobre volúmenes elevados de comprobantes, se definen los siguientes índices en SQLAlchemy:
 
 ```python
-# Definición en backend/app/models.py
+# Declaración en backend/app/models.py
 __table_args__ = (
     Index('idx_cfdi_client_year', 'client_id', 'year'),
     Index('idx_cfdi_emisor_fecha', 'emisor_rfc', 'fecha'),
@@ -181,15 +178,15 @@ __table_args__ = (
 
 ---
 
-## 3. Modelo de Partidas Desestructuradas (`parsed_data`)
+## 3. Estructura del Campo Desestructurado (`parsed_data`)
 
-Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que contiene:
+Cada comprobante fiscal almacena en su columna `parsed_data` un objeto JSON estandarizado con la información analizada del XML:
 
 ```json
 {
   "uuid": "4A1B2C3D-E4F5-6789-ABCD-EF0123456789",
-  "emisor_rfc": "STM180415AA1",
-  "emisor_nombre": "SOLUCIONES TECNOLÓGICAS DE MÉXICO S.A. DE C.V.",
+  "emisor_rfc": "ITN150420AA1",
+  "emisor_nombre": "INNOVACION TECNOLOGICA DEL NORTE SA DE CV",
   "receptor_rfc": "SHLL250825XYZ",
   "receptor_nombre": "Sheila Shellaquiles Ortega",
   "regimen_fiscal_emisor": "601",
@@ -197,7 +194,7 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
   "conceptos": [
     {
       "clave": "81111508",
-      "desc": "Desarrollo de software y backend en Python",
+      "desc": "Desarrollo de software y arquitectura backend en Python",
       "imp": 35000.00,
       "subtotal": 35000.00,
       "descuento": 0.00,
@@ -214,11 +211,11 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
     "salario_base_cot_apor": 1350.00,
     "salario_diario_integrado": 1420.50,
     "percepciones": [
-      { "tipo": "001", "concepto": "Sueldos y Salarios", "gravado": 20000.00, "exento": 0.00 }
+      { "tipo": "001", "concepto": "Sueldos y Salarios", "gravado": 15000.00, "exento": 0.00 }
     ],
     "deducciones": [
-      { "tipo": "001", "concepto": "Seguridad Social IMSS", "total": 540.00 },
-      { "tipo": "002", "concepto": "Retención de ISR", "total": 3533.23 }
+      { "tipo": "001", "concepto": "Seguridad Social IMSS", "total": 450.00 },
+      { "tipo": "002", "concepto": "Retención de ISR", "total": 2150.00 }
     ]
   }
 }
@@ -226,10 +223,12 @@ Cada CFDI almacena en su columna `parsed_data` un objeto JSON normalizado que co
 
 ---
 
-## 4. Estrategia de Invalidación de Caché (`SummaryCache`)
+## 4. Estrategia de Caché e Invalidación (`SummaryCache`)
 
-* La tabla `summary_cache` almacena el payload JSON completo del motor fiscal para evitar re-calcular la matriz de 12 meses y los impuestos en cada lectura de la UI.
-* **Eventos de Invalidación:**
-  * Al subir o eliminar un CFDI (`Cfdi`).
-  * Al sincronizar una declaración oficial del SAT (`PagoProvisionalSAT` / `DeclaracionAnualSAT`).
-  * Al ejecutar cualquier comando de recálculo o refresco de base de datos (`make db-fresh`, `make recreate-db`).
+La tabla `summary_cache` almacena el payload precalculado del resumen fiscal para proporcionar respuestas de baja latencia a la capa de frontend.
+
+### Eventos de Invalidación y Reconstrucción:
+1. Ingesta, modificación o eliminación de un registro en `cfdis`.
+2. Registro o actualización de documentos oficiales en `declaraciones_anuales_sat` o `pagos_provisionales_sat`.
+3. Modificación de exclusiones fiscales en `cfdi_exclusions`.
+4. Ejecución del comando de regeneración de base de datos (`make db-fresh`).

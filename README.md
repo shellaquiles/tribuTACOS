@@ -1,108 +1,219 @@
-# 🌮 tributacos
+# tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 
-> **Radiografía fiscal y desmenuzador universal de CFDIs (XML). Analiza nómina, honorarios e impuestos locales con la misma claridad con la que pides tres con todo.**
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js_15_App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![TailwindCSS](https://img.shields.io/badge/Styles-Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite_%2F_PostgreSQL-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://sqlite.org)
+[![Tests](https://img.shields.io/badge/Tests-11_Passed_Pytest-449C44?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 
-*Porque cuadrar tus impuestos con el SAT debería ser tan transparente y directo como pedir tacos en la esquina: sin intermediarios, con las cuentas claras y bien servido.*
-
----
-
-## 🚀 Características Principales
-
-- ⚡ **Desmenuzador Universal de CFDIs**: Parsea e ingesta comprobantes 3.3, 4.0, complementos de nómina 1.2, retenciones y pagos 2.0.
-- 💾 **Base de Datos & Parse-Once**: Estrategia de alto rendimiento con SQLAlchemy (SQLite para standalone / PostgreSQL para SaaS) y caché inteligente de resúmenes fiscales.
-- 📂 **Ingesta Dual**:
-  - **Drag & Drop en UI**: Sube archivos `.xml` sueltos o `.zip` completos con auto-clasificación por RFC.
-  - **Rutas Locales por Cliente**: Conecta carpetas en disco, NAS o Dropbox para sincronización instantánea.
-- 👥 **Nómina y Sueldos**: Desglose de ingresos brutos vs netos, retenciones ISR, exentos (aguinaldo, PTU, primas) y recibos timbrados por empleador.
-- 💼 **Honorarios / AEyP (Actividad Empresarial y Profesional)**: Flujo de caja efectivo (PUE), retenciones sufridas (ISR/IVA) y mix de servicios.
-- 📅 **Egresos Mensuales Dinámicos**: Análisis mes a mes con selector interactivo, KPIs, evolución gráfica, mix de proveedores/cuentas SAT y visor estructurado de facturas.
-- 🏥 **Deducciones Personales (Art. 151 LISR)**: Validación estricta de formas de pago válidas para deducción anual y control de topes.
-- 🧮 **Simulador y Determinación Anual ISR**: Cálculo automático contra las tarifas oficiales del SAT con detalle de cuota fija, excedente y tasa marginal.
-- ⬇️ **Exportación CSV Excel-Ready**: Descarga reportes completos con BOM UTF-8 en un solo clic.
+**tribuTACOS** es una plataforma de análisis, proyección y simulación fiscal que procesa Comprobantes Fiscales Digitales por Internet (**CFDI 3.3 y 4.0 en XML**) y declaraciones oficiales del **SAT en PDF**, calculando de forma anticipada, transparente y determinista los **Pagos Provisionales Mensuales (ISR e IVA)** y la **Declaración Anual** para personas físicas en México (Sueldos y Salarios y Actividad Empresarial / Servicios Profesionales).
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Flujo de Procesamiento y Arquitectura
 
-- **Backend**: Python 3.11+, FastAPI, SQLAlchemy, lxml, Pydantic v2, Python-Jose (JWT scaffolding).
-- **Frontend**: React 19, Vite, Recharts, Vanilla CSS con Glassmorphism y Dark/Light theme tokens.
-- **Base de Datos**: SQLite (`tributacos.db`) / PostgreSQL compatible.
+```mermaid
+flowchart LR
+    subgraph Ingesta["Fuentes de Entrada"]
+        XML["CFDIs en XML\n• Ingresos PFAE\n• Gastos Operativos\n• Recibos de Nómina\n• Deducciones Personales"]
+        PDF["Documentos SAT (PDF)\n• Declaraciones Anuales\n• Pagos Provisionales\n• Acuses Bancarios"]
+    end
+
+    subgraph Backend["Motor Backend (FastAPI :8010)"]
+        Parser["Parser C (lxml & pdfplumber)"]
+        DB[(Persistencia Relacional\nSQLAlchemy 2.0)]
+        Engine["Motor Fiscal LISR & LIVA\n• Art. 96, 106, 151, 152\n• Acreditamiento IVA Art. 5/6"]
+        Cache["Caché de Resúmenes Fiscales"]
+        API["Servicios REST API"]
+    end
+
+    subgraph Frontend["Interfaz de Usuario (Next.js 15 :3000)"]
+        Dash["Tablero Global"]
+        Prov["Pre-Declaración Mensual"]
+        Nom["Sueldos y Salarios"]
+        Hon["Honorarios PFAE"]
+        Egr["Gastos en 8 Rubros"]
+        Ded["Deducciones Art. 151"]
+        Aud["Auditoría Oficial SAT"]
+    end
+
+    XML --> Parser
+    PDF --> Parser
+    Parser --> DB
+    DB --> Engine
+    Engine --> Cache
+    Cache --> API
+    API --> Frontend
+```
 
 ---
 
-## 📦 Instalación y Puesta en Marcha
+## Módulos Principales del Sistema
+
+### 1. Tablero de Control y KPIs Ejecutivos
+* Visión consolidada de ingresos totales, gastos deducibles, utilidad fiscal del ejercicio y retenciones acumuladas.
+* Determinación preliminar de saldo a favor proyectado o impuesto a cargo.
+* Desglose proporcional de ingresos por régimen fiscal.
+
+### 2. Pre-Declaración Mensual (12 Meses)
+* Simulación mensual bajo el principio de **flujo de efectivo** (facturas PUE y complementos de pago PPD efectivamente cobrados o pagados).
+* Determinación acumulativa del Impuesto Sobre la Renta (Art. 106 LISR).
+* Determinación del Impuesto al Valor Agregado mensual con gestión automática del **arrastre de saldos a favor** (Art. 5 y 6 LIVA).
+* Modales interactivos con el desglose del borrador oficial para ISR e IVA.
+
+### 3. Determinación Anual y Cascada Fiscal
+* Cálculo de ISR anual conforme a la tarifa progresiva del Art. 152 LISR.
+* Desglose en cascada de cinco pasos: Ingresos Acumulables ➔ Deducciones Personales ➔ Base Gravable ➔ ISR Determinado ➔ Liquidación Final.
+* Cálculo de tasa efectiva y tasa marginal del ejercicio.
+
+### 4. Clasificación Taxonómica de Egresos en 8 Rubros SAT
+* Algoritmo jerárquico en 4 niveles que mapea partidas contra las 52,547 claves oficiales del SAT:
+  1. *Software, Nube e Infraestructura TI*
+  2. *Equipo de Cómputo y Electrónica*
+  3. *Servicios Profesionales y Asesoría*
+  4. *Renta de Vehículos y Transporte*
+  5. *Plataformas de Movilidad y Taxis*
+  6. *Combustibles y Lubricantes*
+  7. *Seguros y Coberturas*
+  8. *Viáticos, Viajes y Peajes*
+  9. *Otros Gastos Operativos Generales*
+
+### 5. Deducciones Personales y Optimizador Legal (Art. 151 LISR)
+* Auditoría de requisitos de deducibilidad y medios de pago bancarizados.
+* Control del límite legal general (el menor entre 15% de ingresos acumulables o 5 UMAs anuales).
+* Tratamiento especializado con subtopes para Planes Personales de Retiro (PPR, Fracc. V) y Seguro de Gastos Médicos Mayores (SGMM, Fracc. VI).
+
+### 6. Sueldos, Salarios y Recibos de Nómina (Capítulo I LISR)
+* Auditoría quincenal y mensual de recibos timbrados.
+* Desglose de ingresos gravados y percepciones exentas (aguinaldo, prima vacacional y previsión social bajo el Art. 93 LISR).
+* Conciliación de retenciones de ISR de nómina (Art. 96 LISR) y cuotas de seguridad social (IMSS).
+
+### 7. Honorarios y Facturación Emitida (Capítulo II LISR)
+* Monitoreo de ingresos facturados, retenciones de ISR (10%) e IVA (10.6667%) efectuadas por personas morales.
+* Análisis de concentración de cartera por cliente y distribución por tipo de servicio.
+
+### 8. Auditoría y Conciliación Oficial SAT
+* Comparativa 1 a 1 entre los cálculos derivados de comprobantes XML y las cifras reportadas en las declaraciones oficiales (PDFs).
+* Conciliación de números de operación, fechas de presentación y confirmación de acuses bancarios de pago.
+
+---
+
+## Stack Tecnológico
+
+| Capa | Tecnologías Utilizadas |
+| :--- | :--- |
+| **Backend** | Python 3.11+, FastAPI, Uvicorn, SQLAlchemy 2.0, Pydantic v2, `lxml`, `pdfplumber`, `PyPDF2` |
+| **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons |
+| **Base de Datos** | SQLite (`tributacos.db`) / PostgreSQL |
+| **Pruebas y Calidad** | Pytest, HTTPX, ESLint |
+| **Automatización** | GNU Makefile, Bash Scripts |
+
+---
+
+## Instalación y Puesta en Marcha
 
 ### Prerrequisitos
-- Python 3.11+
-- Node.js 18+ y npm
+* Python 3.11 o superior
+* Node.js 18 o superior con npm
+* GNU Make
 
-### 1. Clonar el repositorio
-```bash
-git clone https://github.com/tu-usuario/tributacos.git
-cd tributacos
-```
+### Puesta en Marcha con Makefile
 
-### 2. Iniciar el entorno de desarrollo (Backend + Frontend)
 ```bash
+# 1. Configuración inicial (creación de venv, instalación de dependencias y base de datos demo)
+make setup
+
+# 2. Iniciar servidores de desarrollo en paralelo (Backend :8010 + Frontend :3000)
 make dev
+
+# 3. Ejecutar la suite de pruebas unitarias y de integración
+make test
 ```
 
-El comando iniciará:
-- 🌐 **Frontend**: `http://localhost:5173`
-- ⚡ **Backend API**: `http://localhost:8010` (Documentación Swagger en `http://localhost:8010/docs`)
+### URLs de Acceso Local
+* **Aplicación Web:** `http://localhost:3000`
+* **Servicios API REST:** `http://localhost:8010`
+* **Documentación Interactiva Swagger / OpenAPI:** `http://localhost:8010/docs`
 
 ---
 
-## ⚙️ Variables de Entorno (`.env`)
+## Guía de Comandos del Sistema (`Makefile`)
 
-Crea un archivo `.env` en la raíz o en `backend/` si deseas personalizar la configuración:
-
-```env
-# Base de Datos
-DATABASE_URL=sqlite:///tributacos.db
-# Para PostgreSQL:
-# DATABASE_URL=postgresql://usuario:password@localhost:5432/tributacos
-
-# Directorio de almacenamiento de XMLs
-DATA_DIR=./backend/data
-
-# Autenticación JWT (v1 = false, v2 = true)
-AUTH_ENABLED=false
-SECRET_KEY=clave-secreta-para-firmar-tokens
-```
+| Comando | Descripción |
+| :--- | :--- |
+| `make setup` | Instala dependencias de backend/frontend y genera la base de datos con el dataset demo oficial. |
+| `make install` | Instala o actualiza dependencias de Python (`requirements.txt`) y Node.js (`package.json`). |
+| `make dev` | Inicia Backend (FastAPI en puerto 8010) y Frontend (Next.js en puerto 3000) en paralelo con hot-reload. |
+| `make backend` | Inicia únicamente el servidor backend de FastAPI. |
+| `make frontend` | Inicia únicamente el servidor frontend de Next.js. |
+| `make db-fresh` | Reinicia la base de datos y carga el dataset de prueba completo (CFDIs, nómina, honorarios y declaraciones SAT). |
+| `make db-empty` | Crea una base de datos limpia con catálogos SAT pero sin comprobantes fiscales. |
+| `make db-export` | Genera un respaldo comprimido (`demo_dataset.json.gz`) del estado actual de la base de datos. |
+| `make test` | Ejecuta la suite completa de pruebas unitarias y de integración con Pytest. |
+| `make build` | Compila el paquete optimizado de producción para la aplicación Next.js. |
+| `make clean` | Elimina cachés temporales de compilación (`.next`, `__pycache__`). |
 
 ---
 
-## 🗺️ Estructura del Proyecto
+## Estructura del Proyecto
 
-```
-tributacos/
-├── backend/
+```text
+declara/
+├── backend/                  # Capa de Backend y Lógica Contable
 │   ├── app/
-│   │   ├── auth/           # Scaffolding JWT & seguridad
-│   │   ├── cfdis/          # Parser, engine fiscal, storage & router
-│   │   ├── config.py       # Configuración centralizada
-│   │   ├── database.py     # Sesión & engine SQLAlchemy
-│   │   ├── models.py       # Modelos Client, Cfdi, Cache, Batch
-│   │   └── main.py         # Entrypoint FastAPI
-│   ├── data/               # Storage de XMLs por cliente
-│   ├── requirements.txt
-│   └── tributacos.db
-├── frontend/
+│   │   ├── catalogos/        # Catálogo maestro UNSPSC (52,547 claves) y taxonomía
+│   │   ├── cfdis/            # Parser XML y calculadoras fiscales puras
+│   │   ├── sat_docs/         # Parser y conciliación de PDFs del SAT
+│   │   ├── seeds/            # Fixtures y generador determinista del dataset demo
+│   │   ├── auth/             # Módulo de autenticación
+│   │   ├── database.py       # Configuración y sesiones de base de datos
+│   │   ├── models.py         # Modelos relacionales ORM (Client, Cfdi, etc.)
+│   │   ├── cli.py            # Interfaz de línea de comandos unificada
+│   │   └── main.py           # Instancia principal de FastAPI
+│   ├── tests/                # Pruebas automatizadas (test_api.py, test_calculators.py)
+│   ├── requirements.txt      # Dependencias de Python
+│   └── tributacos.db         # Base de datos SQLite activa
+├── frontend/                 # Capa de Presentación Next.js 15
 │   ├── src/
-│   │   ├── components/     # UploadModal, Primitives
-│   │   ├── App.jsx         # Shell principal & navegación
-│   │   ├── SatUI.jsx       # Componentes de visualización fiscal
-│   │   ├── csvExport.js    # Utilería de exportación CSV
-│   │   └── index.css       # Sistema de diseño
-│   ├── index.html
-│   └── package.json
-├── Makefile                # Automatización de tareas
-└── README.md
+│   │   ├── app/              # App Router (layout.js, page.js, globals.css)
+│   │   ├── components/       # Componentes visuales desacoplados por módulo
+│   │   ├── SatUI.jsx         # Exportación unificada de vistas
+│   │   ├── csvExport.js      # Generador de reportes CSV con BOM UTF-8
+│   │   ├── App.jsx           # Componente principal de estado y navegación
+│   │   └── index.css         # Tokens de diseño y estilos globales
+│   ├── package.json          # Dependencias de Node.js
+│   └── next.config.mjs       # Configuración de Next.js
+├── docs/                     # Documentación Técnica Especializada
+│   ├── 01_arquitectura_general.md
+│   ├── 02_modelo_de_datos.md
+│   ├── 03_motor_fiscal_algoritmos.md
+│   ├── 04_catalogos_sat_taxonomia.md
+│   ├── 05_api_endpoints.md
+│   ├── 06_frontend_ux_componentes.md
+│   ├── funcional.md
+│   └── tecnico.md
+├── documentacion/            # Manual de Usuario Completo con Guías Visuales
+├── Makefile                  # Automatización integral del ciclo de vida
+├── levantar_proyecto.sh      # Script de inicialización rápida
+└── README.md                 # Guía principal del proyecto
 ```
 
 ---
 
-## 📄 Licencia
+## Documentación Detallada
 
-MIT © tributacos
+Para consultar la documentación técnica y funcional en profundidad:
+
+* **[Manual de Usuario Completo](documentacion/MANUAL_DE_USUARIO_COMPLETO.md)**: Guía detallada de uso con capturas de pantalla de cada sección.
+* **[Especificación de Arquitectura](docs/01_arquitectura_general.md)**: Diseño de software, flujo de datos y dependencias.
+* **[Modelo de Datos Relacional](docs/02_modelo_de_datos.md)**: Diagrama entidad-relación y diccionario de datos.
+* **[Motor Fiscal y Algoritmos](docs/03_motor_fiscal_algoritmos.md)**: Fórmulas y disposiciones legales de la LISR y LIVA.
+* **[Especificación de la API REST](docs/05_api_endpoints.md)**: Esquemas JSON y contratos de endpoints.
+
+---
+
+## Aviso Legal / Disclaimer
+
+tribuTACOS es una plataforma de análisis, proyección y simulación fiscal basada en la interpretación algorítmica de comprobantes digitales (CFDI) y la legislación mexicana (LISR y LIVA). Los cálculos, proyecciones y determinaciones presentados son de carácter estrictamente estimativo e informativo, no constituyen asesoría fiscal, contable o legal vinculante, y no sustituyen las determinaciones, declaraciones formales ni obligaciones presentadas ante el Servicio de Administración Tributaria (SAT).

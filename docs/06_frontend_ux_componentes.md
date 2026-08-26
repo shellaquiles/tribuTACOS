@@ -1,78 +1,70 @@
-# 💻 06. Frontend, UI/UX y Componentes React
+# tribuTACOS — 06. Frontend, UI/UX y Componentes Next.js
 
-> **Arquitectura cliente, árbol de componentes, sistema de diseño en Vanilla CSS, gestión de estado y exportación de datos.**
+Arquitectura cliente, árbol de componentes, sistema de diseño con Tailwind CSS, paletas semánticas autodescriptivas, gestión de estado y exportación de datos.
 
 ---
 
-## 1. Arquitectura de Componentes en React
+## 1. Arquitectura de Componentes en Next.js
 
-El frontend está estructurado como una Single Page Application (SPA) con renderizado declarativo basado en componentes modulares:
+La capa de presentación está implementada en **Next.js 15 (App Router)** con **React 19**, estructurada mediante componentes desacoplados y modulares:
 
 ```mermaid
 graph TD
-    App["App.jsx (Estado Global & Tab Navigator)"] --> Header["Header (Datos del Contribuyente & Selector de Año)"]
-    App --> Tabs["Tab Navigation (7 Pestañas Maestras)"]
+    App[App.jsx - Orquestador de Estado y Navegación] --> Header[Header - Datos del Contribuyente y Selector de Ejercicio]
+    App --> Tabs[Navegación de Pestañas Principales]
     
-    Tabs --> Tab1["📊 Dashboard Global (SatUI.jsx)"]
-    Tabs --> Tab2["📅 Pre-Declaración Mensual (PreDeclaracionMensualSection.jsx)"]
-    Tabs --> Tab3["📉 Gastos y Compras (SatUI.jsx - 8 Rubros SAT)"]
-    Tabs --> Tab4["💼 Honorarios y PFAE (SatUI.jsx)"]
-    Tabs --> Tab5["👔 Nómina y Salarios (SatUI.jsx)"]
-    Tabs --> Tab6["🏥 Deducciones Personales (SatUI.jsx)"]
-    Tabs --> Tab7["🔍 Auditoría SAT PDFs (ConciliacionSatSection.jsx)"]
+    Tabs --> Tab1[Dashboard Global - DashboardSection.jsx]
+    Tabs --> Tab2[Pre-Declaración Mensual - PreDeclaracionMensualSection.jsx]
+    Tabs --> Tab3[Gastos y Compras - EgresosSection.jsx]
+    Tabs --> Tab4[Honorarios y PFAE - HonorariosSection.jsx]
+    Tabs --> Tab5[Nómina y Salarios - NominaSection.jsx]
+    Tabs --> Tab6[Deducciones Personales - DeduccionesSection.jsx]
+    Tabs --> Tab7[Auditoría Oficial SAT - ConciliacionSatSection.jsx]
 
-    Tab2 --> ModalProv["Modal Detalle Borrador SAT (ISR + IVA mensual)"]
-    Tab3 --> FilterRubro["Filtro Interactivo por 8 Rubros"]
-    Tab7 --> ModalConcil["Modal Conciliación Detallada Oficial"]
-    App --> Export["Motor de Exportación CSV (csvExport.js)"]
+    Tab2 --> ModalProv[Modal de Borrador SAT ISR e IVA]
+    Tab3 --> FilterRubro[Filtro por 8 Rubros Operativos]
+    Tab7 --> ModalConcil[Modal de Conciliación Detallada]
+    App --> Export[Módulo de Exportación CSV - csvExport.js]
 ```
 
 ---
 
-## 2. Sistema de Diseño y Tokens CSS (`index.css`)
+## 2. Sistema de Diseño y Paleta Semántica Autodescriptiva
 
-El diseño utiliza CSS moderno con **CSS Custom Properties (Variables)** para garantizar contrastes óptimos, legibilidad contable y micro-interacciones suaves:
+El diseño visual está implementado con **Tailwind CSS**, estructurado mediante clases utilitarias y variables semánticas en `globals.css` e `index.css`. Se asocia una identidad cromática de alto contraste y formalidad a cada régimen fiscal y estado tributario:
 
-```css
-:root {
-  --primary: #3b82f6;
-  --primary-dark: #1d4ed8;
-  --success: #10b981;
-  --success-bg: #f0fdf4;
-  --danger: #dc2626;
-  --danger-bg: #fff1f2;
-  --warning: #f59e0b;
-  --neutral-900: #0f172a;
-  --neutral-600: #475569;
-  --neutral-100: #f1f5f9;
-  --card-radius: 16px;
-  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-}
-```
+| Concepto Fiscal | Tonalidad | Clases Tailwind Principales | Significado Contable |
+| :--- | :--- | :--- | :--- |
+| **Sueldos y Salarios** | Azul cobalto | `bg-blue-50`, `border-blue-500`, `text-blue-700` | Ingresos estables por relación laboral subordinada. |
+| **Honorarios PFAE** | Índigo / Violeta | `bg-indigo-50`, `border-indigo-500`, `text-indigo-700` | Servicios profesionales y actividad empresarial. |
+| **Gastos Deducibles** | Esmeralda / Verde | `bg-emerald-50`, `border-emerald-500`, `text-emerald-700` | Egresos operativos que reducen la base gravable. |
+| **Gastos No Deducibles** | Gris pizarra | `bg-slate-50`, `border-slate-300`, `text-slate-500` | Egresos sin requisitos fiscales o de uso personal. |
+| **Deducciones Personales** | Ámbar / Dorado | `bg-amber-50`, `border-amber-500`, `text-amber-700` | Gastos médicos, lentes, SGMM y aportaciones al retiro (PPR). |
+| **Saldo a Favor (Devolución)** | Verde bosque | `bg-green-100`, `border-green-600`, `text-green-800` | Devolución oficial determinada a favor del contribuyente. |
+| **Saldo a Cargo (Pago)** | Rojo coral | `bg-rose-50`, `border-rose-500`, `text-rose-700` | Impuesto pendiente de liquidar ante el SAT. |
 
 ---
 
 ## 3. Matriz de Pre-Declaración Mensual (`PreDeclaracionMensualSection.jsx`)
 
-Este componente renderiza la tabla interactiva de los 12 meses con lógica de semaforización:
-* **🔴 Mes con Déficit / Pérdida Operativa (Gastos > Ingresos):**
-  * Fondo rosado suave (`#fff1f2`).
-  * Indicador `🔴 Mes`.
-  * Badge `Déficit: -$X,XXX.XX`.
-  * Estatus `⚠️ Saldo a Favor / Sin Pago`.
-* **🟢 Mes con Superávit / Utilidad:**
-  * Fondo blanco con borde verde.
-  * Indicador `🟢 Mes`.
-  * Badge `+$XX,XXX.XX`.
-  * Si genera pago al SAT: `🔴 Pagar: $X,XXX.XX`.
+Este componente presenta la tabla analítica de los 12 meses del ejercicio con estados visuales claros:
+* **Mes con Pérdida Operativa o Sin Pago:**
+  * Fondo tenue (`bg-rose-50`).
+  * Indicador de balance negativo `Déficit: -$X,XXX.XX`.
+  * Estatus de resultado: `Sin Pago / Saldo a Favor`.
+* **Mes con Superávit o Utilidad:**
+  * Fondo blanco con borde esmeralda (`border-emerald-500`).
+  * Indicador de utilidad `+$XX,XXX.XX`.
+  * Monto a pagar al SAT: `Pagar: $X,XXX.XX`.
 
 ---
 
-## 4. Motor de Exportación CSV / Excel (`csvExport.js`)
+## 4. Motor de Exportación de Datos (`csvExport.js`)
 
-El archivo [`frontend/src/csvExport.js`](file:///home/kubrick/www/declara/frontend/src/csvExport.js) genera archivos CSV compatibles con **Microsoft Excel**, **Apple Numbers** y **Google Sheets** incorporando el `Byte Order Mark (BOM)` UTF-8 (`\uFEFF`):
+El módulo [`frontend/src/csvExport.js`](file:///home/kubrick/www/declara/frontend/src/csvExport.js) genera archivos CSV estructurados con el **Byte Order Mark (BOM) UTF-8 (`\uFEFF`)**, garantizando compatibilidad inmediata con **Microsoft Excel**, **Apple Numbers** y **Google Sheets** sin problemas de codificación de caracteres en español.
 
-### Tipos de Reportes Exportables:
-1. **Reporte Maestro de Egresos:** UUID, Fecha, RFC Emisor, Razón Social, Clave SAT, Descripción de Concepto, Rubro Maestro, Subtotal, IVA, Total y Estado Deducible.
-2. **Matriz de Pagos Provisionales (12 Meses):** Ingresos PFAE, Gastos Deducibles, Utilidad/Pérdida, ISR Retenido, ISR Causado, ISR a Pagar, IVA Cobrado, IVA Acreditable e IVA a Pagar.
-3. **Auditoría de Sueldos y Nómina:** Empleador, Quincenas pagadas, Sueldo Bruto, ISR Retenido e IMSS.
+### Tipos de Reportes Disponibles:
+1. **Reporte Maestro de Egresos:** UUID, Fecha, RFC Emisor, Razón Social, Clave SAT, Descripción de Concepto, Rubro Operativo, Subtotal, IVA, Total y Estado de Deducibilidad.
+2. **Matriz de Pagos Provisionales (12 Meses):** Ingresos PFAE, Gastos Deducibles, Utilidad o Pérdida, ISR Retenido, ISR Causado, ISR a Pagar, IVA Cobrado, IVA Acreditable e IVA a Pagar.
+3. **Auditoría de Sueldos y Nómina:** Empleador, Quincenas pagadas, Sueldo Bruto, Percepciones Exentas, ISR Retenido y Cuotas IMSS.
+4. **Resumen de Deducciones Personales:** Categoría, Prestador de servicio, RFC, Importe y aplicabilidad al límite legal del Art. 151 LISR.

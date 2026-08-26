@@ -1,38 +1,38 @@
-# 🧮 03. Motor Fiscal y Algoritmos LISR/LIVA
+# tribuTACOS — 03. Motor Fiscal y Algoritmos LISR/LIVA
 
-> **Modelación matemática, fundamentos legales y algoritmos de cálculo para Pagos Provisionales de ISR e IVA, Nómina y Declaración Anual.**
+Modelación matemática, fundamentos legales y algoritmos deterministas para pagos provisionales de ISR e IVA, nómina y determinación anual.
 
 ---
 
-## 1. Fundamentos Legales de la Legislación Fiscal Mexicana
+## 1. Fundamentos Legales y Módulos de Cálculo
 
-El motor fiscal implementado en [`backend/app/cfdis/calculators/`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/) y coordinado por [`backend/app/cfdis/engine.py`](file:///home/kubrick/www/declara/backend/app/cfdis/engine.py) opera como un conjunto de funciones matemáticas puras desacopladas de la persistencia:
+El motor fiscal implementado en [`backend/app/cfdis/calculators/`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/) y coordinado por [`backend/app/cfdis/engine.py`](file:///home/kubrick/www/declara/backend/app/cfdis/engine.py) opera como un conjunto de funciones matemáticas deterministas desacopladas de la persistencia:
 
-* [`tarifas.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/tarifas.py): Cálculo de ISR Art. 152 con breakdown detallado (`limite_inferior`, `cuota_fija`, `porcentaje_excedente`, `impuesto_marginal`).
-* [`nomina.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/nomina.py): Cálculo de sueldos, desglose de percepciones/deducciones, serie mensual y filtrado dinámico de exclusiones de BD.
-* [`honorarios.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/honorarios.py): Facturación PFAE, serie de 12 meses, concentración de clientes y mix de conceptos.
-* [`gastos.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/gastos.py): Deducibilidad, matriz mensual de egresos y clasificación por rubros SAT.
-* [`deducciones.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/deducciones.py): Deducciones personales, integración de constancias físicas externas (PPRs) y tope del 15% o 5 UMAs.
-* [`intereses.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/intereses.py): Intereses nominales, reales y retenciones de entidades financieras.
-* [`simulador_sat.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con cascada (`waterfall_pasos`), tasa efectiva y marginal.
+* [`tarifas.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/tarifas.py): Cálculo de la tarifa del Art. 152 LISR con desglose de límite inferior, cuota fija, porcentaje excedente e impuesto marginal.
+* [`nomina.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/nomina.py): Cálculo de sueldos, desglose de percepciones gravadas y exentas (Art. 93 LISR), deducciones y serie temporal de recibos.
+* [`honorarios.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/honorarios.py): Facturación PFAE emitida, serie de 12 meses, concentración por cliente y mezcla de conceptos por clave SAT.
+* [`gastos.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/gastos.py): Deducibilidad operativa, matriz mensual de egresos y asignación de rubros SAT.
+* [`deducciones.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/deducciones.py): Deducciones personales (Art. 151 LISR), integración de planes de retiro (PPR), gastos médicos y cálculo del doble tope legal.
+* [`intereses.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/intereses.py): Intereses nominales, cálculo de interés real y retenciones financieras.
+* [`simulador_sat.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con desglose paso a paso.
 
 ```mermaid
 graph LR
-    subgraph Ingresos["📥 Ingresos del Contribuyente"]
+    subgraph Ingresos["Ingresos Acumulables"]
         Nomina["Sueldos y Salarios\n(Capítulo I - Art. 94/96)"]
         PFAE["Actividad Profesional / PFAE\n(Capítulo II - Art. 100/106)"]
-        Intereses["Intereses del Sistema Financiero\n(Capítulo VI - Art. 133/135)"]
+        Intereses["Intereses Financieros\n(Capítulo VI - Art. 133/135)"]
     end
 
-    subgraph Provisionales["📅 Pagos Provisionales Mensuales"]
+    subgraph Provisionales["Determinaciones Provisionales"]
         ISR_Prov["ISR Mensual Acumulativo\nArt. 106 LISR"]
-        IVA_Def["IVA Definitivo & Arrastre\nArt. 5 y 6 LIVA"]
+        IVA_Def["IVA Definitivo Mensual\nArt. 5 y 6 LIVA"]
     end
 
-    subgraph Anual["🏛️ Declaración Anual"]
+    subgraph Anual["Determinación Anual"]
         Deds_Pers["Deducciones Personales\nArt. 151 LISR\n(Tope 15% o 5 UMAs)"]
         Tarifa_Anual["Tarifa Anual Progresiva\nArt. 152 LISR\n(1.92% a 35%)"]
-        Liquidacion["Liquidación Final\n• Saldo a Favor\n• Saldo a Cargo"]
+        Liquidacion["Liquidación del Ejercicio\n• Saldo a Favor\n• Saldo a Cargo"]
     end
 
     Nomina --> Liquidacion
@@ -47,46 +47,50 @@ graph LR
 
 ## 2. Pagos Provisionales de ISR (Art. 106 LISR)
 
-Para las personas físicas con Actividad Empresarial y Profesional (Honorarios), el pago provisional de ISR es **acumulativo mes a mes**:
+Para personas físicas con Actividad Empresarial y Profesional, el pago provisional de ISR se calcula de forma acumulativa mes a mes dentro del ejercicio fiscal:
 
-### Fórmula de Base Gravable Provisional:
+### 2.1 Base Gravable Acumulada:
 $$\text{Base Gravable Acumulada}_m = \max\left(0, \sum_{i=1}^m \text{Ingresos PFAE}_i - \sum_{i=1}^m \text{Gastos Deducibles}_i\right)$$
 
-### Tarifa Mensual Acumulada:
-Para obtener el impuesto causado acumulado en el mes $m$, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la fracción del periodo $\frac{m}{12}$:
+### 2.2 Tarifa Mensual Acumulada:
+Para calcular el impuesto causado acumulado al mes $m$, se anualiza la base y se aplica la tarifa del Art. 152 multiplicada por la proporción del periodo $\frac{m}{12}$:
 $$\text{ISR Causado Acumulado}_m = \text{TarifaAnual}\left(\text{Base}_m \times \frac{12}{m}\right) \times \frac{m}{12}$$
 
-### ISR Neto a Cargo del Mes $m$:
+### 2.3 ISR Neto a Pagar del Mes:
 $$\text{ISR a Pagar}_m = \max\left(0, \text{ISR Causado Acumulado}_m - \sum_{i=1}^{m-1} \text{Pagos Prov Anteriores}_i - \sum_{i=1}^m \text{ISR Retenido}_i\right)$$
 
 ---
 
-## 3. IVA Definitivo y Arrastre de Saldos a Favor (Art. 5 y 6 LIVA)
+## 3. IVA Definitivo y Acreditamiento de Saldos a Favor (Art. 5 y 6 LIVA)
 
-A diferencia del ISR, el IVA es un **impuesto definitivo mensual** que no se acumula anualmente, pero permite el **acreditamiento de remanentes a favor de periodos anteriores**:
+A diferencia del ISR, el IVA es un impuesto definitivo de causación mensual que permite el acreditamiento de remanentes a favor generados en periodos anteriores:
 
 ```mermaid
 flowchart TD
     A["IVA Cobrado en Facturas (16%)"] --> B["- IVA Acreditable en Gastos Deducibles"]
     B --> C["- IVA Retenido por Personas Morales (10.6667%)"]
-    C --> D{"¿Resultado Bruto?"}
+    C --> D{"Resultado del Periodo"}
     
-    D -->|Positivo: Saldo a Cargo Bruto| E["Aplicar Remanente de IVA a Favor Anterior"]
-    E --> F["IVA Neto a Pagar en Banco / SAT"]
+    D -->|Saldo a Cargo| E["Aplicar Remanente de IVA a Favor Anterior"]
+    E --> F["IVA Neto a Pagar"]
     
-    D -->|Negativo: Saldo a Favor| G["Generar Nuevo Remanente de IVA a Favor"]
-    G --> H["Arrastre a Meses Siguientes (Art. 6 LIVA)"]
+    D -->|Saldo a Favor| G["Generar Nuevo Remanente de IVA a Favor"]
+    G --> H["Arrastre a Periodos Siguientes (Art. 6 LIVA)"]
 ```
 
 ---
 
-## 4. Topes en Deducciones Personales (Art. 151 LISR)
+## 4. Topes de Deducciones Personales (Art. 151 LISR)
 
-Las deducciones personales (honorarios médicos `D01`, gastos dentales `D02`, gastos hospitalarios `D03`, intereses reales hipotecarios `D05`, primas de seguros `D07`, colegiaturas) están sujetas a un **doble límite legal**:
+Las deducciones personales (honorarios médicos `D01`, gastos dentales `D02`, gastos hospitalarios `D03`, intereses reales hipotecarios `D05`, primas de seguros `D07`, colegiaturas) están sujetas a un límite general:
 
-$$\text{Tope Legal} = \min\left(\text{Total Ingresos Anuales} \times 15\%, 5 \times \text{UMA Anual}\right)$$
+$$\text{Tope Legal General} = \min\left(\text{Total Ingresos Anuales} \times 15\%, 5 \times \text{UMA Anual}\right)$$
 
-### Valores de Referencia de 5 UMAs Anuales por Ejercicio:
+### 4.1 Excepciones y Reglas Específicas:
+* **Planes Personales de Retiro (PPR - Fracc. V):** Cuentan con un límite independiente de hasta el **10% de los ingresos acumulables o 5 UMAs anuales**, adicional al tope general.
+* **Seguro de Gastos Médicos Mayores (SGMM - Fracc. VI):** Se computa dentro del límite general sin subtopes específicos.
+
+### 4.2 Valores de 5 UMAs Anuales por Ejercicio:
 * **2022:** $178,938.00 MXN
 * **2023:** $189,222.00 MXN
 * **2024:** $198,031.80 MXN
@@ -95,26 +99,15 @@ $$\text{Tope Legal} = \min\left(\text{Total Ingresos Anuales} \times 15\%, 5 \ti
 
 ---
 
-## 5. Tarifa Progresiva de ISR Anual (Art. 152 LISR)
+## 5. Tarifa Progresiva Anual (Art. 152 LISR)
 
-La tarifa del Art. 152 aplica escalones marginales que van desde el **1.92%** hasta el **35.00%**:
+La determinación anual aplica la tarifa progresiva sobre la base gravable:
 
-```python
-def calcular_isr_tarifa_anual(base_gravable: float) -> float:
-    if base_gravable <= 0:
-        return 0.0
-    for limite_inf, cuota_fija, pct in TARIFA_ISR_ANUAL_2024:
-        if base_gravable >= limite_inf:
-            excedente = base_gravable - limite_inf
-            impuesto_marginal = excedente * (pct / 100.0)
-            return round(cuota_fija + impuesto_marginal, 2)
-    return 0.0
-```
+$$\text{Base Gravable Anual} = \text{Ingresos Acumulables Totales} - \text{Deducciones Personales Aceptadas}$$
 
-### Liquidación Anual:
-$$\text{Impuestos Pagados Totales} = \sum \text{Pagos Provisionales ISR} + \sum \text{ISR Retenido (Nómina + PFAE + Intereses)}$$
+$$\text{ISR Causado Anual} = \text{Cuota Fija} + (\text{Base Gravable} - \text{Límite Inferior}) \times \text{Tasa Marginal}$$
 
-* Si $\text{Impuestos Pagados Totales} \ge \text{ISR Anual Causado}$:
-  $$\text{Saldo a Favor (Devolución SAT)} = \text{Impuestos Pagados} - \text{ISR Anual Causado}$$
-* Si $\text{Impuestos Pagados Totales} < \text{ISR Anual Causado}$:
-  $$\text{Saldo a Cargo (A Pagar SAT)} = \text{ISR Anual Causado} - \text{Impuestos Pagados}$$
+$$\text{Resultado Final} = \text{ISR Causado Anual} - \text{Retenciones de Nómina} - \text{Retenciones PFAE} - \text{Pagos Provisionales ISR}$$
+
+* Si $\text{Resultado Final} < 0$: **Saldo a Favor** (sujeto a devolución o compensación).
+* Si $\text{Resultado Final} > 0$: **Saldo a Cargo** (impuesto a liquidar ante el SAT).

@@ -1,36 +1,39 @@
-# 🌐 05. Especificación de API REST FastAPI
+# tribuTACOS — 05. Especificación de API REST FastAPI
 
-> **Contratos de endpoints, parámetros de consulta, estructuras de respuesta JSON y códigos de estado.**
+Contratos de servicios REST, parámetros de consulta, esquemas de respuesta JSON y códigos de estado HTTP.
 
 ---
 
-## 1. Mapeo de Routers y Endpoints
+## 1. Mapeo de Enrutadores y Servicios
 
-La API opera bajo el prefijo `/api` expuesta en el puerto `8010`:
+La API está estructurada bajo el prefijo `/api` y expuesta por defecto en el puerto `8010`:
 
 ```mermaid
 graph LR
-    ClientApp["Frontend / Cliente HTTP"] --> Routers
+    ClientApp[Cliente HTTP / Frontend] --> Routers
     
-    subgraph Routers["FastAPI Routers"]
-        R1["/api/summary\nResumen Fiscal Anual"]
+    subgraph Routers[Enrutadores FastAPI]
+        R1["/api/summary\nResumen Fiscal Consolidado"]
         R2["/api/sat_docs\nAuditoría Oficial SAT"]
-        R3["/api/cfdis\nGestión de CFDIs"]
-        R4["/api/clients\nMulti-RFC & Clientes"]
-        R5["/api/sync\nSincronización de Ingesta"]
+        R3["/api/cfdis\nGestión y Consulta de CFDIs"]
+        R4["/api/clients\nGestión de Contribuyentes"]
+        R5["/api/sync\nSincronización de Comprobantes"]
     end
 ```
 
 ---
 
-## 2. Detalle de Endpoints Principales
+## 2. Especificación de Endpoints Principales
 
-### `GET /api/summary`
-Calcula el estado fiscal integral del ejercicio solicitado.
+### 2.1 Resumen Fiscal Consolidado
+
+#### `GET /api/summary`
+Calcula el estado fiscal integral del ejercicio solicitado, consolidando ingresos de nómina, actividad profesional, gastos deducibles, deducciones personales y simulaciones anuales y mensuales.
 
 * **Parámetros de Consulta:**
   * `year` *(string, requerido)*: Ejercicio fiscal (ej. `2024`).
-  * `client_id` *(string, opcional)*: Identificador del cliente (default: `default`).
+  * `client_id` *(string, opcional)*: Identificador del cliente (por defecto: `default`).
+
 * **Respuesta Exitosa (`200 OK`):**
 ```json
 {
@@ -44,42 +47,34 @@ Calcula el estado fiscal integral del ejercicio solicitado.
   "anios_disponibles": ["2021", "2022", "2023", "2024", "2025", "2026"],
   "sections": {
     "sueldos": {
-      "total_ingresos": 500000.00,
-      "gravado": 500000.00,
-      "exento": 0.00,
-      "isr_retenido": 87727.53,
-      "detalle": [
-        {
-          "nombre": "SOLUCIONES TECNOLÓGICAS DE MÉXICO S.A. DE C.V.",
-          "rfc": "STM180415AA1",
-          "recibos": []
-        }
-      ]
+      "total_ingresos": 402000.00,
+      "gravado": 373150.00,
+      "exento": 28850.00,
+      "isr_retenido": 55128.84,
+      "detalle": []
     },
     "honorarios": {
-      "ingresos": 330000.00,
-      "isr_retenido": 33000.00,
-      "iva_trasladado": 52800.00,
+      "ingresos": 186200.00,
+      "isr_retenido": 18620.00,
+      "iva_trasladado": 29792.00,
       "detalle": []
     },
     "reporte_gastos": [
       {
-        "uuid": "...",
-        "emisor": "...",
+        "uuid": "4A1B2C3D-E4F5-6789-ABCD-EF0123456789",
+        "emisor": "PROVEEDOR EJEMPLO SA DE CV",
         "subtotal": 1500.00,
         "iva": 240.00,
         "total": 1740.00,
         "categoria_gasto": {
           "id": "software_ti",
-          "nombre": "Software, Nube e Infraestructura TI",
-          "icono": "💻",
-          "color": "#8b5cf6"
+          "nombre": "Software, Nube e Infraestructura TI"
         }
       }
     ],
     "deducciones_personales": {
-      "total": 11275.98,
-      "deducible_efectivo": 11275.98,
+      "total": 71100.00,
+      "deducible_efectivo": 71100.00,
       "tope_legal": 198031.80
     }
   },
@@ -87,61 +82,63 @@ Calcula el estado fiscal integral del ejercicio solicitado.
     {
       "mes_numero": 1,
       "mes_nombre": "Enero",
-      "ingresos_periodo": 0.00,
-      "deducciones_bancarizadas_periodo": 26005.62,
-      "base_gravable_provisional": 0.00,
+      "ingresos_periodo": 12300.00,
+      "deducciones_bancarizadas_periodo": 5120.00,
+      "base_gravable_provisional": 7180.00,
       "isr_a_cargo_mes": 0.00,
       "iva_a_cargo_mes": 0.00,
       "total_a_pagar_mes": 0.00
     }
   ],
   "simulacion_anual": {
-    "ingresos_acumulables_totales": 653695.61,
-    "deducciones_personales_efectivas": 11275.98,
-    "base_gravable_anual": 642419.63,
-    "isr_anual_causado": 126329.82,
-    "total_retenciones_anuales": 120727.53,
-    "total_pagos_provisionales_calculados": 5602.29,
-    "saldo_a_favor_proyectado": 0.00,
-    "saldo_a_cargo_proyectado": 0.00
+    "ingresos_acumulables_totales": 494157.83,
+    "deducciones_personales_efectivas": 71100.00,
+    "base_gravable": 423057.83,
+    "isr_tarifa": 71390.73,
+    "retenciones_totales": 73748.84,
+    "saldo_a_favor": 2358.11,
+    "saldo_a_cargo": 0.00
   }
 }
 ```
 
 ---
 
-### `GET /api/sat_docs/summary`
-Devuelve la matriz de conciliación oficial entre las declaraciones y pagos del SAT frente a los XMLs.
+### 2.2 Auditoría y Documentos Oficiales SAT
+
+#### `GET /api/sat_docs/summary`
+Retiene las declaraciones anuales oficiales, matriz de 12 pagos provisionales y conciliaciones bancarias registradas para el ejercicio.
 
 * **Parámetros de Consulta:**
   * `year` *(string, requerido)*: Ejercicio fiscal (ej. `2024`).
+  * `client_id` *(string, opcional)*: Identificador del cliente.
+
 * **Respuesta Exitosa (`200 OK`):**
 ```json
 {
-  "year": "2024",
-  "anios_con_anual_disponible": ["2022", "2023", "2024", "2025", "2026"],
-  "declaracion_anual_oficial": {
+  "ejercicio": "2024",
+  "declaracion_anual": {
+    "num_operacion": "240500190419",
+    "fecha_presentacion": "25/04/2025 17:30",
     "tipo_declaracion": "Normal",
-    "num_operacion": "2024043000000000",
-    "fecha_presentacion": "2025-04-28",
-    "ingresos_acumulables_totales": 653695.61,
-    "deducciones_personales": 11275.98,
-    "base_gravable": 642419.63,
-    "isr_tarifa": 126329.82,
-    "saldo_a_favor": 0.00,
-    "saldo_a_cargo": 0.00
+    "ingresos_acumulables": 494157.83,
+    "deducciones_personales": 71100.00,
+    "base_gravable": 423057.83,
+    "isr_tarifa": 71390.73,
+    "saldo_a_favor": 2358.11,
+    "saldo_a_cargo": 0.00,
+    "clabe": "012180000000000000",
+    "banco": "INSTITUCION BANCARIA MULTIPLE S.A."
   },
-  "matriz_pagos_provisionales": [
+  "pagos_provisionales": [
     {
       "mes_numero": 1,
       "mes_nombre": "Enero",
-      "estatus": "Presentada",
-      "isr_ingresos_mes": 0.00,
-      "xml_ingresos_facturados": 0.00,
-      "isr_a_cargo_sat": 0.00,
-      "iva_a_cargo_sat": 0.00,
-      "total_pago_efectivo": 0.00,
-      "tiene_acuse_pago": false
+      "num_operacion": "2401123456",
+      "isr_a_cargo": 0.00,
+      "iva_a_cargo": 0.00,
+      "total_pagado": 0.00,
+      "tiene_acuse": false
     }
   ]
 }
@@ -149,50 +146,31 @@ Devuelve la matriz de conciliación oficial entre las declaraciones y pagos del 
 
 ---
 
-### `GET /api/clients/{client_id}/exclusions`
-Obtiene las exclusiones o reglas fiscales activas para el cliente (e.g. UUIDs cancelados o duplicados).
+### 2.3 Gestión de Contribuyentes
+
+#### `GET /api/clients`
+Lista los clientes o contribuyentes registrados en el sistema.
 
 * **Respuesta Exitosa (`200 OK`):**
 ```json
 [
   {
-    "id": 1,
-    "client_id": "default",
-    "uuid": "4391e533-31f0-466d-96eb-69671d18721c",
-    "motivo": "Nómina cancelada",
-    "tipo": "nomina"
+    "id": "default",
+    "name": "Sheila Shellaquiles Ortega",
+    "rfc": "SHLL250825XYZ",
+    "email": "tributacos@shellaquiles.org",
+    "created_at": "2026-08-25T12:00:00"
   }
 ]
 ```
 
 ---
 
-### `GET /api/clients/{client_id}/constancias?year=YYYY`
-Obtiene las constancias fiscales externas (e.g. aportaciones a Planes Personales de Retiro PPRs físicos) registradas para el cliente en el ejercicio fiscal.
+## 3. Códigos de Estado HTTP
 
-* **Respuesta Exitosa (`200 OK`):**
-```json
-[
-  {
-    "id": "CONST-PPR-INSIGNIA-2024",
-    "client_id": "default",
-    "year": "2024",
-    "uso_cfdi": "D06",
-    "emisor_rfc": "ILM080311ABC",
-    "emisor_nombre": "INSIGNIA LIFE S.A. DE C.V.",
-    "fecha": "2024-12-31",
-    "monto": 10000.00,
-    "descripcion": "Constancia de aportaciones voluntarias a PPR"
-  }
-]
-```
-
----
-
-### `GET /api/sat/tarifas/{year}`
-Retorna los 11 tramos de la tarifa progresiva de ISR anual (Art. 152 LISR) para el ejercicio especificado.
-
----
-
-### `GET /api/sat/parametros`
-Retorna la tabla histórica de factores UMA y topes de deducciones (2021 a 2026).
+| Código | Significado | Descripción |
+| :---: | :--- | :--- |
+| **`200 OK`** | Petición Exitosa | La solicitud se procesó correctamente y devuelve los datos requeridos. |
+| **`400 Bad Request`** | Parámetros Inválidos | El ejercicio fiscal o los parámetros enviados no cumplen con el formato esperado. |
+| **`404 Not Found`** | Recurso No Encontrado | No se encontraron datos para el ejercicio o cliente especificado. |
+| **`500 Internal Error`** | Error de Servidor | Error no controlado durante el procesamiento contable o acceso a la base de datos. |
