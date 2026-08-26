@@ -3,6 +3,23 @@
 import axios from 'axios';
 import { Component, useEffect, useState, useCallback } from 'react';
 import {
+  LayoutDashboard,
+  CalendarCheck,
+  Landmark,
+  Receipt,
+  HeartHandshake,
+  Users,
+  FileSpreadsheet,
+  Briefcase,
+  FileText,
+  ShieldCheck,
+  Upload,
+  RefreshCw,
+  ChevronDown,
+  Building,
+  CheckCircle2
+} from 'lucide-react';
+import {
   DashboardSection,
   DeduccionesPersonalesSection,
   DeterminacionSection,
@@ -13,7 +30,6 @@ import {
   NominaDetalleSection,
   EgresosMensualesSection,
   InteresesSection,
-  TabNavigation
 } from './SatUI';
 import { UploadModal } from './components/UploadModal';
 import ConciliacionSatSection from './components/ConciliacionSatSection';
@@ -22,13 +38,21 @@ import PreDeclaracionAnualSection from './components/PreDeclaracionAnualSection'
 import './index.css';
 
 class ErrorBoundary extends Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-  static getDerivedStateFromError(e) { return { hasError: true, error: e }; }
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { hasError: true, error: e };
+  }
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '1rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '8px', margin: '1rem 0', color: '#856404', fontSize: '0.85rem' }}>
-          <strong>⚠️ Error en sección:</strong> {this.state.error?.message}
+        <div className="p-6 bg-red-50 border border-red-200 rounded-xl my-4 text-red-900 text-sm">
+          <div className="font-semibold mb-1">Error al procesar esta sección:</div>
+          <code className="text-xs bg-red-100/70 p-2 rounded block mt-2 font-mono text-red-800">
+            {this.state.error?.message}
+          </code>
         </div>
       );
     }
@@ -96,65 +120,81 @@ const App = () => {
 
   const currentClientInfo = clients.find(c => c.id === currentClientId) || data?.client;
 
-  // ─── Navegación Inteligente tributacos: 6 Módulos Principales ─────────────────
+  // ─── Estructura de Navegación Profesional y Limpia ───────────────────────────
   const navGroups = [
     {
-      title: 'Visión General',
+      title: 'Resumen',
       tabs: [
-        { id: 'dashboard', label: 'Dashboard Global', icon: '🌮' },
+        { id: 'dashboard', label: 'Dashboard Principal', icon: LayoutDashboard },
       ]
     },
     {
       title: 'Pre-Declaraciones SAT',
       tabs: [
-        { id: 'pre_mensual', label: 'Pre-Declaración Mensual', icon: '📅' },
-        { id: 'pre_anual',   label: 'Pre-Declaración Anual',   icon: '🏛️' },
+        { id: 'pre_mensual', label: 'Pagos Provisionales (Mensual)', icon: CalendarCheck },
+        { id: 'pre_anual',   label: 'Declaración Anual',              icon: Landmark },
       ]
     },
     {
       title: 'Egresos y Deducciones',
       tabs: [
-        { id: 'egresos_mes', label: 'Gastos y Compras',        icon: '📉' },
-        { id: 'deducciones', label: 'Deducciones Personales',  icon: '🏥' },
+        { id: 'egresos_mes', label: 'Gastos y Facturas Recibidas', icon: Receipt },
+        { id: 'deducciones', label: 'Deducciones Personales',      icon: HeartHandshake },
       ]
     },
     {
       title: 'Ingresos y Nómina',
       tabs: [
-        { id: 'nomina',        label: 'Sueldos y Salarios',     icon: '👥' },
-        { id: 'nomina_detalle',label: 'Detalle de Recibos',     icon: '🧾' },
-        { id: 'aeyp',          label: 'Honorarios Emitidos',    icon: '💼' },
-        { id: 'facturas_aeyp', label: 'Facturas Clientes',      icon: '📄' },
+        { id: 'nomina',        label: 'Sueldos y Salarios',        icon: Users },
+        { id: 'nomina_detalle',label: 'Detalle de Recibos',        icon: FileSpreadsheet },
+        { id: 'aeyp',          label: 'Honorarios / Act. Prof.',   icon: Briefcase },
+        { id: 'facturas_aeyp', label: 'Facturas Emitidas',        icon: FileText },
       ]
     },
     {
-      title: 'Verificación Oficial',
+      title: 'Auditoría SAT',
       tabs: [
-        { id: 'conciliacion_sat', label: 'Auditoría SAT (PDFs)', icon: '🔍' },
+        { id: 'conciliacion_sat', label: 'Conciliación Oficial (PDFs)', icon: ShieldCheck },
       ]
     },
   ];
 
   const allTabs = navGroups.flatMap(g => g.tabs);
-  const activeLabel = allTabs.find(t => t.id === activeTab);
+  const activeTabObj = allTabs.find(t => t.id === activeTab);
 
   if (loading && !data) return (
-    <div className="loading-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem' }}>
-      <div style={{ fontSize: '3.5rem', animation: 'bounce 1s infinite' }}>🌮</div>
-      <div className="spinner" />
-      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#1e293b' }}>tributacos</div>
-      <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Calculando declaraciones del ejercicio {year} a partir de tus CFDIs…</p>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800">
+      <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md mb-4">
+        🌮
+      </div>
+      <div className="text-lg font-bold text-slate-900 tracking-tight mb-1">
+        tribuTACOS
+      </div>
+      <div className="text-xs text-slate-500 mb-4">
+        un proyecto de <span className="font-semibold text-blue-600">shellaquiles.org</span>
+      </div>
+      <p className="text-slate-600 text-xs text-center max-w-sm mb-4">
+        Procesando y recalculando declaraciones fiscales del ejercicio {year}...
+      </p>
+      <div className="w-36 h-1 bg-slate-200 rounded-full overflow-hidden">
+        <div className="h-full bg-blue-600 rounded-full animate-[pulse_1s_infinite]" />
+      </div>
     </div>
   );
 
   if (error && !data) return (
-    <div className="loading-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '1rem', padding: '2rem', textAlign: 'center' }}>
-      <div style={{ fontSize: '3rem' }}>🌮⚠️</div>
-      <h3 style={{ margin: 0, color: '#991b1b' }}>No se pudo conectar con el servidor de tributacos</h3>
-      <p style={{ color: '#64748b', maxWidth: '480px' }}><code>{error}</code></p>
-      <button 
-        onClick={() => loadData(true)} 
-        style={{ padding: '0.6rem 1.4rem', borderRadius: '8px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: 700, cursor: 'pointer' }}
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-slate-800 text-center">
+      <div className="w-12 h-12 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold text-xl mb-4 border border-red-200">
+        !
+      </div>
+      <h3 className="text-base font-bold text-slate-900 mb-1">No se pudo conectar con el servidor fiscal</h3>
+      <div className="text-xs text-slate-500 mb-4">shellaquiles.org • tribuTACOS</div>
+      <p className="text-slate-600 text-xs max-w-md mb-6 font-mono bg-white p-3 rounded-lg border border-slate-200 text-left overflow-x-auto">
+        <code>{error}</code>
+      </p>
+      <button
+        onClick={() => loadData(true)}
+        className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
       >
         Reintentar conexión
       </button>
@@ -164,194 +204,207 @@ const App = () => {
   const { sections, summary } = data || {};
 
   return (
-    <div className="sat-dashboard-app">
-      {/* ── SIDEBAR ── */}
-      <aside className="sat-sidebar">
-        {/* Brand */}
-        <div className="sat-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ fontSize: '2rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }}>🌮</div>
-          <div>
-            <div className="header-title" style={{ fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #1e293b 0%, #3b82f6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              tributacos
+    <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
+      
+      {/* ── SIDEBAR LUMINOSO Y LIMPIO (Light Theme) ── */}
+      <aside className="w-64 bg-white text-slate-700 flex flex-col border-r border-slate-200 shadow-xs flex-shrink-0 z-30">
+        
+        {/* Brand Header */}
+        <div className="p-4 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-base font-black shadow-sm">
+              🌮
             </div>
-            <div className="header-sub" style={{ fontSize: '0.65rem', fontWeight: 700, color: '#64748b' }}>
+            <div>
+              <div className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                tribuTACOS
+              </div>
+              <div className="text-[10px] text-slate-400 font-medium">
+                by <span className="text-blue-600 font-semibold">shellaquiles.org</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3 flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80 text-[11px]">
+            <span className="text-slate-400 font-medium">RFC:</span>
+            <span className="font-mono font-bold text-slate-800">
               {currentClientInfo?.rfc || 'RFC ACTIVO'}
-            </div>
+            </span>
           </div>
         </div>
 
-        {/* Action: Upload XMLs */}
-        <div style={{ padding: '0 0.5rem 1rem 0.5rem' }}>
+        {/* Accion Principal: Importar / Desmenuzar XMLs */}
+        <div className="p-3 border-b border-slate-100">
           <button
             onClick={() => setIsUploadOpen(true)}
-            style={{
-              width: '100%',
-              padding: '0.65rem 1rem',
-              borderRadius: '10px',
-              border: '1.5px solid #3b82f6',
-              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-              color: '#1d4ed8',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.15)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#3b82f6'; e.currentTarget.style.color = '#ffffff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'; e.currentTarget.style.color = '#1d4ed8'; }}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
-            <span>🌮</span>
-            <span>Desmenuzar XMLs</span>
+            <Upload className="w-3.5 h-3.5" />
+            <span>Cargar Comprobantes XML</span>
           </button>
         </div>
 
-        {/* Client & Year Selectors */}
-        <div className="sat-sidebar-controls">
+        {/* Controles: Contribuyente & Ejercicio Fiscal */}
+        <div className="p-3 border-b border-slate-100 bg-slate-50/50 flex flex-col gap-2.5">
           {clients.length > 1 && (
-            <div style={{ marginBottom: '0.75rem' }}>
-              <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Contribuyente
               </label>
-              <select
-                value={currentClientId}
-                onChange={(e) => setCurrentClientId(e.target.value)}
-                style={{ width: '100%', padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a', background: '#ffffff', cursor: 'pointer', fontSize: '0.85rem' }}
-              >
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>{c.rfc} - {c.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={currentClientId}
+                  onChange={(e) => setCurrentClientId(e.target.value)}
+                  className="w-full bg-white text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none pr-7 shadow-xs"
+                >
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>{c.rfc} - {c.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+              </div>
             </div>
           )}
 
-          <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
-            Ejercicio Fiscal
-          </label>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <select 
-              value={year} 
-              onChange={(e) => setYear(e.target.value)} 
-              style={{ flex: 1, padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a', background: '#ffffff', cursor: 'pointer', fontSize: '0.9rem' }}
-            >
-              <option value="2021">2021</option>
-              <option value="2022">2022</option>
-              <option value="2023">2023</option>
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026">2026</option>
-            </select>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              title="Sincronizar carpetas locales y refrescar"
-              style={{
-                padding: '0 10px',
-                borderRadius: '8px',
-                border: '1px solid #cbd5e1',
-                background: '#f8fafc',
-                cursor: syncing ? 'wait' : 'pointer',
-                color: '#475569'
-              }}
-            >
-              {syncing ? '⏳' : '🔄'}
-            </button>
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              Ejercicio Fiscal
+            </label>
+            <div className="flex gap-1.5">
+              <div className="relative flex-1">
+                <select
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  className="w-full bg-white text-slate-800 text-xs font-medium rounded-lg px-2.5 py-1.5 border border-slate-200 focus:outline-none focus:border-blue-500 cursor-pointer appearance-none pr-7 shadow-xs"
+                >
+                  <option value="2021">2021</option>
+                  <option value="2022">2022</option>
+                  <option value="2023">2023</option>
+                  <option value="2024">2024</option>
+                  <option value="2025">2025</option>
+                  <option value="2026">2026</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-2 pointer-events-none" />
+              </div>
+
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                title="Sincronizar y recalcular"
+                className="p-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 border border-slate-200 transition-colors cursor-pointer shadow-xs disabled:cursor-wait"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-blue-600' : ''}`} />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="sat-sidebar-nav">
+        {/* Navegación */}
+        <nav className="flex-1 overflow-y-auto p-2.5 space-y-4">
           {navGroups.map((group) => (
             <div key={group.title}>
-              <div className="nav-group-title" style={{ marginTop: '1.25rem' }}>{group.title}</div>
-              <TabNavigation
-                tabs={group.tabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-              />
+              <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                {group.title}
+              </div>
+              <div className="space-y-0.5">
+                {group.tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const IconComponent = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200/60 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <IconComponent className={`w-4 h-4 ${
+                        isActive ? 'text-blue-600' : 'text-slate-400'
+                      }`} />
+                      <span className="truncate">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </nav>
+
+        {/* Footer institucional */}
+        <div className="p-3 border-t border-slate-100 text-[10px] text-slate-500 flex items-center justify-between bg-slate-50/50">
+          <span>shellaquiles.org</span>
+          <span className="font-mono text-slate-700 font-medium">
+            {(sections?.reporte_gastos?.length || 0) + (sections?.honorarios?.detalle?.length || 0)} CFDIs
+          </span>
+        </div>
       </aside>
 
-      {/* ── MAIN CONTENT ── */}
-      <main className="sat-main-content">
-        <header className="sat-content-header">
-           <div className="sat-content-title">
-             <span style={{ fontSize: '2rem', marginRight: '0.75rem' }}>{activeLabel?.icon}</span>
-             <div>
-               <h2>{activeLabel?.label}</h2>
-               <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>
-                 tributacos — Pre-Declarador Fiscal para <strong>{currentClientInfo?.rfc}</strong> • Ejercicio <strong>{year}</strong>
-               </div>
-             </div>
-           </div>
-           {loading && <div className="sat-sync-badge"><div className="spinner-micro"></div>Calculando...</div>}
+      {/* ── CONTENIDO PRINCIPAL ── */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        {/* Top Navbar */}
+        <header className="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-20">
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold text-slate-900 tracking-tight">
+              {activeTabObj?.label}
+            </h1>
+            <span className="bg-slate-100 text-slate-700 text-xs font-medium px-2 py-0.5 rounded border border-slate-200">
+              Ejercicio {year}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {currentClientInfo && (
+              <div className="hidden sm:flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 text-xs">
+                <Building className="w-3.5 h-3.5 text-slate-400" />
+                <span className="font-medium text-slate-700">{currentClientInfo.name || currentClientInfo.rfc}</span>
+              </div>
+            )}
+          </div>
         </header>
 
-        <div className="sat-content-body">
-          {/* ── 1. Dashboard Global ── */}
-          {activeTab === 'dashboard' && (
-            <ErrorBoundary><DashboardSection sections={sections} year={year} data={data} /></ErrorBoundary>
-          )}
-
-          {/* ── 2. Pre-Declaración Mensual ── */}
-          {activeTab === 'pre_mensual' && (
+        {/* Contenedor con Scroll */}
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-slate-50">
+          <div className="max-w-7xl mx-auto pb-12">
             <ErrorBoundary>
-              <PreDeclaracionMensualSection data={data} year={year} />
+              {activeTab === 'dashboard' && (
+                <DashboardSection sections={sections} year={year} data={data} />
+              )}
+              {activeTab === 'pre_mensual' && (
+                <PreDeclaracionMensualSection data={data} aeypData={sections?.honorarios} gastosData={sections?.reporte_gastos} year={year} />
+              )}
+              {activeTab === 'pre_anual' && (
+                <PreDeclaracionAnualSection sections={sections} year={year} data={data} />
+              )}
+              {activeTab === 'egresos_mes' && (
+                <EgresosMensualesSection data={sections?.reporte_gastos || []} gastos={sections?.reporte_gastos || []} notasCreditoData={sections?.notas_credito || []} notasCredito={sections?.notas_credito || []} year={year} />
+              )}
+              {activeTab === 'deducciones' && (
+                <DeduccionesPersonalesSection data={sections?.deducciones_personales} deducciones={sections?.deducciones_personales} year={year} />
+              )}
+              {activeTab === 'nomina' && (
+                <SueldosSection data={sections?.sueldos} sueldos={sections?.sueldos} year={year} />
+              )}
+              {activeTab === 'nomina_detalle' && (
+                <NominaDetalleSection data={sections?.sueldos} sueldos={sections?.sueldos} year={year} />
+              )}
+              {activeTab === 'aeyp' && (
+                <HonorariosSection data={sections?.honorarios} honorarios={sections?.honorarios} year={year} />
+              )}
+              {activeTab === 'facturas_aeyp' && (
+                <FacturasAeypSection data={sections?.honorarios} honorarios={sections?.honorarios} year={year} />
+              )}
+              {activeTab === 'conciliacion_sat' && (
+                <ConciliacionSatSection data={data} year={year} onRefresh={loadData} />
+              )}
             </ErrorBoundary>
-          )}
-
-          {/* ── 3. Pre-Declaración Anual ── */}
-          {activeTab === 'pre_anual' && (
-            <ErrorBoundary>
-              <PreDeclaracionAnualSection data={data} year={year} />
-            </ErrorBoundary>
-          )}
-
-          {/* ── 4. Egresos y Deducciones ── */}
-          {activeTab === 'egresos_mes' && (
-            <ErrorBoundary>
-              <EgresosMensualesSection 
-                data={sections?.reporte_gastos} 
-                notasCreditoData={sections?.otros_ingresos}
-                year={year} 
-              />
-            </ErrorBoundary>
-          )}
-          {activeTab === 'deducciones' && (
-            <ErrorBoundary>
-              <DeduccionesPersonalesSection data={sections?.deducciones_personales} year={year} />
-            </ErrorBoundary>
-          )}
-
-          {/* ── 5. Ingresos y Nómina ── */}
-          {activeTab === 'nomina' && (
-            <ErrorBoundary><SueldosSection data={sections?.sueldos} year={year} /></ErrorBoundary>
-          )}
-          {activeTab === 'nomina_detalle' && (
-            <ErrorBoundary><NominaDetalleSection data={sections?.sueldos} year={year} /></ErrorBoundary>
-          )}
-          {activeTab === 'aeyp' && (
-            <ErrorBoundary><HonorariosSection data={sections?.honorarios} year={year} /></ErrorBoundary>
-          )}
-          {activeTab === 'facturas_aeyp' && (
-            <ErrorBoundary><FacturasAeypSection data={sections?.honorarios} year={year} /></ErrorBoundary>
-          )}
-
-          {/* ── 6. Auditoría & Conciliación Oficial SAT (PDFs) ── */}
-          {activeTab === 'conciliacion_sat' && (
-            <ErrorBoundary>
-              <ConciliacionSatSection year={year} onYearChange={setYear} />
-            </ErrorBoundary>
-          )}
+          </div>
         </div>
       </main>
 
-      {/* ── MODAL DE UPLOAD DE XMLs ── */}
+      {/* Modal de Subida de Archivos */}
       <UploadModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}

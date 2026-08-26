@@ -25,7 +25,7 @@ export function getGastoCat(item) {
 }
 
 
-export function EgresosMensualesSection({ data, notasCreditoData, year }) {
+export function EgresosMensualesSection({ data, gastos, notasCreditoData, notasCredito, year }) {
   const [activeSubTab, setActiveSubTab] = useState('gastos'); // 'gastos' | 'notas_credito'
   const [selectedMonth, setSelectedMonth] = useState('Global'); // 'Global' | 1..12
   const [selectedCategory, setSelectedCategory] = useState('ALL'); // 'ALL' | cat_id
@@ -45,7 +45,7 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
     setExpandedProviders(prev => ({ ...prev, [provKey]: !prev[provKey] }));
   };
 
-  const rawList = useMemo(() => (Array.isArray(data) ? data : []), [data]);
+  const rawList = useMemo(() => (Array.isArray(data || gastos) ? (data || gastos) : []), [data, gastos]);
 
   // Cálculos agrupados por los 12 meses
   const {
@@ -324,9 +324,9 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
 
   if (!rawList.length) {
     return (
-      <SectionCard icon="📅" title="Vista de Egresos por Mes" badge="0 comprobantes">
-        <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
-          No se encontraron facturas ni complementos de egreso registrados para el ejercicio {year}.
+      <SectionCard title="Gastos y Comprobantes Recibidos" badge="0 comprobantes">
+        <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+          No se encontraron facturas ni complementos de egreso registrados para el ejercicio {year || 'seleccionado'}.
         </div>
       </SectionCard>
     );
@@ -639,21 +639,21 @@ export function EgresosMensualesSection({ data, notasCreditoData, year }) {
                   if (active && payload && payload.length) {
                     const row = payload[0].payload;
                     return (
-                      <div style={{ background: '#0f172a', color: 'white', padding: '0.85rem 1.1rem', borderRadius: '8px', boxShadow: '0 10px 15px rgba(0,0,0,0.3)', fontSize: '0.85rem' }}>
-                        <div style={{ fontWeight: 800, borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '4px', marginBottom: '6px', fontSize: '0.95rem' }}>
+                      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xl text-slate-800 text-xs">
+                        <div className="font-bold text-slate-900 mb-1.5 pb-1 border-b border-slate-100">
                           {row.name} ({row.count} comprobantes)
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', color: '#93c5fd' }}>
+                        <div className="flex justify-between gap-4 py-0.5 text-slate-600">
                           <span>Subtotal Deducible:</span>
-                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.subtotal)}</strong>
+                          <strong className="font-mono text-slate-900">{fmt(row.subtotal)}</strong>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', color: '#fde68a' }}>
+                        <div className="flex justify-between gap-4 py-0.5 text-slate-600">
                           <span>IVA Acreditable:</span>
-                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.iva)}</strong>
+                          <strong className="font-mono text-amber-700">{fmt(row.iva)}</strong>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1.5rem', marginTop: '6px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.2)', fontWeight: 800, color: '#fca5a5' }}>
+                        <div className="flex justify-between gap-4 pt-1 mt-1 border-t border-slate-100 font-bold text-slate-900">
                           <span>Total Pagado:</span>
-                          <strong style={{ fontFamily: 'monospace' }}>{fmt(row.total)}</strong>
+                          <strong className="font-mono">{fmt(row.total)}</strong>
                         </div>
                       </div>
                     );

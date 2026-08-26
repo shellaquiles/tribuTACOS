@@ -1,43 +1,58 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { fmt } from './Primitives';
+import {
+  FileText,
+  Building2,
+  User,
+  Copy,
+  Check,
+  X,
+  CreditCard,
+  Calendar,
+  Layers,
+  Coins,
+  ShieldCheck
+} from 'lucide-react';
 
 export const FriendlyObjectViewer = ({ data, level = 0 }) => {
-  if (data === null || data === undefined) return <span style={{ color: '#94a3b8' }}>null</span>;
-  if (typeof data === 'boolean') return <span style={{ color: '#f43f5e' }}>{data ? 'true' : 'false'}</span>;
-  if (typeof data === 'number') return <span style={{ color: '#2563eb' }}>{data}</span>;
-  if (typeof data === 'string') return <span style={{ color: '#16a34a' }}>"{data}"</span>;
+  if (data === null || data === undefined) return <span className="text-slate-400">null</span>;
+  if (typeof data === 'boolean') return <span className="text-rose-600 font-semibold">{data ? 'true' : 'false'}</span>;
+  if (typeof data === 'number') return <span className="text-blue-600 font-mono font-medium">{data}</span>;
+  if (typeof data === 'string') return <span className="text-emerald-700">"{data}"</span>;
 
   if (Array.isArray(data)) {
-    if (data.length === 0) return <span style={{ color: '#94a3b8' }}>[]</span>;
+    if (data.length === 0) return <span className="text-slate-400">[]</span>;
     return (
-      <div style={{ paddingLeft: level > 0 ? '1.5rem' : 0 }}>
-        <span style={{ color: '#64748b' }}>[</span>
+      <div className={level > 0 ? "pl-4" : ""}>
+        <span className="text-slate-400">[</span>
         {data.map((item, idx) => (
-          <div key={idx} style={{ paddingLeft: '1.5rem', marginBottom: '4px' }}>
+          <div key={idx} className="pl-4 my-0.5">
             <FriendlyObjectViewer data={item} level={level + 1} />
-            {idx < data.length - 1 && <span style={{ color: '#64748b' }}>,</span>}
+            {idx < data.length - 1 && <span className="text-slate-400">,</span>}
           </div>
         ))}
-        <span style={{ color: '#64748b' }}>]</span>
+        <span className="text-slate-400">]</span>
       </div>
     );
   }
 
   if (typeof data === 'object') {
     const keys = Object.keys(data);
-    if (keys.length === 0) return <span style={{ color: '#94a3b8' }}>{`{}`}</span>;
+    if (keys.length === 0) return <span className="text-slate-400">{'{}'}</span>;
     return (
-      <div style={{ paddingLeft: level > 0 ? '1.5rem' : 0 }}>
-        <span style={{ color: '#64748b' }}>{`{`}</span>
+      <div className={level > 0 ? "pl-4" : ""}>
+        <span className="text-slate-400">{'{'}</span>
         {keys.map((key, idx) => (
-          <div key={key} style={{ paddingLeft: '1.5rem', margin: '4px 0' }}>
-            <strong style={{ color: '#8b5cf6' }}>"{key}"</strong>
-            <span style={{ color: '#64748b', margin: '0 6px' }}>:</span>
+          <div key={key} className="pl-4 my-1">
+            <strong className="text-indigo-700 font-semibold">"{key}"</strong>
+            <span className="text-slate-400 mx-1">:</span>
             <FriendlyObjectViewer data={data[key]} level={level + 1} />
-            {idx < keys.length - 1 && <span style={{ color: '#64748b' }}>,</span>}
+            {idx < keys.length - 1 && <span className="text-slate-400">,</span>}
           </div>
         ))}
-        <span style={{ color: '#64748b' }}>{`}`}</span>
+        <span className="text-slate-400">{'}'}</span>
       </div>
     );
   }
@@ -46,26 +61,49 @@ export const FriendlyObjectViewer = ({ data, level = 0 }) => {
 };
 
 export const XmlViewerModal = ({ data, onClose }) => {
+  const [copied, setCopied] = useState(false);
   if (!data) return null;
 
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
-      <div style={{ backgroundColor: '#0f172a', borderRadius: '12px', width: '100%', maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.5)', position: 'relative', border: '1px solid #334155' }}>
+  const handleCopy = () => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header */}
-        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1e293b', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-             <span style={{ fontSize: '1.25rem' }}>💻</span>
-             <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.05rem', fontWeight: 600, fontFamily: 'monospace' }}>
-               Datos Estructurados (Metadatos JSON)
-             </h3>
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Metadatos Estructurados JSON</h3>
+              <p className="text-[11px] text-slate-500">Inspección de propiedades del comprobante</p>
+            </div>
           </div>
-          <button onClick={onClose} style={{ cursor: 'pointer', background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.2rem', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#f1f5f9'} onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>✖</button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-300 transition-colors cursor-pointer shadow-xs"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copiado' : 'Copiar'}</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Console Body */}
-        <div style={{ padding: '1.5rem', fontFamily: 'monospace', fontSize: '0.82rem', color: '#e2e8f0', lineHeight: 1.5, overflowX: 'auto' }}>
-           <FriendlyObjectViewer data={data} />
+        <div className="p-6 font-mono text-xs text-slate-800 overflow-y-auto flex-1 leading-relaxed bg-slate-50/50">
+          <FriendlyObjectViewer data={data} />
         </div>
       </div>
     </div>
@@ -73,94 +111,172 @@ export const XmlViewerModal = ({ data, onClose }) => {
 };
 
 export const CfdiVisualizerModal = ({ cfdi, onClose }) => {
+  const [copiedUuid, setCopiedUuid] = useState(false);
   if (!cfdi) return null;
 
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
-      <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '900px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.35)', position: 'relative' }}>
+  const copyUuid = () => {
+    navigator.clipboard.writeText(cfdi.uuid);
+    setCopiedUuid(true);
+    setTimeout(() => setCopiedUuid(false), 2000);
+  };
 
+  const tipoLabel = cfdi.tipo === 'I' ? 'Ingreso' : cfdi.tipo === 'E' ? 'Egreso' : cfdi.tipo === 'P' ? 'Pago' : cfdi.tipo;
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in">
+      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-200/80 overflow-hidden">
         {/* Header */}
-        <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', position: 'sticky', top: 0, zIndex: 10 }}>
+        <div className="px-6 sm:px-8 py-5 border-b border-slate-200 bg-slate-50/80 flex justify-between items-start">
           <div>
-             <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.5px' }}>Comprobante Fiscal Digital por Internet</h2>
-             <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontWeight: 600 }}>Folio Fiscal (UUID):</span>
-                <span style={{ fontFamily: 'monospace', background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', color: '#334155' }}>{cfdi.uuid}</span>
-             </div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xs font-black uppercase tracking-wider bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200">
+                CFDI 4.0 • {tipoLabel}
+              </span>
+            </div>
+            <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+              Comprobante Fiscal Digital
+            </h2>
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+              <span>UUID:</span>
+              <span className="font-mono bg-slate-200/70 text-slate-800 px-2 py-0.5 rounded-md font-semibold">
+                {cfdi.uuid}
+              </span>
+              <button
+                onClick={copyUuid}
+                className="p-1 rounded-md hover:bg-slate-200 text-slate-500 transition-colors"
+                title="Copiar UUID"
+              >
+                {copiedUuid ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
-          <button onClick={onClose} style={{ cursor: 'pointer', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', color: '#64748b', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'} onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}>✖</button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: '2.5rem' }}>
-          {/* Top Info Grid (Emisor & Receptor) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '2rem', marginBottom: '2.5rem' }}>
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
+          {/* Emisor y Receptor */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Emisor */}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', background: 'linear-gradient(to bottom right, #ffffff, #f8fafc)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}><span>🏢</span> DATOS DEL EMISOR</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem', lineHeight: 1.3 }}>{cfdi.emisor_nombre}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.9rem', color: '#475569' }}><strong style={{ color: '#334155' }}>RFC:</strong> {cfdi.emisor_rfc}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#475569' }}><strong style={{ color: '#334155' }}>Régimen Fiscal:</strong> <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>{cfdi.emisor_regimen}</span></div>
+            <div className="p-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Emisor</span>
+              </div>
+              <div className="text-sm font-bold text-slate-900 mb-2">{cfdi.emisor_nombre}</div>
+              <div className="space-y-1 text-xs text-slate-600">
+                <div><span className="font-semibold text-slate-400">RFC:</span> <span className="font-mono font-bold text-slate-800">{cfdi.emisor_rfc}</span></div>
+                <div><span className="font-semibold text-slate-400">Régimen:</span> <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-mono">{cfdi.emisor_regimen}</span></div>
               </div>
             </div>
 
             {/* Receptor */}
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem', background: 'linear-gradient(to bottom right, #ffffff, #f8fafc)' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '1rem', letterSpacing: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}><span>👤</span> DATOS DEL RECEPTOR</div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', marginBottom: '0.5rem', lineHeight: 1.3 }}>{cfdi.receptor_nombre}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '0.9rem', color: '#475569' }}><strong style={{ color: '#334155' }}>RFC:</strong> {cfdi.receptor_rfc}</div>
-                  <div style={{ fontSize: '0.9rem', color: '#475569' }}><strong style={{ color: '#334155' }}>Uso CFDI:</strong> <span style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>{cfdi.uso_cfdi}</span></div>
+            <div className="p-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                <User className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Receptor</span>
+              </div>
+              <div className="text-sm font-bold text-slate-900 mb-2">{cfdi.receptor_nombre}</div>
+              <div className="space-y-1 text-xs text-slate-600">
+                <div><span className="font-semibold text-slate-400">RFC:</span> <span className="font-mono font-bold text-slate-800">{cfdi.receptor_rfc}</span></div>
+                <div><span className="font-semibold text-slate-400">Uso CFDI:</span> <span className="bg-slate-100 px-2 py-0.5 rounded text-[11px] font-mono">{cfdi.uso_cfdi}</span></div>
               </div>
             </div>
           </div>
 
           {/* Factura Meta */}
-          <div style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '1.5rem', marginBottom: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1.5rem' }}>
-             <div><span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Fecha Emisión</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{(cfdi.fecha || '').replace('T', ' ')}</strong></div>
-             <div><span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Efecto Comp.</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{cfdi.tipo === 'I' ? 'Ingreso' : cfdi.tipo === 'E' ? 'Egreso' : cfdi.tipo === 'P' ? 'Pago' : cfdi.tipo}</strong></div>
-             <div><span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Moneda</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{cfdi.moneda || 'MXN'}</strong></div>
-             <div><span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Forma Pago</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{cfdi.forma_pago || 'N/D'}</strong></div>
-             <div><span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Método Pago</span><strong style={{ color: '#0f172a', fontSize: '1rem' }}>{cfdi.metodo_pago || 'N/D'}</strong></div>
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Fecha Emisión</span>
+              <span className="font-bold text-slate-800">{(cfdi.fecha || '').replace('T', ' ')}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Tipo</span>
+              <span className="font-bold text-slate-800">{tipoLabel}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Moneda</span>
+              <span className="font-bold text-slate-800">{cfdi.moneda || 'MXN'}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Forma Pago</span>
+              <span className="font-bold text-slate-800">{cfdi.forma_pago || 'N/D'}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Método Pago</span>
+              <span className="font-bold text-slate-800">{cfdi.metodo_pago || 'N/D'}</span>
+            </div>
           </div>
 
           {/* Conceptos Table */}
-          <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', marginBottom: '2.5rem', boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)' }}>
-             <table style={{ width: '100%', borderCollapse: 'collapse', margin: 0 }}>
-               <thead style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                 <tr>
-                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', color: '#334155', fontSize: '0.85rem', fontWeight: 600 }}>Descripción del Servicio / Bien</th>
-                    <th style={{ padding: '1rem 1.5rem', textAlign: 'right', color: '#334155', fontSize: '0.85rem', fontWeight: 600, width: '180px' }}>Importe</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {cfdi.conceptos && cfdi.conceptos.length > 0 ? (
-                   cfdi.conceptos.map((c, idx) => (
-                     <tr key={idx} style={{ borderBottom: idx !== cfdi.conceptos.length - 1 ? '1px solid #e2e8f0' : 'none', backgroundColor: '#ffffff' }}>
-                       <td style={{ padding: '1.25rem 1.5rem', color: '#0f172a', fontSize: '0.95rem', lineHeight: 1.4 }}>{c.desc}</td>
-                       <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right', fontFamily: 'monospace', color: '#334155', fontSize: '1rem' }}>{fmt(parseFloat(c.imp))}</td>
-                     </tr>
-                   ))
-                 ) : (
-                   <tr><td colSpan={2} style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>Sin conceptos detallados en el XML procesado.</td></tr>
-                 )}
-               </tbody>
-             </table>
+          <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="p-3.5">Descripción del Bien o Servicio</th>
+                  <th className="p-3.5 text-right w-40">Importe</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {cfdi.conceptos && cfdi.conceptos.length > 0 ? (
+                  cfdi.conceptos.map((c, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/60">
+                      <td className="p-3.5 text-slate-800 font-medium">{c.desc}</td>
+                      <td className="p-3.5 text-right font-mono font-bold text-slate-800">
+                        {fmt(parseFloat(c.imp))}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={2} className="p-6 text-center text-slate-400 italic">
+                      Sin conceptos detallados en el comprobante procesado.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
 
           {/* Totals Summary */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-             <div style={{ width: '350px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', color: '#475569', fontSize: '1rem' }}><span>Subtotal:</span> <strong style={{ fontFamily: 'monospace', color: '#1e293b' }}>{fmt(cfdi.subtotal)}</strong></div>
-                {cfdi.descuento > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', color: '#475569', fontSize: '1rem' }}><span>Descuento:</span> <strong style={{ fontFamily: 'monospace', color: '#ef4444' }}>-{fmt(cfdi.descuento)}</strong></div>}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', color: '#475569', fontSize: '1rem' }}><span>IVA Trasladado:</span> <strong style={{ fontFamily: 'monospace', color: '#1e293b' }}>{fmt(cfdi.iva)}</strong></div>
-                {cfdi.retencion_iva > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', color: '#475569', fontSize: '1rem' }}><span>Retención IVA:</span> <strong style={{ fontFamily: 'monospace', color: '#ef4444' }}>-{fmt(cfdi.retencion_iva)}</strong></div>}
-                {cfdi.retencion_isr > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', color: '#475569', fontSize: '1rem' }}><span>Retención ISR:</span> <strong style={{ fontFamily: 'monospace', color: '#ef4444' }}>-{fmt(cfdi.retencion_isr)}</strong></div>}
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0 0.25rem 0', color: '#0f172a', fontSize: '1.35rem', fontWeight: 800, borderTop: '2px solid #cbd5e1', marginTop: '1rem' }}><span>TOTAL:</span> <span style={{ fontFamily: 'monospace' }}>{fmt(cfdi.total)}</span></div>
-             </div>
+          <div className="flex justify-end">
+            <div className="w-full sm:w-80 bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal:</span>
+                <span className="font-mono font-bold text-slate-800">{fmt(cfdi.subtotal)}</span>
+              </div>
+              {cfdi.descuento > 0 && (
+                <div className="flex justify-between text-rose-600">
+                  <span>Descuento:</span>
+                  <span className="font-mono font-bold">-{fmt(cfdi.descuento)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-slate-600">
+                <span>IVA Trasladado:</span>
+                <span className="font-mono font-bold text-slate-800">{fmt(cfdi.iva)}</span>
+              </div>
+              {cfdi.retencion_iva > 0 && (
+                <div className="flex justify-between text-rose-600">
+                  <span>Retención IVA:</span>
+                  <span className="font-mono font-bold">-{fmt(cfdi.retencion_iva)}</span>
+                </div>
+              )}
+              {cfdi.retencion_isr > 0 && (
+                <div className="flex justify-between text-rose-600">
+                  <span>Retención ISR:</span>
+                  <span className="font-mono font-bold">-{fmt(cfdi.retencion_isr)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm font-black text-slate-900 border-t border-slate-200 pt-2 mt-2">
+                <span>TOTAL:</span>
+                <span className="font-mono text-base">{fmt(cfdi.total)}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

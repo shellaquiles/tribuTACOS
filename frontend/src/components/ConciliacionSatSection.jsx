@@ -21,7 +21,7 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`http://localhost:8010/api/sat_docs/summary?year=${year}`);
+      const res = await axios.get(`/api/sat_docs/summary?year=${year}`);
       setData(res.data);
     } catch (err) {
       console.error("Error fetching SAT docs:", err);
@@ -33,11 +33,10 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem', gap: '1rem' }}>
-        <div style={{ fontSize: '3rem', animation: 'bounce 1s infinite' }}>🏛️</div>
-        <div className="spinner" />
-        <p style={{ color: '#64748b', fontWeight: 600, margin: 0 }}>
-          Consultando declaraciones de ISR e IVA oficiales del SAT para el ejercicio {year}…
+      <div className="flex flex-col items-center justify-center p-12 gap-3 text-slate-600">
+        <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin" />
+        <p className="text-xs font-medium">
+          Consultando declaraciones de ISR e IVA oficiales del SAT para el ejercicio {year}...
         </p>
       </div>
     );
@@ -64,44 +63,32 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
   const esSaldoFavor = anual && anual.saldo_a_favor > 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+    <div className="flex flex-col gap-7">
       
       {/* ── BARRA SUPERIOR: SELECTOR DE AÑOS Y VISTA ── */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1.25rem' }}>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '1.75rem' }}>🏛️</span>
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
-              Auditoría Oficial SAT • Ejercicio {year}
-            </h2>
-          </div>
-          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-            Liquidación anual oficial del SAT y desglose exhaustivo de los 12 pagos provisionales de ISR e IVA.
+          <h2 className="text-base font-bold text-slate-900 tracking-tight">
+            Auditoría Oficial SAT • Ejercicio {year}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Liquidación anual oficial del SAT y desglose de pagos provisionales de ISR e IVA.
           </p>
         </div>
 
         {/* Selector de Años */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Ejercicio:</span>
-          <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '12px', gap: '4px' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase">Ejercicio:</span>
+          <div className="flex bg-slate-100 p-0.5 rounded-lg gap-1 border border-slate-200">
             {aniosDisponibles.map((y) => {
               const isSelected = year === y;
               return (
                 <button
                   key={y}
                   onClick={() => onYearChange && onYearChange(y)}
-                  style={{
-                    padding: '6px 14px',
-                    fontSize: '0.85rem',
-                    fontWeight: 800,
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    background: isSelected ? '#0f172a' : 'transparent',
-                    color: isSelected ? '#ffffff' : '#64748b',
-                    boxShadow: isSelected ? '0 2px 6px rgba(0,0,0,0.15)' : 'none'
-                  }}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                    isSelected ? 'bg-white text-slate-900 shadow-xs border border-slate-200' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   {y}
                 </button>
@@ -111,124 +98,74 @@ export default function ConciliacionSatSection({ year, onYearChange }) {
         </div>
       </div>
 
-      {/* ── 1. GRAN HERO CARD: RESULTADO ANUAL DEFINITIVO (¿PAGASTE O SALISTE A FAVOR?) ── */}
+      {/* ── 1. RESUMEN ANUAL DEFINITIVO (Clean Card) ── */}
       {anual ? (
-        <div style={{
-          background: esSaldoFavor
-            ? 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #0f172a 100%)'
-            : 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #1e1b4b 100%)',
-          borderRadius: '24px',
-          padding: '2.25rem',
-          color: 'white',
-          boxShadow: esSaldoFavor ? '0 12px 30px -8px rgba(6,78,59,0.4)' : '0 12px 30px -8px rgba(127,29,29,0.4)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '9rem', opacity: 0.08, pointerEvents: 'none' }}>
-            {esSaldoFavor ? '💰' : '📑'}
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap justify-between items-center gap-2 pb-4 border-b border-slate-100 mb-6">
+            <span className="text-xs font-semibold text-slate-700 bg-slate-50 px-2.5 py-1 rounded border border-slate-200 uppercase">
+              Declaración Anual Oficial • {anual.tipo_declaracion}
+            </span>
+
+            <div className="text-xs text-slate-500 font-mono">
+              Folio de Operación SAT: <b className="text-slate-900">{anual.num_operacion || 'N/A'}</b>
+            </div>
           </div>
 
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            {/* Header del Banner */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: esSaldoFavor ? 'rgba(52, 211, 153, 0.2)' : 'rgba(248, 113, 113, 0.2)',
-                border: `1px solid ${esSaldoFavor ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
-                padding: '6px 16px',
-                borderRadius: '999px',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                color: esSaldoFavor ? '#6ee7b7' : '#fca5a5',
-                letterSpacing: '0.04em'
-              }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: esSaldoFavor ? '#34d399' : '#ef4444', display: 'inline-block' }} />
-                DECLARACIÓN ANUAL OFICIAL • {anual.tipo_declaracion.toUpperCase()}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div className="lg:col-span-6">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">
+                {esSaldoFavor ? 'Resultado Oficial: Saldo a Favor' : 'Resultado Oficial: Impuesto a Cargo'}
+              </span>
+              <div className={`text-4xl font-extrabold tracking-tight font-mono mb-2 ${
+                esSaldoFavor ? 'text-emerald-700' : 'text-red-700'
+              }`}>
+                {esSaldoFavor ? formatMoney(anual.saldo_a_favor) : formatMoney(anual.saldo_a_cargo)}
               </div>
+              <p className="text-xs text-slate-600 max-w-md leading-relaxed">
+                {esSaldoFavor
+                  ? `El SAT determinó un saldo a favor de ${formatMoney(anual.saldo_a_favor)} por retenciones correspondientes al ejercicio.`
+                  : `Se liquidó un impuesto total a cargo de ${formatMoney(anual.saldo_a_cargo)} en este ejercicio fiscal.`}
+              </p>
 
-              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontFamily: 'monospace' }}>
-                FOLIO OPERACIÓN SAT: <b style={{ color: 'white', fontSize: '0.95rem' }}>{anual.num_operacion || 'N/A'}</b>
-              </div>
+              {anual.clabe && (
+                <div className="mt-3 inline-flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
+                  <span className="text-slate-500">Cuenta CLABE:</span>
+                  <span className="font-mono font-bold text-slate-800">{anual.clabe}</span>
+                  {anual.banco && <span className="text-slate-500">({anual.banco})</span>}
+                </div>
+              )}
             </div>
 
-            {/* Cuerpo del Banner */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '0.85rem', color: esSaldoFavor ? '#a7f3d0' : '#fecaca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-                  {esSaldoFavor ? '🎉 Resultado Oficial: Saldo a Favor' : '⚠️ Resultado Oficial: Impuesto a Cargo'}
-                </div>
-                <h1 style={{ margin: 0, fontSize: '3rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                  {esSaldoFavor ? formatMoney(anual.saldo_a_favor) : formatMoney(anual.saldo_a_cargo)}
-                </h1>
-                <p style={{ margin: '1rem 0 0 0', fontSize: '0.95rem', color: '#f1f5f9', opacity: 0.9, lineHeight: 1.5 }}>
-                  {esSaldoFavor
-                    ? `El SAT autorizó devolverte ${formatMoney(anual.saldo_a_favor)} por retenciones a tu favor.`
-                    : `Se liquidó un impuesto total a cargo de ${formatMoney(anual.saldo_a_cargo)} en este ejercicio.`}
-                </p>
-
-                {anual.clabe && (
-                  <div style={{
-                    marginTop: '1.25rem',
-                    display: 'inline-flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: '10px',
-                    background: 'rgba(255, 255, 255, 0.12)',
-                    backdropFilter: 'blur(8px)',
-                    padding: '8px 16px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    fontSize: '0.85rem'
-                  }}>
-                    <span style={{ color: '#34d399', fontWeight: 700 }}>💳 Cuenta CLABE Registrada:</span>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 800, color: 'white', letterSpacing: '0.05em' }}>{anual.clabe}</span>
-                    {anual.banco && <span style={{ color: '#a7f3d0' }}>({anual.banco})</span>}
-                  </div>
-                )}
+            {/* Cascada de Determinación Oficial */}
+            <div className="lg:col-span-6 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-2 text-xs">
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                Determinación Oficial SAT
               </div>
-
-              {/* Cascada de Determinación Oficial */}
-              <div style={{
-                background: 'rgba(0, 0, 0, 0.4)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '20px',
-                padding: '1.5rem 1.75rem',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.85rem'
-              }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Liquidación Oficial de la Anual
+              <div className="flex justify-between py-0.5">
+                <span className="text-slate-600">Ingresos Acumulables:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(anual.ingresos_acumulables_totales)}</span>
+              </div>
+              <div className="flex justify-between py-0.5">
+                <span className="text-slate-600">Deducciones Personales:</span>
+                <span className="font-mono font-bold text-amber-700">-{formatMoney(anual.deducciones_personales)}</span>
+              </div>
+              <div className="flex justify-between py-0.5 font-semibold">
+                <span className="text-slate-700">Base Gravable:</span>
+                <span className="font-mono font-bold text-slate-900">{formatMoney(anual.base_gravable)}</span>
+              </div>
+              <div className="flex justify-between py-0.5">
+                <span className="text-slate-600">ISR a Cargo (Tarifa):</span>
+                <span className="font-mono font-bold text-red-700">{formatMoney(anual.isr_tarifa)}</span>
+              </div>
+              {anual.pagos_provisionales > 0 && (
+                <div className="flex justify-between py-0.5">
+                  <span className="text-slate-600">Pagos Provisionales:</span>
+                  <span className="font-mono font-bold text-blue-700">-{formatMoney(anual.pagos_provisionales)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>1. Ingresos Acumulables:</span>
-                  <span style={{ fontWeight: 800, color: 'white', fontFamily: 'monospace' }}>{formatMoney(anual.ingresos_acumulables_totales)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>2. Deducciones Personales:</span>
-                  <span style={{ fontWeight: 800, color: '#fcd34d', fontFamily: 'monospace' }}>-{formatMoney(anual.deducciones_personales)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>3. Base Gravable:</span>
-                  <span style={{ fontWeight: 900, color: '#6ee7b7', fontFamily: 'monospace' }}>{formatMoney(anual.base_gravable)}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>4. ISR Causado (Art. 152):</span>
-                  <span style={{ fontWeight: 800, color: '#fca5a5', fontFamily: 'monospace' }}>{formatMoney(anual.isr_tarifa)}</span>
-                </div>
-                {anual.pagos_provisionales_acreditados > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span style={{ color: '#cbd5e1' }}>5. Pagos Provisionales (Meses):</span>
-                    <span style={{ fontWeight: 900, color: '#60a5fa', fontFamily: 'monospace' }}>-{formatMoney(anual.pagos_provisionales_acreditados)}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>{anual.pagos_provisionales_acreditados > 0 ? '6.' : '5.'} ISR Retenido (Patrones):</span>
-                  <span style={{ fontWeight: 900, color: '#34d399', fontFamily: 'monospace' }}>-{formatMoney(anual.isr_retenido_total)}</span>
-                </div>
+              )}
+              <div className="flex justify-between py-0.5 pt-1.5 border-t border-slate-200">
+                <span className="text-slate-700 font-semibold">ISR Retenido:</span>
+                <span className="font-mono font-bold text-emerald-700">-{formatMoney(anual.isr_retenido)}</span>
               </div>
             </div>
           </div>

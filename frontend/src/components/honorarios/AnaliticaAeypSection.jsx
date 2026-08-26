@@ -93,18 +93,17 @@ export function AnaliticaAeypSection({ data, year }) {
       {/* KPIs Consolidados */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
         {[
-          { label: 'Facturado Bruto', value: fmt(filteredData.totalBruto), color: '#3b82f6', icon: '💰' },
-          { label: 'Subtotal Neto', value: fmt(filteredData.totalSubtotal), color: '#10b981', icon: '📄' },
-          { label: 'IVA Trasladado', value: fmt(filteredData.totalIva), color: '#f59e0b', icon: '🏛️' },
-          { label: 'Mejor Mes', value: filteredData.bestMonth?.name || '—', color: '#6366f1', icon: '📅', sub: fmt(filteredData.bestMonth?.Neto) },
+          { label: 'Facturado Bruto', value: fmt(filteredData.totalBruto), color: '#2563eb' },
+          { label: 'Subtotal Neto', value: fmt(filteredData.totalSubtotal), color: '#10b981' },
+          { label: 'IVA Trasladado', value: fmt(filteredData.totalIva), color: '#f59e0b' },
+          { label: 'Mejor Mes', value: filteredData.bestMonth?.name || '—', color: '#6366f1', sub: fmt(filteredData.bestMonth?.Neto) },
         ].map((k, i) => (
           <div key={i} style={{ background: 'white', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <span>{k.icon}</span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em' }}>{k.label}</span>
+            <div style={{ marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>{k.label}</span>
             </div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: k.color }}>{k.value}</div>
-            {k.sub && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>{k.sub}</div>}
+            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: k.color, fontFamily: 'monospace' }}>{k.value}</div>
+            {k.sub && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>{k.sub}</div>}
           </div>
         ))}
       </div>
@@ -121,9 +120,9 @@ export function AnaliticaAeypSection({ data, year }) {
             <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
             <Tooltip formatter={(val, name) => [fmt(val), name]} cursor={{ fill: '#f8fafc' }} />
             <Legend iconType='circle' wrapperStyle={{ fontSize: '12px' }} />
-            <Bar dataKey='Subtotal' stackId='a' fill='#94a3b8' name='Subtotal' />
-            <Bar dataKey='IVA' stackId='a' fill='#fbbf24' radius={[4, 4, 0, 0]} name='IVA Trasladado' />
-            <Line type='monotone' dataKey='Neto' stroke='#3b82f6' strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} name='Bruto Cobrado' />
+            <Bar dataKey='Subtotal' stackId='a' fill='#10b981' name='Subtotal Facturado' />
+            <Bar dataKey='IVA' stackId='a' fill='#f59e0b' radius={[4, 4, 0, 0]} name='IVA Trasladado' />
+            <Line type='monotone' dataKey='Neto' stroke='#2563eb' strokeWidth={3} dot={{ r: 4, fill: '#2563eb' }} name='Bruto Cobrado' />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

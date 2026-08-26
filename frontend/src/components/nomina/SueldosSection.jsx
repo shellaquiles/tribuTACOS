@@ -1,36 +1,46 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine
+  Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { SectionCard, KpiRow, ConceptCard, fmt } from '../ui/Primitives';
 
-export const SueldosSection = ({ data, year }) => {
+export const SueldosSection = ({ data, sueldos, year }) => {
   const [selectedEmployer, setSelectedEmployer] = useState('Global');
-  if (!data) return null;
+  const currentData = data || sueldos;
+
+  if (!currentData || (!currentData.total_ingresos && !currentData.gravado && (!currentData.detalle || currentData.detalle.length === 0))) {
+    return (
+      <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-xs">
+        No se encontraron comprobantes de sueldos y salarios timbrados para el ejercicio {year || 'seleccionado'}.
+      </div>
+    );
+  }
 
   const currentViewData = useMemo(() => {
     if (selectedEmployer === 'Global') {
       return {
-        totalBruto: data.total_bruto || (data.gravado + data.exento),
-        totalDeducciones: data.total_deducciones || data.isr_retenido,
-        totalVales: data.total_vales || 0,
-        neto: data.neto || (data.total_ingresos - data.isr_retenido),
-        percepcionesPorTipo: data.percepciones_por_tipo || [],
-        deduccionesPorTipo: data.deducciones_por_tipo || [],
-        nominaMensualData: data.nomina_mensual_resumen || [],
-        meses: data.meses_laborados || 12,
+        totalBruto: currentData.total_bruto || (currentData.gravado + currentData.exento),
+        totalDeducciones: currentData.total_deducciones || currentData.isr_retenido,
+        totalVales: currentData.total_vales || 0,
+        neto: currentData.neto || (currentData.total_ingresos - currentData.isr_retenido),
+        percepcionesPorTipo: currentData.percepciones_por_tipo || [],
+        deduccionesPorTipo: currentData.deducciones_por_tipo || [],
+        nominaMensualData: currentData.nomina_mensual_resumen || [],
+        meses: currentData.meses_laborados || 12,
         kpiData: {
-          ingresos: data.total_ingresos,
-          gravado: data.gravado,
-          exento: data.exento,
-          isr: data.isr_retenido
+          ingresos: currentData.total_ingresos,
+          gravado: currentData.gravado,
+          exento: currentData.exento,
+          isr: currentData.isr_retenido
         },
         salarios: { sbc: null, sdi: null, sd: null }
       };
     }
 
-    const emp = (data.detalle || []).find(e => e.nombre === selectedEmployer);
+    const emp = (currentData.detalle || []).find(e => e.nombre === selectedEmployer);
     if (!emp) return { percepcionesPorTipo: [], deduccionesPorTipo: [], nominaMensualData: [] };
 
     const targetRecibos = emp.recibos || [];
@@ -106,134 +116,170 @@ export const SueldosSection = ({ data, year }) => {
         sd: targetRecibos[0]?.dias_pagados > 0 ? (tBruto / (targetRecibos.length * 15)).toFixed(2) : '-'
       }
     };
-  }, [data, selectedEmployer]);
+  }, [currentData, selectedEmployer]);
 
-  const { totalBruto, totalDeducciones, totalVales, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, nominaMensualData, meses } = currentViewData;
+  const { totalBruto, totalDeducciones, neto, percepcionesPorTipo, deduccionesPorTipo, kpiData, nominaMensualData, meses } = currentViewData;
 
   return (
-    <SectionCard icon="👥" title="Sueldos, salarios y asimilados">
+    <div className="flex flex-col gap-6 text-slate-800">
 
-      {data.detalle && data.detalle.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setSelectedEmployer('Global')}
-              style={{
-                padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
-                background: selectedEmployer === 'Global' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : '#f1f5f9',
-                color: selectedEmployer === 'Global' ? 'white' : '#475569',
-                fontWeight: selectedEmployer === 'Global' ? '700' : '500',
-                boxShadow: selectedEmployer === 'Global' ? '0 4px 10px rgba(59, 130, 246, 0.4)' : 'none',
-                transition: 'all 0.3s ease', fontSize: '0.9rem'
-              }}
-            >
-              🌐 Portafolio Global
-            </button>
-            {data.detalle.map((emp, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedEmployer(emp.nombre)}
-                style={{
-                  padding: '0.6rem 1.2rem', borderRadius: '30px', cursor: 'pointer', border: 'none',
-                  background: selectedEmployer === emp.nombre ? 'linear-gradient(135deg, #10b981, #059669)' : '#f1f5f9',
-                  color: selectedEmployer === emp.nombre ? 'white' : '#475569',
-                  fontWeight: selectedEmployer === emp.nombre ? '700' : '500',
-                  boxShadow: selectedEmployer === emp.nombre ? '0 4px 10px rgba(16, 185, 129, 0.4)' : 'none',
-                  transition: 'all 0.3s ease', fontSize: '0.9rem'
-                }}
-              >
-                🏢 {emp.nombre.length > 25 ? emp.nombre.substring(0, 25) + '...' : emp.nombre}
-              </button>
-            ))}
+      {/* ── Encabezado y Selector de Empleador ── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex justify-between items-center flex-wrap gap-4 pb-4 border-b border-slate-100 mb-6">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">
+              Régimen de Sueldos y Salarios • Ejercicio {year}
+            </span>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Ingresos y Retenciones de Nómina
+            </h2>
           </div>
-        </div>
-      )}
 
-      {/* Tarjeta de Masa Bruta y Flujo */}
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '2rem', alignItems: 'center',
-        background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,1) 100%)',
-        backdropFilter: 'blur(12px)', borderRadius: '24px', padding: '2.5rem 2rem',
-        border: '1px solid rgba(226,232,240,0.8)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)', marginBottom: '2.5rem'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Masa Bruta Anual</span>
-          <span style={{ fontSize: '2.75rem', fontWeight: 900, background: 'linear-gradient(135deg, #1e3a8a, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalBruto)}</span>
-          {Number(meses) > 0 && (
-            <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 700, marginTop: '16px', background: '#f1f5f9', padding: '6px 16px', borderRadius: '16px' }}>
-              Promedio: {fmt(totalBruto / Number(meses))} <span style={{ opacity: 0.6, marginLeft: '4px' }}>({meses}m)</span>
+          {currentData.detalle && currentData.detalle.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setSelectedEmployer('Global')}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                  selectedEmployer === 'Global'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Portafolio Global
+              </button>
+              {currentData.detalle.map((emp, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedEmployer(emp.nombre)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                    selectedEmployer === emp.nombre
+                      ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {emp.nombre.length > 25 ? emp.nombre.substring(0, 25) + '...' : emp.nombre}
+                </button>
+              ))}
             </div>
           )}
         </div>
-        <div style={{ height: '48px', width: '48px', borderRadius: '24px', background: 'linear-gradient(135deg, #fef2f2, #fee2e2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', fontSize: '1.75rem', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(239,68,68,0.1)' }}>−</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Deducciones & Retenciones</span>
-          <span style={{ fontSize: '2.75rem', fontWeight: 900, color: '#ef4444', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(totalDeducciones)}</span>
-          <div style={{ fontSize: '0.9rem', color: '#991b1b', fontWeight: 700, marginTop: '16px', background: '#fef2f2', padding: '6px 16px', borderRadius: '16px' }}>
-            ISR: {fmt(kpiData.isr)}
+        {/* Resumen de Flujo de Nómina */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Masa Bruta Anual</span>
+            <div className="text-2xl font-bold text-slate-900 font-mono mt-1">
+              {fmt(totalBruto)}
+            </div>
+            {Number(meses) > 0 && (
+              <div className="text-xs text-slate-500 mt-1">
+                Promedio mensual: {fmt(totalBruto / Number(meses))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Deducciones y Retenciones</span>
+            <div className="text-2xl font-bold text-red-700 font-mono mt-1">
+              {fmt(totalDeducciones)}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">
+              ISR Retenido: {fmt(kpiData.isr)}
+            </div>
+          </div>
+
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Neto Depositado</span>
+            <div className="text-2xl font-bold text-emerald-700 font-mono mt-1">
+              {fmt(neto)}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">
+              Total percibido en cuenta bancaria
+            </div>
           </div>
         </div>
-        <div style={{ height: '48px', width: '48px', borderRadius: '24px', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '1.75rem', fontWeight: 900, boxShadow: '0 4px 6px -1px rgba(16,185,129,0.1)' }}>=</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: '1 1 200px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Neto Depositado</span>
-          <span style={{ fontSize: '2.75rem', fontWeight: 900, color: '#10b981', letterSpacing: '-0.02em', lineHeight: '1' }}>{fmt(neto)}</span>
-          <div style={{ fontSize: '0.9rem', color: '#065f46', fontWeight: 700, marginTop: '16px', background: '#f0fdf4', padding: '6px 16px', borderRadius: '16px' }}>
-            Efectivo libre
-          </div>
-        </div>
+        <KpiRow items={[
+          { label: 'Total ingresos por nómina', value: kpiData.ingresos, help: 'Bruto percibido' },
+          { label: 'Ingresos gravados', value: kpiData.gravado, accent: 'kpi-accent', help: 'Base para cálculo del ISR anual' },
+          { label: 'Ingresos exentos', value: kpiData.exento, accent: 'kpi-success', help: 'Aguinaldo, PTU y primas exentas' },
+          { label: 'ISR retenido en nómina', value: kpiData.isr, accent: 'kpi-danger', help: 'Enterado por tu empleador al SAT' },
+        ]} />
       </div>
 
-      <KpiRow items={[
-        { label: 'Total ingresos por nómina', value: kpiData.ingresos, help: 'Bruto percibido' },
-        { label: 'Ingresos gravados', value: kpiData.gravado, accent: 'kpi-accent', help: 'Base para cálculo del ISR anual' },
-        { label: 'Ingresos exentos', value: kpiData.exento, accent: 'kpi-success', help: 'Aguinaldo, PTU y primas exentas' },
-        { label: 'ISR retenido en nómina', value: kpiData.isr, accent: 'kpi-danger', help: 'Enterado por tu empleador al SAT' },
-      ]} />
-
       {/* Gráfica de Serie Mensual */}
-      {nominaMensualData.length > 0 && (
-        <div style={{ background: 'white', padding: '1.75rem', borderRadius: '20px', border: '1px solid #e2e8f0', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', marginTop: '2rem' }}>
-          <h4 style={{ margin: '0 0 1.5rem 0', color: '#1e293b', fontSize: '1.05rem', fontWeight: 800 }}>
-            📈 Flujo de Nómina Mensual — Neto vs Retenciones ({year})
-          </h4>
-          <ResponsiveContainer width='100%' height={320}>
+      {nominaMensualData && nominaMensualData.length > 0 && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">
+            Flujo de Nómina Mensual — Neto vs Retenciones ({year})
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
             <ComposedChart data={nominaMensualData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#e2e8f0' />
-              <XAxis dataKey='name' tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <Tooltip formatter={(val, name) => [fmt(val), name]} cursor={{ fill: '#f8fafc' }} />
-              <Legend iconType='circle' wrapperStyle={{ fontSize: '13px', fontWeight: 600 }} />
-              <Bar dataKey='Neto en Cuenta' stackId='a' fill='#10b981' name='Neto Depositado' />
-              <Bar dataKey='ISR Retenido' stackId='a' fill='#ef4444' name='ISR Retenido' />
-              <Bar dataKey='Otras Retenciones' stackId='a' fill='#f59e0b' name='Otras Retenciones' radius={[4, 4, 0, 0]} />
-              <Line type='monotone' dataKey='Sueldo Bruto' stroke='#3b82f6' strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} name='Masa Bruta' />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+              <Tooltip formatter={(val, name) => [fmt(val), name]} />
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
+              <Bar dataKey="Neto en Cuenta" stackId="a" fill="#10b981" name="Neto Depositado" />
+              <Bar dataKey="ISR Retenido" stackId="a" fill="#ef4444" name="ISR Retenido" />
+              <Bar dataKey="Otras Retenciones" stackId="a" fill="#f59e0b" name="Otras Retenciones" radius={[3, 3, 0, 0]} />
+              <Line type="monotone" dataKey="Sueldo Bruto" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3, fill: '#2563eb' }} name="Masa Bruta" />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {/* Desglose de Percepciones y Deducciones */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-        <div>
-          <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontWeight: 800 }}>Percepciones Detectadas</h4>
-          <div className="concept-grid">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Percepciones Detectadas</h3>
+              <p className="text-xs text-slate-500">Desglose de ingresos timbrados en nómina</p>
+            </div>
+            <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 font-mono">
+              {percepcionesPorTipo.length} conceptos
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {percepcionesPorTipo.map((it, idx) => (
-              <ConceptCard key={idx} title={`${it.clave} — ${(it.items || []).join(' / ') || 'Percepción'}`} value={it.total} accent="blue" />
+              <ConceptCard
+                key={idx}
+                badge={it.clave}
+                title={(it.items || []).join(' • ') || 'Percepción'}
+                value={it.total}
+                gravado={it.gravado}
+                exento={it.exento}
+                accent="blue"
+              />
             ))}
           </div>
         </div>
 
-        <div>
-          <h4 style={{ marginBottom: '1rem', color: '#1e293b', fontWeight: 800 }}>Deducciones y Retenciones</h4>
-          <div className="concept-grid">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Deducciones y Retenciones</h3>
+              <p className="text-xs text-slate-500">Descuentos y retenciones aplicados en nómina</p>
+            </div>
+            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200 font-mono">
+              {deduccionesPorTipo.length} conceptos
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {deduccionesPorTipo.map((it, idx) => (
-              <ConceptCard key={idx} title={`${it.clave} — ${(it.items || []).join(' / ') || 'Deducción'}`} value={it.total} accent="red" />
+              <ConceptCard
+                key={idx}
+                badge={it.clave}
+                title={(it.items || []).join(' • ') || 'Deducción'}
+                value={it.total}
+                accent="rose"
+              />
             ))}
           </div>
         </div>
       </div>
-    </SectionCard>
+
+    </div>
   );
 };

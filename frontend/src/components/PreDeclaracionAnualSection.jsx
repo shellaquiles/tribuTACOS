@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState } from 'react';
 import { exportPapelTrabajoAnual } from '../csvExport';
+import { Download, ChevronDown, ChevronUp } from 'lucide-react';
 
 const formatMoney = (val) => {
   if (val === undefined || val === null || isNaN(val)) return '$0.00';
@@ -26,253 +29,182 @@ export default function PreDeclaracionAnualSection({ data, year }) {
   const patrones = sueldosSec.detalle || [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="flex flex-col gap-6 text-slate-800">
       
-      {/* ── 1. GRAN HERO CARD: SALDO PROYECTADO DEL EJERCICIO ── */}
-      <div style={{
-        background: esSaldoFavor
-          ? 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #0f172a 100%)'
-          : 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #1e1b4b 100%)',
-        borderRadius: '24px',
-        padding: '2.5rem',
-        color: 'white',
-        boxShadow: esSaldoFavor ? '0 12px 30px -8px rgba(6,78,59,0.4)' : '0 12px 30px -8px rgba(127,29,29,0.4)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ position: 'absolute', right: '-20px', bottom: '-20px', fontSize: '10rem', opacity: 0.08, pointerEvents: 'none' }}>
-          {esSaldoFavor ? '💰' : '📑'}
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: esSaldoFavor ? 'rgba(52, 211, 153, 0.2)' : 'rgba(248, 113, 113, 0.2)',
-              border: `1px solid ${esSaldoFavor ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
-              padding: '6px 16px',
-              borderRadius: '999px',
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              color: esSaldoFavor ? '#6ee7b7' : '#fca5a5'
-            }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: esSaldoFavor ? '#34d399' : '#ef4444' }} />
-              SIMULACIÓN ANUAL TRIBUTACOS (100% CFDIs) • EJERCICIO {year}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => exportPapelTrabajoAnual(data, year)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.18)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  padding: '6px 14px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <span>📊</span>
-                <span>Exportar Papel de Trabajo (CSV)</span>
-              </button>
-
-              {oficial && (
-                <span style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(8px)',
-                  padding: '6px 14px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  color: '#cbd5e1'
-                }}>
-                  🏛️ Acuse Oficial SAT (Op. {oficial.num_operacion})
-                </span>
-              )}
-            </div>
+      {/* ── 1. Resumen Ejecutivo del Ejercicio (Clean Financial Card) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex justify-between items-center flex-wrap gap-3 pb-4 border-b border-slate-100 mb-6">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+              Determinación Anual ISR • Ejercicio Fiscal {year}
+            </span>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              Pre-Declaración Anual Personas Físicas
+            </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2.5rem', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: '0.85rem', color: esSaldoFavor ? '#a7f3d0' : '#fecaca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-                {esSaldoFavor ? '🎉 Saldo a Favor Estimado (Devolución SAT)' : '⚠️ Impuesto Anual a Cargo Estimado'}
-              </div>
-              <h1 style={{ margin: 0, fontSize: '3.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                {formatMoney(saldoMonto)}
-              </h1>
-              <p style={{ margin: '1rem 0 0 0', fontSize: '0.95rem', color: '#f1f5f9', opacity: 0.9, lineHeight: 1.5 }}>
-                {esSaldoFavor
-                  ? `Tienes un saldo a favor estimado de ${formatMoney(saldoMonto)} por el total de retenciones y pagos realizados durante ${year}.`
-                  : `Se proyecta un impuesto a cargo de ${formatMoney(saldoMonto)} al cierre del ejercicio ${year}.`}
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => exportPapelTrabajoAnual(data, year)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Exportar Papel de Trabajo (CSV)</span>
+            </button>
 
-            {/* Cascada de Determinación Anual */}
-            <div style={{
-              background: 'rgba(0, 0, 0, 0.4)',
-              backdropFilter: 'blur(16px)',
-              borderRadius: '20px',
-              padding: '1.5rem 1.75rem',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem'
-            }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Cascada Fiscal Oficial (Art. 152 LISR)
+            {oficial && (
+              <span className="px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-700 rounded-lg border border-slate-200">
+                Acuse Oficial SAT (Op. {oficial.num_operacion})
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-6">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">
+              {esSaldoFavor ? 'Saldo a Favor Proyectado (Devolución)' : 'Impuesto Anual a Cargo Estimado'}
+            </span>
+            <div className={`text-4xl font-extrabold tracking-tight font-mono mb-2 ${
+              esSaldoFavor ? 'text-emerald-700' : 'text-red-700'
+            }`}>
+              {formatMoney(saldoMonto)}
+            </div>
+            <p className="text-xs text-slate-600 max-w-md leading-relaxed">
+              {esSaldoFavor
+                ? `Resultado del cálculo fiscal a partir de tus CFDIs: cuentas con un saldo a favor estimado de ${formatMoney(saldoMonto)}.`
+                : `Se proyecta un impuesto a cargo de ${formatMoney(saldoMonto)} para este ejercicio fiscal.`}
+            </p>
+          </div>
+
+          {/* Cascada de Determinación Anual */}
+          <div className="lg:col-span-6 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col gap-2 text-xs">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+              Cascada Fiscal Oficial (Art. 152 LISR)
+            </div>
+            <div className="flex justify-between py-0.5">
+              <span className="text-slate-600">1. Ingresos Acumulables Totales:</span>
+              <span className="font-mono font-bold text-slate-900">{formatMoney(sim.ingresos_acumulables_totales)}</span>
+            </div>
+            <div className="flex justify-between py-0.5">
+              <span className="text-slate-600">2. Deducciones Personales Aplicadas:</span>
+              <span className="font-mono font-bold text-amber-700">-{formatMoney(sim.deducciones_personales_aplicadas)}</span>
+            </div>
+            <div className="flex justify-between py-0.5 font-semibold">
+              <span className="text-slate-700">3. Base Gravable del Ejercicio:</span>
+              <span className="font-mono font-bold text-slate-900">{formatMoney(sim.base_gravable_anual)}</span>
+            </div>
+            <div className="flex justify-between py-0.5">
+              <span className="text-slate-600">4. ISR Causado (Tarifa Art. 152):</span>
+              <span className="font-mono font-bold text-red-700">{formatMoney(sim.isr_anual_causado)}</span>
+            </div>
+            {sim.pagos_provisionales_acreditables > 0 && (
+              <div className="flex justify-between py-0.5">
+                <span className="text-slate-600">5. Pagos Provisionales Realizados:</span>
+                <span className="font-mono font-bold text-blue-700">-{formatMoney(sim.pagos_provisionales_acreditables)}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                <span style={{ color: '#cbd5e1' }}>1. Ingresos Acumulables Totales:</span>
-                <span style={{ fontWeight: 800, color: 'white', fontFamily: 'monospace' }}>{formatMoney(sim.ingresos_acumulables_totales)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                <span style={{ color: '#cbd5e1' }}>2. Deducciones Personales:</span>
-                <span style={{ fontWeight: 800, color: '#fcd34d', fontFamily: 'monospace' }}>-{formatMoney(sim.deducciones_personales_aplicadas)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                <span style={{ color: '#cbd5e1' }}>3. Base Gravable del Ejercicio:</span>
-                <span style={{ fontWeight: 900, color: '#6ee7b7', fontFamily: 'monospace' }}>{formatMoney(sim.base_gravable_anual)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                <span style={{ color: '#cbd5e1' }}>4. ISR Causado (Tarifa Art. 152):</span>
-                <span style={{ fontWeight: 800, color: '#fca5a5', fontFamily: 'monospace' }}>{formatMoney(sim.isr_anual_causado)}</span>
-              </div>
-              {sim.pagos_provisionales_acreditables > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                  <span style={{ color: '#cbd5e1' }}>5. Pagos Provisionales Realizados:</span>
-                  <span style={{ fontWeight: 900, color: '#60a5fa', fontFamily: 'monospace' }}>-{formatMoney(sim.pagos_provisionales_acreditables)}</span>
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                <span style={{ color: '#cbd5e1' }}>{sim.pagos_provisionales_acreditables > 0 ? '6.' : '5.'} Retenciones Totales (Nómina/Hon):</span>
-                <span style={{ fontWeight: 900, color: '#34d399', fontFamily: 'monospace' }}>-{formatMoney(sim.retenciones_totales_acreditables)}</span>
-              </div>
+            )}
+            <div className="flex justify-between py-0.5 pt-1.5 border-t border-slate-200">
+              <span className="text-slate-700 font-semibold">{sim.pagos_provisionales_acreditables > 0 ? '6.' : '5.'} Retenciones Totales de ISR:</span>
+              <span className="font-mono font-bold text-emerald-700">-{formatMoney(sim.retenciones_totales_acreditables)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── 2. DESGLOSE DE ORIGEN DE INGRESOS ACUMULABLES (NÓMINA + HONORARIOS + INTERESES) ── */}
-      <div style={{ background: 'white', borderRadius: '20px', padding: '1.75rem 2rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      {/* ── 2. Desglose de Origen de Ingresos Acumulables ── */}
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>👔</span> Origen de Ingresos Acumulables — ¿De dónde salen {formatMoney(sim.ingresos_acumulables_totales)}?
+            <h3 className="text-sm font-bold text-slate-900">
+              Origen de Ingresos Acumulables ({formatMoney(sim.ingresos_acumulables_totales)})
             </h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-              Consolidación de regímenes fiscales: Sueldos de patrones, Utilidad de Honorarios y Rendimientos financieros.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Consolidación por régimen: Sueldos y Salarios, Honorarios y Rendimientos de Inversión.
             </p>
           </div>
           <button
             onClick={() => setShowDetalleNomina(!showDetalleNomina)}
-            style={{
-              background: '#f1f5f9',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              padding: '6px 14px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: '#334155',
-              cursor: 'pointer'
-            }}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
           >
-            {showDetalleNomina ? 'Ocultar Patrones' : 'Ver Desglose Patrones'}
+            {showDetalleNomina ? 'Ocultar Detalle de Patrones' : 'Ver Detalle de Patrones'}
           </button>
         </div>
 
         {/* Tarjetas de Regímenes */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', marginBottom: showDetalleNomina && patrones.length > 0 ? '1.5rem' : 0 }}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-4">
           {/* Sueldos */}
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#3b82f6', textTransform: 'uppercase' }}>👔 Sueldos y Salarios</span>
-              <span style={{ fontSize: '0.75rem', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sueldos y Salarios</span>
+              <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-medium">
                 {patrones.length} patrón{patrones.length !== 1 ? 'es' : ''}
               </span>
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+            <div className="text-xl font-bold text-slate-900 font-mono mt-1">
               {formatMoney(sim.ingresos_sueldos_gravados)}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-              Ingreso gravado acumulable • ISR Retenido: <strong style={{ color: '#059669' }}>{formatMoney(sueldosSec.isr_retenido)}</strong>
+            <div className="text-xs text-slate-500 mt-1">
+              ISR Retenido: <span className="font-mono font-semibold text-slate-800">{formatMoney(sueldosSec.isr_retenido)}</span>
             </div>
           </div>
 
           {/* Honorarios */}
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase' }}>💼 Honorarios / Actividad</span>
-              <span style={{ fontSize: '0.75rem', background: '#d1fae5', color: '#065f46', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Honorarios / Act. Prof.</span>
+              <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-medium">
                 Facturado: {formatMoney(honorariosSec.ingresos)}
               </span>
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+            <div className="text-xl font-bold text-slate-900 font-mono mt-1">
               {formatMoney(sim.ingresos_honorarios_utilidad)}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-              Utilidad neta acumulable (Deducciones: {formatMoney(honorariosSec.deducciones_autorizadas)})
+            <div className="text-xs text-slate-500 mt-1">
+              Utilidad neta (Gastos: {formatMoney(honorariosSec.deducciones_autorizadas)})
             </div>
           </div>
 
           {/* Intereses */}
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#8b5cf6', textTransform: 'uppercase' }}>📈 Intereses Financieros</span>
-              <span style={{ fontSize: '0.75rem', background: '#ede9fe', color: '#5b21b6', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                Bancos
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Intereses Financieros</span>
+              <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-medium">
+                Bancos / Cetes
               </span>
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', marginTop: '6px', fontFamily: 'monospace' }}>
+            <div className="text-xl font-bold text-slate-900 font-mono mt-1">
               {formatMoney(sim.ingresos_intereses_reales)}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-              Interés real acumulable • ISR Retenido: <strong style={{ color: '#059669' }}>{formatMoney(interesesSec.isr_retenido)}</strong>
+            <div className="text-xs text-slate-500 mt-1">
+              ISR Retenido: <span className="font-mono font-semibold text-slate-800">{formatMoney(interesesSec.isr_retenido)}</span>
             </div>
           </div>
         </div>
 
         {/* Desglose por Patrón de Nómina */}
         {showDetalleNomina && patrones.length > 0 && (
-          <div style={{ marginTop: '1rem', borderTop: '1px dashed #e2e8f0', paddingTop: '1.25rem' }}>
-            <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', color: '#334155', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Detalle de Ingresos y Retenciones de Nómina por Empleador ({year})
+          <div className="border-t border-slate-200 pt-3 mt-2">
+            <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2.5">
+              Detalle de Nómina por Empleador ({year})
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div className="space-y-2">
               {patrones.map((p, idx) => (
-                <div key={idx} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.75rem 1rem',
-                  background: '#f8fafc',
-                  borderRadius: '10px',
-                  border: '1px solid #e2e8f0',
-                  flexWrap: 'wrap',
-                  gap: '0.75rem'
-                }}>
+                <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs flex-wrap gap-2">
                   <div>
-                    <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>🏢 {p.nombre}</strong>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                      RFC: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{p.rfc}</span> • {p.recibos?.length || 0} recibos timbrados
+                    <div className="font-bold text-slate-900">{p.nombre}</div>
+                    <div className="text-slate-500 font-mono text-[11px]">
+                      RFC: {p.rfc} • {p.recibos?.length || 0} recibos timbrados
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Ingreso Gravado</span>
-                      <strong style={{ color: '#0f172a', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.gravado)}</strong>
+                  <div className="flex gap-6 items-center">
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 uppercase block font-semibold">Ingreso Gravado</span>
+                      <span className="font-mono font-bold text-slate-900">{formatMoney(p.gravado)}</span>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>ISR Retenido</span>
-                      <strong style={{ color: '#059669', fontSize: '0.95rem', fontFamily: 'monospace' }}>{formatMoney(p.isr)}</strong>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-500 uppercase block font-semibold">ISR Retenido</span>
+                      <span className="font-mono font-bold text-slate-900">{formatMoney(p.isr)}</span>
                     </div>
                   </div>
                 </div>
@@ -282,91 +214,79 @@ export default function PreDeclaracionAnualSection({ data, year }) {
         )}
       </div>
 
-      {/* ── 3. OPTIMIZADOR FISCAL: DEDUCCIONES PERSONALES Y TOPE LEGAL ── */}
-      <div style={{ background: 'white', borderRadius: '20px', padding: '1.75rem 2rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+      {/* ── 3. Deducciones Personales y Tope Legal ── */}
+      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+        <div className="flex justify-between items-center flex-wrap gap-2 mb-4">
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🏥</span> Optimización de Deducciones Personales (Art. 151 LISR)
+            <h3 className="text-sm font-bold text-slate-900">
+              Deducciones Personales (Art. 151 LISR)
             </h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
-              Tope legal máximo permitido por el SAT: el menor entre el 15% de tus ingresos brutos o 5 UMAs anuales.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Tope legal máximo permitido: el menor entre el 15% de ingresos brutos o 5 UMAs anuales.
             </p>
           </div>
 
-          <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '6px 14px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, color: '#065f46' }}>
-            Tope Legal Máximo: {formatMoney(sim.tope_legal_deducciones)}
+          <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700">
+            Tope Legal: {formatMoney(sim.tope_legal_deducciones)}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Deducciones Aplicadas</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#059669', marginTop: '4px', fontFamily: 'monospace' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Deducciones Aplicadas</div>
+            <div className="text-xl font-bold text-slate-900 font-mono">
               {formatMoney(deduccionesValidas)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Facturas D01 a D10 válidas</div>
+            <div className="text-xs text-slate-500 mt-1">Facturas D01 a D10 validadas</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Remanente Libre para Deducir</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: remanenteDeducciones > 0 ? '#2563eb' : '#64748b', marginTop: '4px', fontFamily: 'monospace' }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Remanente Libre para Deducir</div>
+            <div className="text-xl font-bold text-slate-900 font-mono">
               {formatMoney(remanenteDeducciones)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Margen disponible para más saldo a favor</div>
+            <div className="text-xs text-slate-500 mt-1">Margen disponible no utilizado</div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Aprovechamiento del Tope</div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#7c3aed', marginTop: '4px' }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aprovechamiento del Tope</div>
+            <div className="text-xl font-bold text-slate-900 font-mono">
               {tope.porcentaje_aprovechado || 0}%
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Del límite fiscal utilizado</div>
+            <div className="text-xs text-slate-500 mt-1">Del límite fiscal máximo</div>
           </div>
         </div>
       </div>
 
-      {/* ── 4. COMPARATIVA / VERIFICACIÓN SAT (SI EXISTE ACUSE) ── */}
+      {/* ── 4. Comparativa con Acuse Oficial SAT (si existe) ── */}
       {oficial && (
-        <div style={{ background: '#f8fafc', borderRadius: '20px', padding: '1.75rem 2rem', border: '1px solid #cbd5e1' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🔍</span> Verificación Cruzada: Simulación XMLs vs Declaración Presentada SAT
+        <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-bold text-slate-900">
+              Conciliación: Simulación XMLs vs Declaración Oficial SAT
             </h3>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '4px 10px', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
-              ✓ Coincidencia Validada
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Acuse Validado
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            <div style={{ background: 'white', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>INGRESOS ACUMULABLES</span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.9rem' }}>
-                <span>XMLs: <b>{formatMoney(sim.ingresos_acumulables_totales)}</b></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#64748b' }}>
-                <span>SAT: <b>{formatMoney(oficial.ingresos_acumulables_totales)}</b></span>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Ingresos Acumulables</span>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>XMLs:</span> <b className="font-mono">{formatMoney(sim.ingresos_acumulables_totales)}</b></div>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>SAT:</span> <b className="font-mono">{formatMoney(oficial.ingresos_acumulables_totales)}</b></div>
             </div>
 
-            <div style={{ background: 'white', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>ISR CAUSADO</span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.9rem' }}>
-                <span>XMLs: <b>{formatMoney(sim.isr_anual_causado)}</b></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#64748b' }}>
-                <span>SAT: <b>{formatMoney(oficial.isr_tarifa)}</b></span>
-              </div>
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">ISR Causado</span>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>XMLs:</span> <b className="font-mono">{formatMoney(sim.isr_anual_causado)}</b></div>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>SAT:</span> <b className="font-mono">{formatMoney(oficial.isr_tarifa)}</b></div>
             </div>
 
-            <div style={{ background: 'white', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700 }}>SALDO DEFINITIVO</span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.9rem' }}>
-                <span>XMLs: <b style={{ color: esSaldoFavor ? '#059669' : '#dc2626' }}>{formatMoney(saldoMonto)}</b></span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#64748b' }}>
-                <span>SAT: <b>{oficial.saldo_a_favor > 0 ? formatMoney(oficial.saldo_a_favor) : formatMoney(oficial.saldo_a_cargo)}</b></span>
-              </div>
+            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Saldo del Ejercicio</span>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>XMLs:</span> <b className="font-mono">{formatMoney(saldoMonto)}</b></div>
+              <div className="flex justify-between text-slate-700 py-0.5"><span>SAT:</span> <b className="font-mono">{formatMoney(oficial.saldo_a_favor > 0 ? oficial.saldo_a_favor : oficial.saldo_a_cargo)}</b></div>
             </div>
           </div>
         </div>

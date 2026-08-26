@@ -1,8 +1,16 @@
+'use client';
+
 import React from 'react';
+import {
+  Download,
+  Info,
+  CheckCircle2,
+  AlertCircle
+} from 'lucide-react';
 
 export const CHART_COLORS = [
-  '#6366f1', '#10b981', '#f59e0b', '#ef4444',
-  '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'
+  '#2563eb', '#10b981', '#f59e0b', '#8b5cf6',
+  '#06b6d4', '#ec4899', '#6366f1', '#64748b'
 ];
 
 export const MONTH_NAMES = [
@@ -21,35 +29,12 @@ export const CsvExportButton = ({ onClick, label = 'Exportar CSV', count }) => (
   <button
     onClick={onClick}
     title={`Exportar ${count ? count + ' registros' : 'datos'} a CSV`}
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '0.5rem 1rem',
-      borderRadius: '8px',
-      border: '1.5px solid #10b981',
-      background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-      color: '#065f46',
-      fontSize: '0.82rem',
-      fontWeight: 700,
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      letterSpacing: '0.01em',
-      whiteSpace: 'nowrap',
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-      e.currentTarget.style.color = '#ffffff';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.background = 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)';
-      e.currentTarget.style.color = '#065f46';
-    }}
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer active:scale-98 whitespace-nowrap"
   >
-    <span style={{ fontSize: '1rem' }}>⬇️</span>
-    {label}
+    <Download className="w-3.5 h-3.5 text-slate-500" />
+    <span>{label}</span>
     {count !== undefined && (
-      <span style={{ background: 'rgba(16,185,129,0.15)', padding: '1px 6px', borderRadius: '10px', fontSize: '0.75rem' }}>
+      <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded text-[10px] font-mono font-bold">
         {count}
       </span>
     )}
@@ -57,145 +42,179 @@ export const CsvExportButton = ({ onClick, label = 'Exportar CSV', count }) => (
 );
 
 export const SectionCard = ({ icon, title, badge, children, accent }) => (
-  <div className={`sec-card ${accent || ''}`}>
-    <div className="sec-header">
-      <span className="sec-icon">{icon}</span>
-      <span className="sec-title">{title}</span>
-      {badge != null && <span className="sec-badge">{badge}</span>}
+  <div className={`bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden mb-5 ${accent || ''}`}>
+    <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
+      <div className="flex items-center gap-2.5">
+        {icon && (
+          <span className="text-slate-600 text-sm font-semibold">
+            {icon}
+          </span>
+        )}
+        <span className="text-sm font-bold text-slate-900 tracking-tight">{title}</span>
+      </div>
+      {badge != null && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+          {badge}
+        </span>
+      )}
     </div>
-    <div className="sec-body">{children}</div>
+    <div className="p-5">{children}</div>
   </div>
 );
 
 export const KpiRow = ({ items }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-    {items.map((k, i) => (
-      <div key={i} style={{
-        background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-        borderRadius: '16px',
-        padding: '1.5rem',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          bottom: 0,
-          width: '4px',
-          background: k.accent === 'kpi-danger' ? '#ef4444' : (k.accent === 'kpi-accent' ? '#f59e0b' : '#3b82f6')
-        }} />
-        <div style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>
-          {k.label}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
+    {items.map((k, i) => {
+      return (
+        <div
+          key={i}
+          className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              {k.label}
+            </span>
+            {k.tag && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                {k.tag}
+              </span>
+            )}
+          </div>
+          
+          <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-mono mb-1">
+            {fmt(k.value)}
+          </div>
+          
+          {k.help && (
+            <div className="text-[11px] text-slate-500 font-normal pt-1.5 border-t border-slate-100 mt-1">
+              {k.help}
+            </div>
+          )}
         </div>
-        <div style={{ fontSize: '1.85rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
-          {fmt(k.value)}
-        </div>
-        {k.help && <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{k.help}</div>}
-      </div>
-    ))}
+      );
+    })}
   </div>
 );
 
 export const InfoField = ({ label, value, help, accent }) => (
-  <div className={`info-field ${accent || ''}`}>
-    <div className="info-label">{label}</div>
-    <div className="info-value">{fmt(value)}</div>
-    {help && <div className="info-help">{help}</div>}
+  <div className={`p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 ${accent || ''}`}>
+    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">{label}</div>
+    <div className="text-base font-bold text-slate-900 font-mono">{fmt(value)}</div>
+    {help && <div className="text-xs text-slate-500 mt-0.5">{help}</div>}
   </div>
 );
 
-export const Pill = ({ text, color }) => (
-  <span className={`pill pill-${color || 'gray'}`}>{text}</span>
-);
+export const Pill = ({ text, color }) => {
+  const colorMap = {
+    green: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    emerald: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    red: 'bg-red-50 text-red-800 border-red-200',
+    rose: 'bg-red-50 text-red-800 border-red-200',
+    amber: 'bg-amber-50 text-amber-800 border-amber-200',
+    yellow: 'bg-amber-50 text-amber-800 border-amber-200',
+    blue: 'bg-slate-100 text-slate-800 border-slate-200',
+    gray: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
 
-export const CalcStep = ({ label, value, op, highlight }) => (
-  <div className={`calc-step ${highlight ? 'calc-highlight' : ''}`}>
-    <span className="calc-op">{op}</span>
-    <span className="calc-label">{label}</span>
-    <span className="calc-value">{fmt(value)}</span>
-  </div>
-);
-
-export const ConceptCard = ({ title, value, accent, metaItems, badge }) => {
-  let claveNumber = '';
-  let cleanTitle = title;
-
-  if (badge) {
-    claveNumber = badge;
-    cleanTitle = title;
-  } else {
-    const titleParts = title.split(' - ');
-    claveNumber = titleParts[0].replace('Clave: ', '');
-    if (titleParts.length > 1 && titleParts[0].startsWith('Clave:')) {
-      cleanTitle = titleParts.slice(1).join(' - ');
-    }
-  }
-
-  const isGreen = accent === 'green';
-  const isBlue = accent === 'blue';
-
-  const colorBase = isGreen ? '#10b981' : (isBlue ? '#ef4444' : '#ef4444');
-  const bgSoft = isGreen ? 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)' : 'linear-gradient(135deg, #fef2f2 0%, #ffffff 100%)';
-  const borderCol = isGreen ? '#a7f3d0' : '#fca5a5';
-  const shadowHover = isGreen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+  const styleClass = colorMap[color] || colorMap.gray;
 
   return (
-    <div
-       style={{
-         background: bgSoft,
-         borderRadius: '16px',
-         padding: '1.25rem',
-         border: `1px solid ${borderCol}`,
-         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
-         display: 'flex',
-         flexDirection: 'column',
-         position: 'relative',
-         overflow: 'hidden'
-       }}
-       onMouseEnter={(e) => {
-         e.currentTarget.style.transform = 'translateY(-4px)';
-         e.currentTarget.style.boxShadow = `0 12px 20px -8px ${shadowHover}`;
-         e.currentTarget.style.transition = 'all 0.3s ease';
-       }}
-       onMouseLeave={(e) => {
-         e.currentTarget.style.transform = 'translateY(0)';
-         e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02)';
-       }}
-    >
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: colorBase }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: colorBase, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${styleClass}`}>
+      {text}
+    </span>
+  );
+};
+
+export const CalcStep = ({ label, value, op, highlight }) => (
+  <div className={`flex items-center justify-between p-2.5 rounded-lg border text-xs ${
+    highlight
+      ? 'bg-slate-50 border-slate-300 font-bold text-slate-900 shadow-xs'
+      : 'bg-white border-slate-200 text-slate-700'
+  }`}>
+    <div className="flex items-center gap-2">
+      <span className="flex items-center justify-center w-5 h-5 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-bold">
+        {op}
+      </span>
+      <span className="font-medium">{label}</span>
+    </div>
+    <span className="font-mono font-semibold">{fmt(value)}</span>
+  </div>
+);
+
+export const ConceptCard = ({ title, value, accent = 'blue', metaItems, badge, gravado, exento }) => {
+  let claveNumber = badge || '';
+  let cleanTitle = title || '';
+
+  // Parse title if format is "001 — Concepto..."
+  if (!badge && title.includes('—')) {
+    const parts = title.split('—');
+    claveNumber = parts[0].trim();
+    cleanTitle = parts.slice(1).join('—').trim();
+  } else if (!badge && title.includes(' - ')) {
+    const parts = title.split(' - ');
+    claveNumber = parts[0].replace('Clave:', '').trim();
+    cleanTitle = parts.slice(1).join(' - ').trim();
+  }
+
+  const isRed = accent === 'red' || accent === 'danger' || accent === 'rose';
+  const isGreen = accent === 'green' || accent === 'emerald';
+
+  const cardBg = isRed
+    ? 'bg-gradient-to-br from-rose-50/80 via-orange-50/30 to-white border-rose-200/90 hover:border-rose-300'
+    : isGreen
+    ? 'bg-gradient-to-br from-emerald-50/80 via-teal-50/30 to-white border-emerald-200/90 hover:border-emerald-300'
+    : 'bg-gradient-to-br from-blue-50/80 via-indigo-50/30 to-white border-blue-200/90 hover:border-blue-300';
+
+  const badgeBg = isRed
+    ? 'bg-rose-100 text-rose-800 border-rose-200'
+    : isGreen
+    ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+    : 'bg-blue-100 text-blue-800 border-blue-200';
+
+  const amountColor = isRed
+    ? 'text-rose-700'
+    : isGreen
+    ? 'text-emerald-700'
+    : 'text-blue-700';
+
+  return (
+    <div className={`rounded-xl p-4 border shadow-xs flex flex-col justify-between transition-all hover:shadow-md hover:-translate-y-0.5 ${cardBg}`}>
+      <div>
+        <div className="flex justify-between items-center gap-2 mb-2">
+          {claveNumber && (
+            <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border font-mono tracking-wider ${badgeBg}`}>
               {claveNumber}
             </span>
-            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#1e293b', lineHeight: '1.2' }}>
-              {cleanTitle}
-            </span>
-         </div>
-      </div>
-      <div style={{ fontSize: '1.75rem', fontWeight: 900, color: colorBase, marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>
-        {fmt(value)}
+          )}
+        </div>
+        <div className="text-xs font-bold text-slate-800 mb-2.5 leading-snug line-clamp-2">
+          {cleanTitle}
+        </div>
+        <div className={`text-xl font-extrabold ${amountColor} font-mono tracking-tight`}>
+          {fmt(value)}
+        </div>
       </div>
 
-      {metaItems && metaItems.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', borderTop: '1px dashed #cbd5e1', paddingTop: '1rem', marginTop: 'auto' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            <span style={{ display: 'block', fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase', fontSize: '0.65rem' }}>Conceptos reportados</span>
-            <span style={{ color: '#475569', lineHeight: '1.4' }}>{metaItems[0].value}</span>
-          </div>
-          {metaItems.length > 1 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: 'rgba(255,255,255,0.7)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.04)' }}>
-               {metaItems.slice(1).map((m, i) => (
-                 <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                   <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>{m.label}</span>
-                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>{m.value}</span>
-                 </div>
-               ))}
+      {(gravado !== undefined || exento !== undefined || (metaItems && metaItems.length > 0)) && (
+        <div className="flex flex-col gap-1.5 border-t border-slate-200/60 pt-2 mt-3 text-[11px]">
+          {gravado !== undefined && gravado > 0 && (
+            <div className="flex justify-between text-slate-600">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase">Gravado:</span>
+              <span className="font-mono font-medium text-slate-800">{fmt(gravado)}</span>
             </div>
           )}
+          {exento !== undefined && exento > 0 && (
+            <div className="flex justify-between text-emerald-700">
+              <span className="text-[10px] font-semibold uppercase">Exento:</span>
+              <span className="font-mono font-medium">{fmt(exento)}</span>
+            </div>
+          )}
+          {metaItems && metaItems.map((m, i) => (
+            <div key={i} className="flex justify-between text-slate-600">
+              <span className="text-[10px] font-semibold text-slate-400 uppercase">{m.label}:</span>
+              <span className="font-medium text-slate-800 truncate max-w-[140px]">{m.value}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -203,17 +222,30 @@ export const ConceptCard = ({ title, value, accent, metaItems, badge }) => {
 };
 
 export const TabNavigation = ({ tabs, activeTab, onTabChange }) => (
-  <div className="tab-nav">
-    {tabs.map(tab => (
-      <button
-        key={tab.id}
-        className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-        onClick={() => onTabChange(tab.id)}
-      >
-        <span className="tab-icon">{tab.icon}</span>
-        <span>{tab.label}</span>
-        {tab.count !== undefined && <span className="tab-badge">{tab.count}</span>}
-      </button>
-    ))}
+  <div className="flex flex-col gap-0.5">
+    {tabs.map(tab => {
+      const isActive = activeTab === tab.id;
+      return (
+        <button
+          key={tab.id}
+          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer text-left ${
+            isActive
+              ? 'bg-zinc-800 text-white font-semibold'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+          }`}
+          onClick={() => onTabChange(tab.id)}
+        >
+          <div className="flex items-center gap-2 truncate">
+            <span className="text-sm">{tab.icon}</span>
+            <span className="truncate">{tab.label}</span>
+          </div>
+          {tab.count !== undefined && (
+            <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-semibold bg-zinc-800 text-zinc-400">
+              {tab.count}
+            </span>
+          )}
+        </button>
+      );
+    })}
   </div>
 );

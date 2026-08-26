@@ -1,8 +1,20 @@
+'use client';
+
 import React from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
+import {
+  Briefcase,
+  Users,
+  Receipt,
+  HeartHandshake,
+  Landmark,
+  CheckCircle2,
+  AlertCircle,
+  FileCheck
+} from 'lucide-react';
 
 export function DashboardSection({ sections, year, data }) {
   const nomina = sections?.sueldos;
@@ -48,186 +60,228 @@ export function DashboardSection({ sections, year, data }) {
   }));
 
   const pieSources = [
-    { name: 'Sueldos y Nómina', value: totalNomina },
-    { name: 'Honorarios / AEyP', value: totalAeyp },
+    { name: 'Sueldos y Salarios', value: totalNomina },
+    { name: 'Honorarios y Act. Profesional', value: totalAeyp },
   ].filter(x => x.value > 0);
 
-  const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
+  // Paleta luminosa, amable y profesional (Azul Royal, Verde Esmeralda, Ámbar, Violeta)
+  const COLORS = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6'];
   const esSaldoFavor = (simAnual.saldo_a_favor_proyectado || 0) > 0;
   const saldoMonto = esSaldoFavor ? simAnual.saldo_a_favor_proyectado : simAnual.saldo_a_cargo_proyectado;
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+  // Custom Clean Tooltip
+  const CleanTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xl text-slate-800 text-xs">
+          <div className="font-bold text-slate-900 mb-1.5 pb-1 border-b border-slate-100">{label}</div>
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-4 py-0.5">
+              <span className="flex items-center gap-1.5 text-slate-600">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                {entry.name}:
+              </span>
+              <span className="font-mono font-bold text-slate-900">{fmt(entry.value)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
-      {/* ── HERO BANNER DEL RESULTADO ANUAL PREVIO ── */}
-      <div style={{
-        background: esSaldoFavor
-          ? 'linear-gradient(135deg, #022c22 0%, #065f46 50%, #0f172a 100%)'
-          : 'linear-gradient(135deg, #450a0a 0%, #7f1d1d 50%, #1e1b4b 100%)',
-        borderRadius: '24px',
-        padding: '2.25rem',
-        color: 'white',
-        boxShadow: esSaldoFavor ? '0 12px 30px -8px rgba(6,78,59,0.4)' : '0 12px 30px -8px rgba(127,29,29,0.4)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: esSaldoFavor ? 'rgba(52, 211, 153, 0.2)' : 'rgba(248, 113, 113, 0.2)',
-            border: `1px solid ${esSaldoFavor ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)'}`,
-            padding: '4px 14px',
-            borderRadius: '999px',
-            fontSize: '0.8rem',
-            fontWeight: 800,
-            color: esSaldoFavor ? '#6ee7b7' : '#fca5a5'
-          }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: esSaldoFavor ? '#34d399' : '#ef4444' }} />
-            PRE-DECLARACIÓN FISCAL ANUAL • EJERCICIO {year}
+  return (
+    <div className="flex flex-col gap-6">
+
+      {/* ── BANNER DEL RESULTADO ANUAL (Luminoso y Claro) ── */}
+      <div className={`rounded-2xl p-6 sm:p-7 border transition-all ${
+        esSaldoFavor
+          ? 'bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border-emerald-200 text-emerald-950 shadow-xs'
+          : 'bg-gradient-to-r from-rose-50 via-amber-50/40 to-white border-rose-200 text-rose-950 shadow-xs'
+      }`}>
+        <div className="flex justify-between items-center flex-wrap gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
+              esSaldoFavor
+                ? 'bg-emerald-100/90 border-emerald-300 text-emerald-800'
+                : 'bg-rose-100/90 border-rose-300 text-rose-800'
+            }`}>
+              {esSaldoFavor ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+              Pre-Declaración Anual • Ejercicio {year}
+            </span>
           </div>
 
           {oficial && (
-            <span style={{ fontSize: '0.8rem', color: '#cbd5e1', background: 'rgba(255,255,255,0.15)', padding: '4px 10px', borderRadius: '8px', fontWeight: 700 }}>
-              🏛️ Acuse SAT Registrado (Op. {oficial.num_operacion})
+            <span className="inline-flex items-center gap-1.5 text-xs text-slate-700 bg-white px-3 py-1 rounded-full border border-slate-200 font-medium shadow-xs">
+              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+              Acuse Oficial SAT: Op. {oficial.num_operacion}
             </span>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '0.8rem', color: esSaldoFavor ? '#a7f3d0' : '#fecaca', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {esSaldoFavor ? '🎉 Saldo a Favor Estimado (Devolución)' : '⚠️ Impuesto Anual a Cargo Estimado'}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-7">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              {esSaldoFavor ? 'Saldo a Favor Proyectado (Devolución SAT)' : 'Impuesto Anual a Cargo Estimado'}
             </div>
-            <h1 style={{ margin: '4px 0 0 0', fontSize: '2.8rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', lineHeight: 1 }}>
+            <div className={`text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-2 ${
+              esSaldoFavor ? 'text-emerald-700' : 'text-rose-700'
+            }`}>
               {fmt(saldoMonto || 0)}
-            </h1>
-            <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.9rem', color: '#f1f5f9', opacity: 0.9 }}>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
               {esSaldoFavor
-                ? `Cálculo automático de tus XMLs: Tienes derecho a solicitar ${fmt(saldoMonto)} de devolución ante el SAT.`
-                : `Cálculo automático de tus XMLs: Se proyecta un impuesto a cargo de ${fmt(saldoMonto)} para este año.`}
+                ? `Cálculo a partir de tus CFDIs: Cuentas con un saldo a favor estimado de ${fmt(saldoMonto)} para devolución.`
+                : `Cálculo a partir de tus CFDIs: Se proyecta un impuesto a cargo de ${fmt(saldoMonto)} para este ejercicio.`}
             </p>
           </div>
 
-          <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: '#cbd5e1' }}>Ingresos Acumulables:</span>
-              <b style={{ color: 'white', fontFamily: 'monospace' }}>{fmt(simAnual.ingresos_acumulables_totales || 0)}</b>
+          <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200/90 flex flex-col gap-2.5 shadow-sm">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Ingresos Acumulables:</span>
+              <span className="font-mono font-bold text-slate-900">{fmt(simAnual.ingresos_acumulables_totales || 0)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: '#cbd5e1' }}>Deducciones Personales:</span>
-              <b style={{ color: '#fcd34d', fontFamily: 'monospace' }}>-{fmt(simAnual.deducciones_personales_aplicadas || 0)}</b>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Deducciones Personales:</span>
+              <span className="font-mono font-bold text-amber-700">-{fmt(simAnual.deducciones_personales_aplicadas || 0)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: '#cbd5e1' }}>ISR Causado (Art. 152):</span>
-              <b style={{ color: '#fca5a5', fontFamily: 'monospace' }}>{fmt(simAnual.isr_anual_causado || 0)}</b>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">ISR Causado (Art. 152 LISR):</span>
+              <span className="font-mono font-bold text-rose-700">{fmt(simAnual.isr_anual_causado || 0)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: '#cbd5e1' }}>Retenciones Acreditables:</span>
-              <b style={{ color: '#34d399', fontFamily: 'monospace' }}>-{fmt(simAnual.retenciones_totales_acreditables || 0)}</b>
+            <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-100">
+              <span className="text-slate-500 font-medium">Retenciones Acreditables:</span>
+              <span className="font-mono font-bold text-emerald-700">-{fmt(simAnual.retenciones_totales_acreditables || 0)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── 4 KPIS CONSOLIDADOS ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      {/* ── 4 KPIS CONSOLIDADOS (Luminosos y Limpios) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Ingresos Totales', value: fmt(totalNomina + totalAeyp), color: '#3b82f6', icon: '💼', sub: `Sueldos: ${fmt(totalNomina)} | Hon: ${fmt(totalAeyp)}` },
-          { label: 'Gastos Deducibles', value: fmt(totalGastosDed), color: '#059669', icon: '📉', sub: `${gastos.length} comprobantes en disco` },
-          { label: 'Deducciones Personales', value: fmt(deducciones.total || 0), color: '#f59e0b', icon: '🏥', sub: `Tope: ${fmt(deducciones.tope?.tope_aplicable || 0)}` },
-          { label: 'Retenciones ISR', value: fmt(totalRetenciones), color: '#7c3aed', icon: '🏛️', sub: `Acreditables a tu favor` },
-        ].map((k, i) => (
-          <div key={i} style={{ background: 'white', borderRadius: '14px', padding: '1.25rem 1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              <span style={{ fontSize: '1.1rem' }}>{k.icon}</span>
-              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', letterSpacing: '0.05em' }}>{k.label}</span>
+          { label: 'Ingresos Totales', value: fmt(totalNomina + totalAeyp), icon: Briefcase, colorClass: 'text-blue-600', iconBg: 'bg-blue-50 text-blue-600 border-blue-100', sub: `Sueldos: ${fmt(totalNomina)} | Hon: ${fmt(totalAeyp)}` },
+          { label: 'Gastos Deducibles', value: fmt(totalGastosDed), icon: Receipt, colorClass: 'text-emerald-600', iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-100', sub: `${gastos.length} comprobantes registrados` },
+          { label: 'Deducciones Personales', value: fmt(deducciones.total || 0), icon: HeartHandshake, colorClass: 'text-amber-600', iconBg: 'bg-amber-50 text-amber-600 border-amber-100', sub: `Tope: ${fmt(deducciones.tope?.tope_aplicable || 0)}` },
+          { label: 'Retenciones ISR', value: fmt(totalRetenciones), icon: Landmark, colorClass: 'text-indigo-600', iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-100', sub: `Acreditables contra ISR anual` },
+        ].map((k, i) => {
+          const IconComp = k.icon;
+          return (
+            <div key={i} className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{k.label}</span>
+                  <div className={`p-2 rounded-lg border ${k.iconBg}`}>
+                    <IconComp className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className={`text-2xl font-bold ${k.colorClass} tracking-tight font-mono mb-1`}>
+                  {k.value}
+                </div>
+              </div>
+              <div className="text-xs text-slate-500 font-normal pt-2.5 border-t border-slate-100 mt-2">
+                {k.sub}
+              </div>
             </div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: k.color, fontFamily: 'monospace' }}>{k.value}</div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px', fontWeight: 600 }}>{k.sub}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* ── GRÁFICA DE EVOLUCIÓN MENSUAL ── */}
-      <div style={{ background: 'white', padding: '1.5rem 1.75rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-        <h4 style={{ margin: '0 0 1.25rem 0', color: '#0f172a', fontSize: '1rem', fontWeight: 800 }}>
-          📈 Flujo Mensual de Ingresos — Sueldos vs Honorarios ({year})
-        </h4>
-        <ResponsiveContainer width='100%' height={280}>
-          <ComposedChart data={mensualData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#e2e8f0' />
-            <XAxis dataKey='name' tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
-            <Tooltip formatter={(val, name) => [fmt(val), name]} cursor={{ fill: '#f8fafc' }} />
-            <Legend iconType='circle' wrapperStyle={{ fontSize: '12px', fontWeight: 600 }} />
-            <Bar dataKey='Nómina' stackId='a' fill='#6366f1' name='Sueldos y Salarios' />
+      {/* ── GRÁFICA DE EVOLUCIÓN MENSUAL (Azul Royal + Verde Esmeralda) ── */}
+      <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-tight">
+              Evolución Mensual de Ingresos
+            </h4>
+            <p className="text-xs text-slate-500">Comparativa Sueldos vs Honorarios ({year})</p>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-medium text-slate-600">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-600 inline-block" /> Nómina</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" /> Honorarios</span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500 inline-block" /> Total</span>
+          </div>
+        </div>
+        <ResponsiveContainer width='100%' height={270}>
+          <ComposedChart data={mensualData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#f1f5f9' />
+            <XAxis dataKey='name' tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={v => '$' + (v / 1000).toFixed(0) + 'k'} tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip content={<CleanTooltip />} />
+            <Bar dataKey='Nómina' stackId='a' fill='#2563eb' radius={[0, 0, 0, 0]} name='Sueldos y Salarios' />
             <Bar dataKey='Honorarios' stackId='a' fill='#10b981' radius={[4, 4, 0, 0]} name='Honorarios / Facturación' />
-            <Line type='monotone' dataKey='Total' stroke='#f59e0b' strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} name='Ingreso Total' />
+            <Line type='monotone' dataKey='Total' stroke='#f59e0b' strokeWidth={2.5} dot={{ r: 3.5, fill: '#f59e0b', stroke: '#ffffff', strokeWidth: 1.5 }} name='Ingreso Total' />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Composición de Ingresos */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 text-center">
             Composición de Ingresos {year}
           </h4>
-          <ResponsiveContainer width='100%' height={200}>
+          <ResponsiveContainer width='100%' height={190}>
             <PieChart>
-              <Pie data={pieSources} cx='50%' cy='50%' innerRadius={55} outerRadius={85} paddingAngle={3} dataKey='value' stroke='none'>
+              <Pie data={pieSources} cx='50%' cy='50%' innerRadius={55} outerRadius={82} paddingAngle={3} dataKey='value' stroke='none'>
                 {pieSources.map((e, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(val) => fmt(val)} />
+              <Tooltip content={<CleanTooltip />} />
             </PieChart>
           </ResponsiveContainer>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '0.75rem' }}>
+          <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-slate-100">
             {pieSources.map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-                <span style={{ flex: 1, fontSize: '13px', color: '#334155', fontWeight: 600 }}>{s.name}</span>
-                <span style={{ fontSize: '13px', color: '#475569', fontWeight: 700 }}>{fmt(s.value)}</span>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>{totalGeneral > 0 ? ((s.value / totalGeneral) * 100).toFixed(0) : 0}%</span>
+              <div key={i} className="flex items-center justify-between text-xs py-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="text-slate-700 font-medium">{s.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-slate-900">{fmt(s.value)}</span>
+                  <span className="text-slate-400 font-mono w-10 text-right">
+                    {totalGeneral > 0 ? ((s.value / totalGeneral) * 100).toFixed(0) : 0}%
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', overflowX: 'auto' }}>
-          <h4 style={{ margin: '0 0 1rem 0', color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            Resumen por Mes
+        {/* Resumen por Mes */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs overflow-x-auto">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            Resumen Mensual
           </h4>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+          <table className="w-full text-xs text-left">
             <thead>
-              <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                <th style={{ textAlign: 'left', padding: '4px 8px', color: '#64748b', fontWeight: 700 }}>Mes</th>
-                <th style={{ textAlign: 'right', padding: '4px 8px', color: '#6366f1', fontWeight: 700 }}>Nómina</th>
-                <th style={{ textAlign: 'right', padding: '4px 8px', color: '#10b981', fontWeight: 700 }}>Honorarios</th>
-                <th style={{ textAlign: 'right', padding: '4px 8px', color: '#f59e0b', fontWeight: 700 }}>Total</th>
+              <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                <th className="py-2.5 px-3">Mes</th>
+                <th className="py-2.5 px-3 text-right text-blue-600">Nómina</th>
+                <th className="py-2.5 px-3 text-right text-emerald-600">Honorarios</th>
+                <th className="py-2.5 px-3 text-right text-slate-900">Total</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {mensualData.filter(m => m.Total > 0).map((m, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '5px 8px', fontWeight: 600, color: '#334155' }}>{m.name}</td>
-                  <td style={{ padding: '5px 8px', textAlign: 'right', color: '#6366f1' }}>{m['Nómina'] > 0 ? fmt(m['Nómina']) : '—'}</td>
-                  <td style={{ padding: '5px 8px', textAlign: 'right', color: '#10b981' }}>{m.Honorarios > 0 ? fmt(m.Honorarios) : '—'}</td>
-                  <td style={{ padding: '5px 8px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{fmt(m.Total)}</td>
+                <tr key={i} className="hover:bg-slate-50/80">
+                  <td className="py-2.5 px-3 text-slate-700 font-medium">{m.name}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-blue-600 font-medium">{m['Nómina'] > 0 ? fmt(m['Nómina']) : '—'}</td>
+                  <td className="py-2.5 px-3 text-right font-mono text-emerald-600 font-medium">{m.Honorarios > 0 ? fmt(m.Honorarios) : '—'}</td>
+                  <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">{fmt(m.Total)}</td>
                 </tr>
               ))}
-              <tr style={{ borderTop: '2px solid #e2e8f0', background: '#f8fafc' }}>
-                <td style={{ padding: '6px 8px', fontWeight: 800, color: '#0f172a' }}>TOTAL</td>
-                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 800, color: '#6366f1' }}>{fmt(totalNomina)}</td>
-                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>{fmt(totalAeyp)}</td>
-                <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 900, color: '#0f172a' }}>{fmt(totalGeneral)}</td>
+              <tr className="bg-slate-50 font-bold text-slate-900 border-t-2 border-slate-200">
+                <td className="py-2.5 px-3">TOTAL</td>
+                <td className="py-2.5 px-3 text-right font-mono text-blue-600">{fmt(totalNomina)}</td>
+                <td className="py-2.5 px-3 text-right font-mono text-emerald-600">{fmt(totalAeyp)}</td>
+                <td className="py-2.5 px-3 text-right font-mono text-slate-900 font-black">{fmt(totalGeneral)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ── Panel Fiscal: Impuestos y Retenciones ── */}
+      {/* ── Impuestos y Retenciones ── */}
       {(() => {
         const isrNomina = nomina?.isr_retenido || 0;
         const isrAeyp = aeyp?.isr_retenido || 0;
@@ -238,59 +292,57 @@ export function DashboardSection({ sections, year, data }) {
         const ivaNetoCargo = ivaTrasl - ivaRet;
 
         const kpis = [
-          { label: 'ISR Retenido (Nómina)', value: fmt(isrNomina), color: '#6366f1', icon: '👥', tip: 'ISR que tus empleadores retuvieron al pagarte' },
-          { label: 'ISR Retenido (AEyP)', value: fmt(isrAeyp), color: '#10b981', icon: '💼', tip: 'ISR que tus clientes retuvieron en facturas' },
-          { label: 'ISR Retenido (Intereses)', value: fmt(isrInt), color: '#8b5cf6', icon: '🏦', tip: 'ISR retenido por Cetes/bancos en tus rendimientos' },
-          { label: 'Total ISR Retenido', value: fmt(totalIsrRet), color: '#ef4444', icon: '🧮', tip: 'Acreditable contra tu ISR anual' },
-          { label: 'IVA Trasladado (Cobrado)', value: fmt(ivaTrasl), color: '#f59e0b', icon: '🏛️', tip: 'IVA que cobraste a clientes — pertenece al SAT' },
-          { label: 'IVA Retenido (por Clientes)', value: fmt(ivaRet), color: '#ec4899', icon: '✂️', tip: 'IVA que clientes te retuvieron y enteraron al SAT' },
-          { label: ivaNetoCargo >= 0 ? 'IVA a Cargo (SAT)' : 'IVA a Favor', value: fmt(Math.abs(ivaNetoCargo)), color: ivaNetoCargo >= 0 ? '#ef4444' : '#10b981', icon: ivaNetoCargo >= 0 ? '⬆️' : '⬇️', tip: 'IVA Trasladado − IVA Retenido (sin acreditable de gastos)' },
+          { label: 'ISR Retenido (Nómina)', value: fmt(isrNomina), colorClass: 'text-blue-600', tip: 'ISR retenido por empleadores' },
+          { label: 'ISR Retenido (Honorarios)', value: fmt(isrAeyp), colorClass: 'text-emerald-600', tip: 'ISR retenido por personas morales en facturas' },
+          { label: 'ISR Retenido (Intereses)', value: fmt(isrInt), colorClass: 'text-indigo-600', tip: 'ISR retenido en rendimientos e inversiones' },
+          { label: 'Total ISR Retenido', value: fmt(totalIsrRet), colorClass: 'text-slate-900', tip: 'Acreditable contra el ISR anual', highlight: true },
+          { label: 'IVA Trasladado (Cobrado)', value: fmt(ivaTrasl), colorClass: 'text-amber-600', tip: 'IVA cobrado en facturas emitidas' },
+          { label: 'IVA Retenido por Clientes', value: fmt(ivaRet), colorClass: 'text-purple-600', tip: 'IVA retenido por personas morales' },
+          { label: ivaNetoCargo >= 0 ? 'IVA a Cargo (Bruto)' : 'IVA a Favor (Bruto)', value: fmt(Math.abs(ivaNetoCargo)), colorClass: ivaNetoCargo >= 0 ? 'text-rose-600' : 'text-emerald-600', tip: 'IVA Trasladado − IVA Retenido' },
         ];
 
         return (
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-              <div style={{ width: '4px', height: '22px', borderRadius: '2px', background: 'linear-gradient(180deg,#ef4444,#f59e0b)' }} />
-              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#334155' }}>Impuestos y Retenciones — {year}</h3>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1rem' }}>
+          <div className="flex flex-col gap-3">
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">Desglose de Retenciones e Impuestos — {year}</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {kpis.map((k, i) => (
-                <div key={i} title={k.tip} style={{ background: 'white', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', position: 'relative', overflow: 'hidden', cursor: 'default' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: k.color }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                    <span>{k.icon}</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', lineHeight: 1.2 }}>{k.label}</span>
-                  </div>
-                  <div style={{ fontSize: '1.35rem', fontWeight: 900, color: k.color }}>{k.value}</div>
+                <div key={i} title={k.tip} className={`bg-white rounded-xl p-4 border ${k.highlight ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200'}`}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">{k.label}</div>
+                  <div className={`text-xl font-bold font-mono ${k.colorClass}`}>{k.value}</div>
                 </div>
               ))}
             </div>
 
             {/* Waterfall visual ISR */}
-            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', marginTop: '1rem' }}>
-              <h4 style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ISR Retenido por Fuente</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs mt-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+                Distribución de Retenciones ISR por Fuente
+              </h4>
+              <div className="flex flex-col gap-3.5">
                 {[
-                  { label: 'Nómina (empleadores)', value: isrNomina, color: '#6366f1' },
-                  { label: 'AEyP / Honorarios (clientes)', value: isrAeyp, color: '#10b981' },
-                  { label: 'Intereses y Rendimientos', value: isrInt, color: '#8b5cf6' },
+                  { label: 'Nómina (empleadores)', value: isrNomina, barBg: 'bg-blue-600', textClass: 'text-blue-600' },
+                  { label: 'Honorarios / Act. Prof. (clientes)', value: isrAeyp, barBg: 'bg-emerald-500', textClass: 'text-emerald-600' },
+                  { label: 'Intereses y Rendimientos', value: isrInt, barBg: 'bg-indigo-500', textClass: 'text-indigo-600' },
                 ].map((row, i) => {
                   const pct = totalIsrRet > 0 ? (row.value / totalIsrRet) * 100 : 0;
                   return (
                     <div key={i}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '12px' }}>
-                        <span style={{ color: '#475569', fontWeight: 600 }}>{row.label}</span>
-                        <span style={{ color: row.color, fontWeight: 800 }}>{fmt(row.value)} <span style={{ color: '#94a3b8', fontWeight: 500 }}>({pct.toFixed(0)}%)</span></span>
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="text-slate-700 font-medium">{row.label}</span>
+                        <span className={`font-mono font-bold ${row.textClass}`}>
+                          {fmt(row.value)} <span className="text-slate-400 font-normal">({pct.toFixed(0)}%)</span>
+                        </span>
                       </div>
-                      <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: pct + '%', background: row.color, borderRadius: '4px', transition: 'width 0.8s ease' }} />
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className={`h-full ${row.barBg} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );
                 })}
-                <div style={{ borderTop: '2px solid #e2e8f0', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                  <span style={{ fontWeight: 800, color: '#0f172a' }}>Total ISR Retenido (Acreditable)</span>
-                  <span style={{ fontWeight: 900, color: '#ef4444', fontSize: '1rem' }}>{fmt(totalIsrRet)}</span>
+                <div className="border-t border-slate-200 pt-3 flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-900">Total ISR Retenido (Acreditable):</span>
+                  <span className="font-black text-slate-900 font-mono text-base">{fmt(totalIsrRet)}</span>
                 </div>
               </div>
             </div>

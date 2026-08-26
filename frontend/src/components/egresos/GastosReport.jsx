@@ -46,14 +46,14 @@ export const GastosReport = ({ data, year }) => {
     });
   }, [data, groupBy]);
 
-  if (!data?.length) return <SectionCard icon="📈" title="Reporte Detallado de Egresos" badge="0">No hay gastos deducibles registrados en este periodo.</SectionCard>;
+  if (!data?.length) return <SectionCard title="Reporte Detallado de Egresos" badge="0">No hay gastos deducibles registrados en este periodo.</SectionCard>;
 
   const totalSubtotal = data.reduce((s, d) => s + d.subtotal, 0);
   const totalIva = data.reduce((s, d) => s + d.iva, 0);
 
   return (
     <>
-      <SectionCard icon="📈" title="Reporte Detallado de Egresos (Negocio)" badge={`${data.length} comprobantes`}>
+      <SectionCard title="Reporte Detallado de Egresos (Negocio)" badge={`${data.length} comprobantes`}>
 
       {/* Controles de Agrupación y KPI Globales */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -63,21 +63,21 @@ export const GastosReport = ({ data, year }) => {
             onClick={() => setGroupBy('emisor')}
             style={{ cursor: 'pointer', border: 'none', transition: 'all 0.2s', padding: '0.5rem 1rem' }}
           >
-            🏢 Agrupar por Proveedor / Emisor
+            Agrupar por Proveedor / Emisor
           </button>
           <button
             className={`pill ${groupBy === 'mes' ? 'pill-blue' : 'pill-gray'}`}
             onClick={() => setGroupBy('mes')}
             style={{ cursor: 'pointer', border: 'none', transition: 'all 0.2s', padding: '0.5rem 1rem' }}
           >
-            📅 Agrupar por Mes
+            Agrupar por Mes
           </button>
           <button
             className={`pill ${groupBy === 'uso_cfdi' ? 'pill-blue' : 'pill-gray'}`}
             onClick={() => setGroupBy('uso_cfdi')}
             style={{ cursor: 'pointer', border: 'none', transition: 'all 0.2s', padding: '0.5rem 1rem' }}
           >
-            🏷️ Agrupar por Cuenta / Uso CFDI
+            Agrupar por Cuenta / Uso CFDI
           </button>
           <CsvExportButton
             onClick={() => exportEgresos(data, year, 'Detalle')}

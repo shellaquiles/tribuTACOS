@@ -1,5 +1,16 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
+import {
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  FileText,
+  Archive,
+  RefreshCw
+} from 'lucide-react';
 
 export const UploadModal = ({ isOpen, onClose, clientId, onUploadSuccess }) => {
   const [dragActive, setDragActive] = useState(false);
@@ -39,7 +50,7 @@ export const UploadModal = ({ isOpen, onClose, clientId, onUploadSuccess }) => {
       formData.append("files", files[i]);
     }
 
-    const apiBase = `http://${window.location.hostname}:8010/api`;
+    const apiBase = `/api`;
     const url = clientId ? `${apiBase}/upload?client_id=${clientId}` : `${apiBase}/upload`;
 
     try {
@@ -56,52 +67,27 @@ export const UploadModal = ({ isOpen, onClose, clientId, onUploadSuccess }) => {
   };
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.7)',
-      backdropFilter: 'blur(6px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 10000, padding: '1rem'
-    }}>
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '20px',
-        maxWidth: '560px',
-        width: '100%',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        overflow: 'hidden',
-        border: '1px solid #e2e8f0'
-      }}>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden">
+        
         {/* Header */}
-        <div style={{
-          padding: '1.25rem 1.5rem',
-          background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.6rem' }}>🌮</span>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Desmenuzar Nuevos CFDIs</h3>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8' }}>Sube archivos .XML sueltos o un .ZIP completo</p>
-            </div>
+        <div className="px-6 py-4 bg-slate-50 text-slate-900 flex items-center justify-between border-b border-slate-200">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+              Carga y Clasificación de Comprobantes XML
+            </h3>
+            <p className="text-[11px] text-slate-500">tribuTACOS • shellaquiles.org</p>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white',
-              width: '32px', height: '32px', borderRadius: '50%', cursor: 'pointer',
-              fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}
+            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div style={{ padding: '1.75rem' }}>
+        <div className="p-6">
           {/* Dropzone */}
           <div
             onDragEnter={handleDrag}
@@ -109,27 +95,18 @@ export const UploadModal = ({ isOpen, onClose, clientId, onUploadSuccess }) => {
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: `2px dashed ${dragActive ? '#3b82f6' : '#cbd5e1'}`,
-              borderRadius: '16px',
-              padding: '2.5rem 1.5rem',
-              textAlign: 'center',
-              backgroundColor: dragActive ? '#eff6ff' : '#f8fafc',
-              cursor: uploading ? 'wait' : 'pointer',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px'
-            }}
+            className={`border border-dashed rounded-lg p-8 text-center transition-colors flex flex-col items-center justify-center gap-2.5 cursor-pointer ${
+              dragActive
+                ? 'border-slate-800 bg-slate-50'
+                : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50'
+            }`}
           >
             <input
               ref={fileInputRef}
               type="file"
               multiple
               accept=".xml,.zip"
-              style={{ display: 'none' }}
+              className="hidden"
               onChange={(e) => {
                 if (e.target.files && e.target.files.length > 0) {
                   handleFiles(e.target.files);
@@ -138,82 +115,67 @@ export const UploadModal = ({ isOpen, onClose, clientId, onUploadSuccess }) => {
             />
 
             {uploading ? (
-              <>
-                <div className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px' }} />
-                <div style={{ fontWeight: 700, color: '#1e293b' }}>Procesando y clasificando CFDIs...</div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Indexando comprobantes en la base de datos</div>
-              </>
+              <div className="flex flex-col items-center gap-2 py-3">
+                <RefreshCw className="w-6 h-6 text-slate-700 animate-spin" />
+                <div className="text-xs font-semibold text-slate-800">Procesando e indexando comprobantes...</div>
+                <div className="text-[11px] text-slate-500">Validando sellos digitales y RFCs</div>
+              </div>
             ) : (
               <>
-                <div style={{
-                  width: '56px', height: '56px', borderRadius: '50%',
-                  background: '#e0f2fe', color: '#0284c7',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.6rem'
-                }}>
-                  📂
+                <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center border border-slate-200">
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b' }}>
-                    Arrastra aquí tus archivos XML o ZIP
+                  <div className="text-xs font-semibold text-slate-800">
+                    Arrastra aquí tus archivos XML o paquetes ZIP
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px' }}>
-                    O haz clic para explorar en tu computadora
+                  <div className="text-[11px] text-slate-500 mt-0.5">
+                    O haz clic para seleccionar desde tu equipo
                   </div>
                 </div>
-                <div style={{
-                  display: 'inline-flex', gap: '6px', fontSize: '0.72rem',
-                  background: '#e2e8f0', color: '#475569', padding: '4px 10px',
-                  borderRadius: '12px', fontWeight: 600
-                }}>
-                  <span>⚡ Auto-clasificación por RFC</span>
-                  <span>•</span>
-                  <span>Deduplicación automática</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <FileText className="w-3 h-3" /> XML 3.3 / 4.0
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <Archive className="w-3 h-3" /> Paquete ZIP
+                  </span>
                 </div>
               </>
             )}
           </div>
 
-          {/* Results feedback */}
+          {/* Feedback Resultados */}
           {uploadResult && (
-            <div style={{
-              marginTop: '1.25rem', padding: '1rem 1.25rem', borderRadius: '12px',
-              background: '#f0fdf4', border: '1px solid #86efac', color: '#166534'
-            }}>
-              <div style={{ fontWeight: 800, fontSize: '0.9rem', marginBottom: '4px' }}>
-                ✅ Ingesta Completada
+            <div className="mt-4 p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-900 mb-1">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                Ingesta Completada
               </div>
-              <div style={{ fontSize: '0.82rem' }}>
-                Se detectaron <strong>{uploadResult.files_total}</strong> comprobantes. 
+              <div className="text-slate-700">
+                Se detectaron <strong>{uploadResult.files_total}</strong> comprobantes.
                 Ingestados correctamente: <strong>{uploadResult.files_ok}</strong>
-                {uploadResult.files_error > 0 && ` (${uploadResult.files_error} omitidos o corruptos)`}.
+                {uploadResult.files_error > 0 && ` (${uploadResult.files_error} omitidos o no válidos)`}.
               </div>
             </div>
           )}
 
           {error && (
-            <div style={{
-              marginTop: '1.25rem', padding: '1rem 1.25rem', borderRadius: '12px',
-              background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b',
-              fontSize: '0.85rem'
-            }}>
-              <strong>⚠️ Error:</strong> {error}
+            <div className="mt-4 p-3.5 rounded-lg bg-red-50 border border-red-200 text-red-950 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-red-900 mb-1">
+                <AlertCircle className="w-4 h-4 text-red-700" />
+                Error en la carga
+              </div>
+              <p className="text-red-800">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div style={{
-          padding: '1rem 1.5rem', background: '#f8fafc',
-          borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem'
-        }}>
+        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
           <button
             onClick={onClose}
-            style={{
-              padding: '0.6rem 1.2rem', borderRadius: '8px', border: '1px solid #cbd5e1',
-              background: '#ffffff', color: '#475569', fontWeight: 600, fontSize: '0.85rem',
-              cursor: 'pointer'
-            }}
+            className="px-4 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors cursor-pointer"
           >
             {uploadResult ? 'Cerrar y Actualizar' : 'Cancelar'}
           </button>

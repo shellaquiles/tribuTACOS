@@ -1,16 +1,26 @@
+'use client';
+
 import React, { useState } from 'react';
 import { SectionCard, CsvExportButton, fmt } from '../ui/Primitives';
 import { CfdiVisualizerModal, XmlViewerModal } from '../ui/Modals';
 import { exportDeduccionesPersonales } from '../../csvExport';
+import { Download, FileText, Code2 } from 'lucide-react';
 
-export const DeduccionesPersonalesSection = ({ data, year }) => {
+export const DeduccionesPersonalesSection = ({ data, deducciones, year }) => {
   const [activeSubTab, setActiveSubTab] = useState('validas');
   const [selectedCfdi, setSelectedCfdi] = useState(null);
   const [viewingXml, setViewingXml] = useState(null);
 
-  if (!data) return null;
+  const currentData = data || deducciones;
+  if (!currentData) {
+    return (
+      <div className="bg-white p-8 rounded-xl border border-slate-200 text-center text-slate-500 text-xs">
+        No se encontraron datos de deducciones personales para el ejercicio {year || 'seleccionado'}.
+      </div>
+    );
+  }
 
-  const tope = data.tope || {
+  const tope = currentData.tope || {
     limite_15_pct: 0,
     limite_5_umas: 198031.8,
     tope_aplicable: 198031.8,
@@ -19,218 +29,187 @@ export const DeduccionesPersonalesSection = ({ data, year }) => {
     porcentaje_aprovechado: 0
   };
 
-  const validas = data.detalle || [];
-  const observadas = data.observadas || [];
-  const posibles = data.posibles_no_clasificadas || [];
+  const validas = currentData.detalle || [];
+  const observadas = currentData.observadas || [];
+  const posibles = currentData.posibles_no_clasificadas || [];
 
   const CAT_DEDUCCIONES_INFO = [
-    { code: 'D01', name: 'Honorarios médicos, dentales y hospitalarios', icon: '🏥', desc: 'Consultas médicas, dentistas, psicólogos y nutriólogos titulados' },
-    { code: 'D02', name: 'Gastos médicos por incapacidad / ópticos', icon: '👓', desc: 'Lentes graduados (hasta $2,500) y aparatos de rehabilitación' },
-    { code: 'D03', name: 'Gastos funerales', icon: '⚰️', desc: 'Gastos de sepelio para cónyuge, padres, abuelos o hijos' },
-    { code: 'D04', name: 'Donativos no onerosos', icon: '🎗️', desc: 'Donaciones a donatarias autorizadas por el SAT (tope 7% ingresos)' },
-    { code: 'D05', name: 'Intereses reales crédito hipotecario', icon: '🏠', desc: 'Intereses reales pagados en créditos Infonavit, Fovissste o bancarios' },
-    { code: 'D06', name: 'Aportaciones voluntarias al SAR / Afore', icon: '🎓', desc: 'Aportaciones para el retiro (tope 10% ingresos o 5 UMAs)' },
-    { code: 'D07', name: 'Primas por seguros de gastos médicos', icon: '💊', desc: 'Pólizas de seguro médico para ti o familiares directos' },
-    { code: 'D08', name: 'Gastos de transportación escolar obligatoria', icon: '🚌', desc: 'Transporte escolar obligatorio para hijos' },
-    { code: 'D09', name: 'Cuentas especiales para el ahorro', icon: '🏦', desc: 'Planes de ahorro a largo plazo (hasta $152,000 anuales)' },
-    { code: 'D10', name: 'Colegiaturas', icon: '🏫', desc: 'Preescolar a Bachillerato con topes específicos por nivel escolar' },
+    { code: 'D01', name: 'Honorarios médicos, dentales y hospitalarios', desc: 'Consultas médicas, dentistas, psicólogos y nutriólogos titulados' },
+    { code: 'D02', name: 'Gastos médicos por incapacidad / ópticos', desc: 'Lentes graduados (hasta $2,500) y aparatos de rehabilitación' },
+    { code: 'D03', name: 'Gastos funerales', desc: 'Gastos de sepelio para cónyuge, padres, abuelos o hijos' },
+    { code: 'D04', name: 'Donativos no onerosos', desc: 'Donaciones a donatarias autorizadas por el SAT (tope 7% ingresos)' },
+    { code: 'D05', name: 'Intereses reales crédito hipotecario', desc: 'Intereses reales pagados en créditos Infonavit, Fovissste o bancarios' },
+    { code: 'D06', name: 'Aportaciones voluntarias al SAR / Afore', desc: 'Aportaciones para el retiro (tope 10% ingresos o 5 UMAs)' },
+    { code: 'D07', name: 'Primas por seguros de gastos médicos', desc: 'Pólizas de seguro médico para ti o familiares directos' },
+    { code: 'D08', name: 'Gastos de transportación escolar obligatoria', desc: 'Transporte escolar obligatorio para hijos' },
+    { code: 'D09', name: 'Cuentas especiales para el ahorro', desc: 'Planes de ahorro a largo plazo (hasta $152,000 anuales)' },
+    { code: 'D10', name: 'Colegiaturas', desc: 'Preescolar a Bachillerato con topes específicos por nivel escolar' },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div className="flex flex-col gap-6 text-slate-800">
 
-      {/* ── 1. TERMÓMETRO DEL TOPE LEGAL DEL SAT (Art. 151 LISR) ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        borderRadius: '20px',
-        padding: '2rem',
-        color: 'white',
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ position: 'absolute', top: '-40px', right: '-40px', fontSize: '10rem', opacity: 0.05, pointerEvents: 'none' }}>
-          🏥
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem' }}>
+      {/* ── 1. Resumen Ejecutivo del Tope Legal (Art. 151 LISR) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex justify-between items-start flex-wrap gap-4 pb-4 border-b border-slate-100 mb-6">
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-              <span>⚖️ Art. 151 LISR</span>
-              <span>•</span>
-              <span>Tope Anual SAT {year}</span>
-            </div>
-            <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'white' }}>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">
+              Art. 151 LISR • Tope Anual SAT {year}
+            </span>
+            <h2 className="text-lg font-bold text-slate-900 tracking-tight">
               Control de Deducciones Personales
-            </h3>
-            <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: '#94a3b8', maxWidth: '600px' }}>
-              Reduce directamente tu base gravable anual. El límite del SAT es el menor entre el <strong>15% de tus ingresos totales</strong> y <strong>5 UMAs anuales ({fmt(tope.limite_5_umas)})</strong>.
+            </h2>
+            <p className="text-xs text-slate-500 max-w-xl mt-1">
+              Reduce directamente tu base gravable anual. El límite del SAT es el menor entre el 15% de tus ingresos totales y 5 UMAs anuales ({fmt(tope.limite_5_umas)}).
             </p>
           </div>
 
           {validas.length > 0 && (
-            <CsvExportButton
+            <button
               onClick={() => exportDeduccionesPersonales(validas, year)}
-              label="Exportar Deducciones"
-              count={validas.length}
-            />
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" />
+              <span>Exportar Deducciones ({validas.length})</span>
+            </button>
           )}
         </div>
 
         {/* KPIs de Aprovechamiento */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Monto Deducible Aplicado</span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#34d399', lineHeight: 1.2, marginTop: '4px' }}>
-              {fmt(data.total)}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Monto Deducible Aplicado</span>
+            <div className="text-2xl font-bold text-slate-900 font-mono mt-1">
+              {fmt(currentData.total)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#a7f3d0', marginTop: '4px' }}>
+            <div className="text-xs text-slate-500 mt-1">
               {validas.length} comprobante(s) válido(s)
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tope Legal Máximo SAT</span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#60a5fa', lineHeight: 1.2, marginTop: '4px' }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Tope Legal Máximo SAT</span>
+            <div className="text-2xl font-bold text-slate-900 font-mono mt-1">
               {fmt(tope.tope_aplicable)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#93c5fd', marginTop: '4px' }}>
+            <div className="text-xs text-slate-500 mt-1">
               5 UMAs: {fmt(tope.limite_5_umas)}
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '14px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Espacio Fiscal Disponible</span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1.2, marginTop: '4px' }}>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Espacio Fiscal Disponible</span>
+            <div className="text-2xl font-bold text-slate-900 font-mono mt-1">
               {fmt(tope.remanente_disponible)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#fde68a', marginTop: '4px' }}>
-              Margen aún deducible
+            <div className="text-xs text-slate-500 mt-1">
+              Margen aún disponible para deducir
             </div>
           </div>
         </div>
 
         {/* Barra de Progreso */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>
-            <span style={{ color: '#cbd5e1' }}>Aprovechamiento del Tope Anual</span>
-            <span style={{ color: '#34d399' }}>{tope.porcentaje_aprovechado}% utilizado</span>
+          <div className="flex justify-between text-xs font-medium text-slate-600 mb-1.5">
+            <span>Aprovechamiento del Tope Anual</span>
+            <span className="font-semibold text-slate-800">{tope.porcentaje_aprovechado}% utilizado</span>
           </div>
-          <div style={{ height: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', overflow: 'hidden' }}>
-            <div style={{
-              height: '100%',
-              width: `${Math.min(100, Math.max(0, tope.porcentaje_aprovechado))}%`,
-              background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
-              borderRadius: '6px',
-              transition: 'width 0.8s ease'
-            }} />
+          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+            <div
+              className="h-full bg-blue-600 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, tope.porcentaje_aprovechado))}%` }}
+            />
           </div>
         </div>
       </div>
 
-      {/* ── 2. CATÁLOGO VISUAL DE RUBROS DEDUCIBLES ── */}
-      <SectionCard icon="🗂️" title="Desglose por Tipo de Deducción Personal" badge={`${validas.length} comprobantes`}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+      {/* ── 2. Catálogo de Rubros Deducibles ── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-900">
+            Desglose por Tipo de Deducción Personal
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Clasificación fiscal de acuerdo al catálogo oficial de deducciones del SAT.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {CAT_DEDUCCIONES_INFO.map(cat => {
-            const monto = data.por_uso?.[cat.code] || 0;
+            const monto = currentData.por_uso?.[cat.code] || 0;
             const hasData = monto > 0;
             return (
               <div
                 key={cat.code}
-                style={{
-                  background: hasData ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' : '#f8fafc',
-                  border: `1.5px solid ${hasData ? '#86efac' : '#e2e8f0'}`,
-                  borderRadius: '14px',
-                  padding: '1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  transition: 'all 0.2s ease',
-                  boxShadow: hasData ? '0 4px 10px rgba(16, 185, 129, 0.08)' : 'none'
-                }}
+                className={`p-3.5 rounded-xl border transition-colors flex flex-col justify-between ${
+                  hasData
+                    ? 'bg-blue-50/50 border-blue-200'
+                    : 'bg-slate-50/70 border-slate-200'
+                }`}
               >
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '1.5rem' }}>{cat.icon}</span>
-                    <span style={{
-                      fontSize: '0.7rem', fontWeight: 800, padding: '2px 8px', borderRadius: '12px',
-                      background: hasData ? '#10b981' : '#cbd5e1', color: '#ffffff'
-                    }}>
-                      {cat.code}
-                    </span>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">{cat.code}</span>
+                    {hasData && (
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded">
+                        Activo
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: hasData ? '#065f46' : '#334155', lineHeight: 1.3 }}>
+                  <div className="text-xs font-semibold text-slate-900 line-clamp-2 leading-tight">
                     {cat.name}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px', lineHeight: 1.3 }}>
+                  <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">
                     {cat.desc}
                   </div>
                 </div>
 
-                <div style={{ borderTop: `1px solid ${hasData ? 'rgba(16,185,129,0.2)' : '#e2e8f0'}`, paddingTop: '8px', marginTop: '4px' }}>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 900, color: hasData ? '#047857' : '#94a3b8' }}>
-                    {hasData ? fmt(monto) : '$0'}
+                <div className="border-t border-slate-200/80 pt-2 mt-2">
+                  <div className={`text-sm font-bold font-mono ${hasData ? 'text-blue-700' : 'text-slate-400'}`}>
+                    {hasData ? fmt(monto) : '$0.00'}
                   </div>
                 </div>
               </div>
             );
           })}
         </div>
-      </SectionCard>
+      </div>
 
-      {/* ── 3. EXPLORADOR DE COMPROBANTES Y SEMÁFORO FISCAL ── */}
-      <SectionCard icon="🧾" title="Comprobantes y Validación Fiscal">
-        {/* Selector de Pestañas */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      {/* ── 3. Comprobantes y Validación Fiscal ── */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs">
+        <div className="flex gap-2 mb-4 border-b border-slate-200 pb-3 flex-wrap">
           <button
             onClick={() => setActiveSubTab('validas')}
-            style={{
-              padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
-              background: activeSubTab === 'validas' ? 'linear-gradient(135deg, #10b981, #059669)' : '#f1f5f9',
-              color: activeSubTab === 'validas' ? 'white' : '#475569',
-              fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: activeSubTab === 'validas' ? '0 4px 10px rgba(16, 185, 129, 0.3)' : 'none'
-            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              activeSubTab === 'validas'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
           >
-            <span>✅ Válidas y Deducibles</span>
-            <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
-              {validas.length}
-            </span>
+            Válidas y Deducibles ({validas.length})
           </button>
 
           <button
             onClick={() => setActiveSubTab('observadas')}
-            style={{
-              padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
-              background: activeSubTab === 'observadas' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#f1f5f9',
-              color: activeSubTab === 'observadas' ? 'white' : '#475569',
-              fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
-              boxShadow: activeSubTab === 'observadas' ? '0 4px 10px rgba(245, 158, 11, 0.3)' : 'none'
-            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+              activeSubTab === 'observadas'
+                ? 'bg-slate-900 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
           >
-            <span>⚠️ Observadas / En Riesgo SAT</span>
-            <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
-              {observadas.length}
-            </span>
+            Observadas ({observadas.length})
           </button>
 
           {posibles.length > 0 && (
             <button
               onClick={() => setActiveSubTab('posibles')}
-              style={{
-                padding: '0.6rem 1.2rem', borderRadius: '10px', cursor: 'pointer', border: 'none',
-                background: activeSubTab === 'posibles' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : '#f1f5f9',
-                color: activeSubTab === 'posibles' ? 'white' : '#475569',
-                fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: activeSubTab === 'posibles' ? '0 4px 10px rgba(59, 130, 246, 0.3)' : 'none'
-              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                activeSubTab === 'posibles'
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
             >
-              <span>💡 Salud con Uso General (G03)</span>
-              <span style={{ background: 'rgba(255,255,255,0.25)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem' }}>
-                {posibles.length}
-              </span>
+              Salud con Uso General G03 ({posibles.length})
             </button>
           )}
         </div>
@@ -239,197 +218,144 @@ export const DeduccionesPersonalesSection = ({ data, year }) => {
         {activeSubTab === 'validas' && (
           <div>
             {validas.length > 0 ? (
-              <div className="table-responsive">
-                <table className="sat-table">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Emisor / Proveedor</th>
-                      <th>Rubro Deducible</th>
-                      <th>Forma de Pago</th>
-                      <th>UUID / Acciones</th>
-                      <th className="text-right">Monto Deducible</th>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                      <th className="p-3">Fecha</th>
+                      <th className="p-3">Emisor / Proveedor</th>
+                      <th className="p-3">Rubro Deducible</th>
+                      <th className="p-3">Forma de Pago</th>
+                      <th className="p-3 text-right">Monto</th>
+                      <th className="p-3 text-center">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {validas.map((cfdi, idx) => (
-                      <tr key={idx}>
-                        <td style={{ fontWeight: 600, color: '#334155' }}>{cfdi.fecha}</td>
-                        <td>
-                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{cfdi.emisor}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{cfdi.rfc_emisor}</div>
+                  <tbody className="divide-y divide-slate-100">
+                    {validas.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3 font-mono text-slate-600 whitespace-nowrap">{item.fecha}</td>
+                        <td className="p-3">
+                          <div className="font-semibold text-slate-900">{item.emisor}</div>
+                          <div className="text-slate-500 font-mono text-[11px]">{item.rfc_emisor}</div>
                         </td>
-                        <td>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', color: '#065f46', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #a7f3d0' }}>
-                            <span>{cfdi.uso_icon || '🏥'}</span>
-                            <span>{cfdi.uso_cfdi} - {cfdi.uso_nombre}</span>
+                        <td className="p-3">
+                          <span className="inline-block bg-slate-100 text-slate-700 font-mono text-[10px] px-1.5 py-0.5 rounded border border-slate-200 mr-1.5">
+                            {item.uso_cfdi}
+                          </span>
+                          <span className="text-slate-700">{item.uso_nombre}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-emerald-700 font-medium text-[11px]">
+                            {item.forma_pago === '03' ? 'Transferencia (03)' : item.forma_pago === '04' ? 'Tarjeta Crédito (04)' : item.forma_pago === '28' ? 'Tarjeta Débito (28)' : item.forma_pago}
                           </span>
                         </td>
-                        <td>
-                          <span style={{ background: '#f1f5f9', color: '#334155', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600 }}>
-                            {cfdi.forma_pago === '03' ? '03 Transferencia' : cfdi.forma_pago === '04' ? '04 Tarjeta Crédito' : cfdi.forma_pago === '28' ? '28 Tarjeta Débito' : `Forma ${cfdi.forma_pago}`}
-                          </span>
+                        <td className="p-3 text-right font-mono font-bold text-slate-900">
+                          {fmt(item.monto)}
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <button
-                              onClick={() => setSelectedCfdi(cfdi.raw_cfdi)}
-                              style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontFamily: 'monospace', fontWeight: 700 }}
+                              onClick={() => setSelectedCfdi(item.raw_cfdi || item)}
+                              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded cursor-pointer"
+                              title="Ver CFDI"
                             >
-                              {cfdi.uuid?.slice(0, 8)}...
+                              <FileText className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setSelectedCfdi(cfdi.raw_cfdi)}
-                              style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#475569', cursor: 'pointer' }}
-                              title="Ver JSON estructurado"
+                              onClick={() => setViewingXml(item.raw_cfdi || item)}
+                              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded cursor-pointer"
+                              title="Ver JSON"
                             >
-                              💻
+                              <Code2 className="w-4 h-4" />
                             </button>
-                            {cfdi.raw_cfdi?.filename && (
-                              <button
-                                onClick={() => window.open(`http://${window.location.hostname}:8010/api/download_xml?filename=${cfdi.raw_cfdi.filename}`, '_blank')}
-                                style={{ background: 'none', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', color: '#475569', cursor: 'pointer' }}
-                                title="Descargar XML original"
-                              >
-                                ⬇️ XML
-                              </button>
-                            )}
                           </div>
-                        </td>
-                        <td className="text-right font-medium" style={{ fontSize: '0.95rem', color: '#047857', fontWeight: 800 }}>
-                          {fmt(cfdi.monto)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    <tr style={{ background: '#f8fafc', fontWeight: 800 }}>
-                      <td colSpan="5">TOTAL DEDUCCIONES VÁLIDAS</td>
-                      <td className="text-right" style={{ color: '#047857', fontSize: '1.05rem', fontWeight: 900 }}>
-                        {fmt(data.total_valido_bruto || data.total)}
-                      </td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             ) : (
-              <div style={{
-                background: '#f8fafc', borderRadius: '16px', padding: '3rem 2rem', textAlign: 'center',
-                border: '1.5px dashed #cbd5e1', color: '#64748b'
-              }}>
-                <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🏥✨</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
-                  No se encontraron comprobantes de deducciones personales en el ejercicio {year}
-                </div>
-                <p style={{ maxWidth: '520px', margin: '8px auto 16px auto', fontSize: '0.85rem' }}>
-                  Si tuviste gastos médicos, dentales, hospitalarios, colegiaturas o seguros, asegúrate de pedir las facturas con <strong>Uso CFDI D01 a D10</strong> y pagar siempre con tarjeta, transferencia o cheque.
-                </p>
-                <div style={{
-                  display: 'inline-flex', gap: '8px', background: '#eff6ff', color: '#1d4ed8',
-                  padding: '8px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700
-                }}>
-                  💡 Recuerda: Puedes deducir hasta {fmt(tope.tope_aplicable)} este año para obtener saldo a favor.
-                </div>
+              <div className="p-8 text-center text-slate-500 text-xs">
+                No se registraron deducciones personales válidas en este ejercicio fiscal.
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 2: Observadas / En Riesgo */}
+        {/* Tab 2: Observadas */}
         {activeSubTab === 'observadas' && (
           <div>
             {observadas.length > 0 ? (
-              <div>
-                <div style={{ background: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e', padding: '1rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
-                  <strong>⚠️ ¿Por qué están observadas?</strong> El SAT rechaza automáticamente deducciones personales si fueron pagadas en efectivo (Forma 01), si se dejaron "Por definir" (99) sin complemento, o si son medicamentos de farmacia comercial no hospitalaria.
-                </div>
-                <div className="table-responsive">
-                  <table className="sat-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Emisor / Proveedor</th>
-                        <th>Uso Reportado</th>
-                        <th>Forma de Pago</th>
-                        <th>Motivo de Observación SAT</th>
-                        <th className="text-right">Monto</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                      <th className="p-3">Fecha</th>
+                      <th className="p-3">Emisor</th>
+                      <th className="p-3">Motivo de Observación</th>
+                      <th className="p-3 text-right">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {observadas.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3 font-mono text-slate-600">{item.fecha}</td>
+                        <td className="p-3 font-semibold text-slate-900">{item.emisor}</td>
+                        <td className="p-3 text-red-700 font-medium">{item.motivo || 'Pago en efectivo o no deducible'}</td>
+                        <td className="p-3 text-right font-mono text-slate-800">{fmt(item.monto)}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {observadas.map((cfdi, idx) => (
-                        <tr key={idx} style={{ background: '#fffbeb' }}>
-                          <td>{cfdi.fecha}</td>
-                          <td>
-                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{cfdi.emisor}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{cfdi.rfc_emisor}</div>
-                          </td>
-                          <td><span className="sat-badge sat-badge-blue">{cfdi.uso_cfdi}</span></td>
-                          <td>
-                            <span style={{ background: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
-                              Forma {cfdi.forma_pago}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '0.78rem', color: '#b45309', maxWidth: '300px' }}>
-                            {(cfdi.motivos_rechazo || []).map((m, mi) => (
-                              <div key={mi} style={{ marginBottom: '2px' }}>• {m}</div>
-                            ))}
-                          </td>
-                          <td className="text-right font-medium" style={{ color: '#b45309', fontWeight: 700 }}>
-                            {fmt(cfdi.monto)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#16a34a', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #86efac' }}>
-                ✅ No tienes comprobantes observados ni en riesgo de rechazo para el ejercicio {year}.
+              <div className="p-8 text-center text-slate-500 text-xs">
+                No hay deducciones con observaciones fiscales.
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 3: Posibles no clasificadas */}
+        {/* Tab 3: Posibles (G03) */}
         {activeSubTab === 'posibles' && (
           <div>
-            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1e40af', padding: '1rem', borderRadius: '10px', fontSize: '0.82rem', marginBottom: '1.25rem' }}>
-              <strong>💡 Oportunidad Fiscal:</strong> Detectamos comprobantes relacionados con salud o laboratorios que tu proveedor emitió con Uso General (G03). Podrías solicitar refacturación con uso D01/D02 para que el SAT los reconozca como deducción personal en tu declaración anual.
-            </div>
-            <div className="table-responsive">
-              <table className="sat-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Proveedor / Emisor</th>
-                    <th>Uso Actual</th>
-                    <th>Conceptos Facturados</th>
-                    <th className="text-right">Monto</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {posibles.map((cfdi, idx) => (
-                    <tr key={idx}>
-                      <td>{cfdi.fecha}</td>
-                      <td style={{ fontWeight: 700 }}>{cfdi.emisor}</td>
-                      <td><span className="sat-badge" style={{ background: '#e2e8f0', color: '#334155' }}>{cfdi.uso_cfdi}</span></td>
-                      <td style={{ fontSize: '0.78rem', color: '#475569' }}>
-                        {(cfdi.conceptos || []).map(c => c.desc).join(' • ')}
-                      </td>
-                      <td className="text-right font-medium">{fmt(cfdi.monto)}</td>
+            {posibles.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
+                      <th className="p-3">Fecha</th>
+                      <th className="p-3">Emisor</th>
+                      <th className="p-3">Concepto Detectado</th>
+                      <th className="p-3 text-right">Monto</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {posibles.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3 font-mono text-slate-600">{item.fecha}</td>
+                        <td className="p-3 font-semibold text-slate-900">{item.emisor}</td>
+                        <td className="p-3 text-slate-700">{item.concepto}</td>
+                        <td className="p-3 text-right font-mono text-slate-800">{fmt(item.monto)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-500 text-xs">
+                No se detectaron facturas de salud con uso G03.
+              </div>
+            )}
           </div>
         )}
-      </SectionCard>
+      </div>
 
-      {/* Modales */}
-      {selectedCfdi && <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />}
-      {viewingXml && <XmlViewerModal data={viewingXml} onClose={() => setViewingXml(null)} />}
+      {/* Modales de Inspección */}
+      <CfdiVisualizerModal cfdi={selectedCfdi} onClose={() => setSelectedCfdi(null)} />
+      <XmlViewerModal data={viewingXml} onClose={() => setViewingXml(null)} />
+
     </div>
   );
 };
