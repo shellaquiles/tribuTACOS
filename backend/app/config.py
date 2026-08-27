@@ -23,8 +23,10 @@ try:
 except ImportError:
     pass
 
-# Environment
+# Environment & Versioning
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+VERSION = "1.0.1"
+
 
 # Server settings
 HOST = os.getenv("HOST", "0.0.0.0")

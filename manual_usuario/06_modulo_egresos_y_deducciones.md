@@ -22,8 +22,32 @@ Este módulo procesa todas las facturas recibidas de proveedores, verificando su
 * **Tratamiento de Notas de Crédito:** Descuentos y devoluciones emitidos por proveedores que restan el monto de gastos deducibles.
 * **Explorador Maestro-Detalle:** Visualización de cada partida individual de la factura con su clave UNSPSC y tasa de IVA correspondiente.
 
+![Concentración por Proveedor, Deducibilidad y Matriz de Egresos](img/06_gastos_scroll_categorias_y_grafica.png)
+
+### 1.2 Analítica de Proveedores y Matriz de Egresos:
+* **Gráfica de Barras Mensual:** Distribución del subtotal deducible frente al IVA acreditable erogado mes con mes.
+* **Concentración por Proveedor (Gráfico de Dona):** Ranking de los principales emisores con montos y porcentajes de participación en el presupuesto de compras.
+* **Deducibilidad e IVA Acreditable:** Semáforo del cumplimiento estricto del Art. 27 LISR y monto total de IVA listo para acreditar.
+* **Matriz de Egresos Mensuales (12 Meses):** Desglose cronológico de comprobantes válidos, deducibles, no deducibles y totales liquidados con botón de auditoría <kbd>Ver Mes</kbd>.
+
+### 1.3 Explorador Multimodal y Botones Interactivos:
+El explorador de egresos cuenta con 3 modos de visualización y herramientas avanzadas de auditoría:
+1. **Selector de Vistas:**
+   - <kbd>📁 Por Rubro / Categoría</kbd>: Agrupa los comprobantes por partidas y artículos en los 8 rubros SAT (servicios, tecnología, mantenimiento, etc.).
+   - <kbd>🏢 Por Proveedor</kbd>: Agrupa el gasto por emisor comercial / RFC, mostrando el volumen y total acumulado por empresa.
+   - <kbd>📋 Lista Cronológica</kbd>: Tabla plana de todas las facturas del periodo ordenadas por fecha con badges de estatus de deducibilidad.
+2. **Pestañas Superiores de Filtro (<kbd>Pills</kbd>):** Permite aislar rápidamente las facturas de un mes específico (`Ene`...`Dic`) o ver el consolidado `Todo el Año`.
+3. **Buscador Instantáneo:** Filtro reactivo en tiempo real por nombre de artículo, clave de producto SAT (`c_ClaveProdServ`), razón social del proveedor o UUID.
+4. **Exportación de Datos (<kbd>📥 Exportar (CSV)</kbd>):** Descarga inmediata de un archivo CSV codificado con UTF-8 BOM listo para abrir en Microsoft Excel o importar a software contable.
+5. **Inspectores de Comprobante por Fila:**
+   - **Clic en UUID:** Abre el visor detallado del CFDI con los datos del emisor, receptor, conceptos, impuestos y sellos fiscales.
+   - **Botón <kbd>JSON</kbd>:** Abre el modal interactivo con el árbol estructurado de propiedades del comprobante para depuración técnica.
+   - **Botón <kbd>XML</kbd>:** Permite descargar directamente el archivo XML original timbrado.
+
+
 > [!WARNING]
 > **Regla Estricta de Bancarización (Art. 27 Fracc. III LISR):** Los pagos de gastos operativos que excedan los `$2,000.00 MXN` deben realizarse obligatoriamente mediante cheque nominativo, transferencia electrónica (SPEI), tarjeta de crédito, débito o servicios. Cualquier pago en efectivo por encima de dicho umbral es descalificado automáticamente.
+
 
 ---
 
