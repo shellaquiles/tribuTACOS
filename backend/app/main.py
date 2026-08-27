@@ -12,8 +12,9 @@ init_db()
 app = FastAPI(
     title="🌮 tributacos API",
     description="Radiografía fiscal y desmenuzador universal de CFDIs (XML)",
-    version="1.0.0"
+    version="1.0.1"
 )
+
 
 # CORS
 app.add_middleware(

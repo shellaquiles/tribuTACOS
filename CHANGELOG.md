@@ -6,15 +6,34 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## [1.0.1] - 2026-08-26
 
+### Añadido
+- **Automatización y Flujo de Trabajo en `Makefile`**:
+  - Reestructuración del menú interactivo en 5 fases secuenciales (`Inicio`, `Datos/CFDIs`, `Calidad`, `Documentación`, `Mantenimiento`).
+  - Nuevos comandos autodescriptivos: `make db-seed`, `make db-reset`, `make screenshots`, `make docs-sync`, `make pdf-all`, `make pdf-manual`, `make pdf-tecnica`.
+  - Integración de `make docs-sync` para orquestar en un solo paso las capturas de pantalla, la sincronización del manual maestro y la compilación de PDFs oficiales.
+- **Motor de Documentación (Pandocquiles by shellaquiles.org)**:
+  - Archivo fuente persistente `utils/pandocquiles.env` y auto-aprovisionamiento de variables `.env` al inicializar el submódulo.
+  - Optimización en memoria con PIL/Pillow para redimensionamiento inteligente y compresión de capturas de alta densidad, evitando saturación de Puppeteer en documentos extensos.
+  - Reglas de whitelist en `.gitignore` para versionar los PDFs oficiales generados (`!manual_usuario/*.pdf`, `!docs/*.pdf`).
+- **Ecosistema de Workflows para Onboarding y Gobernanza**:
+  - Creación de `.agent/workflows/declara_context.md` (arquitectura general, catálogos y comandos).
+  - Creación de `.agent/workflows/release_and_versioning.md` (protocolo SemVer y checklist para PRs).
+  - Creación de `.agent/workflows/screenshots_and_docs_sync.md` (pipeline de capturas con Playwright y scroll asistido).
+  - Creación de `.agent/workflows/documentation_style_guide.md` (guía de estilo editorial, badges y nomenclatura fiscal).
+
 ### Mejorado
+- **Interfaz y Experiencia de Usuario**:
+  - Desactivación de indicadores flotantes de desarrollo de Next.js (`devIndicators: false`) para asegurar capturas 100% limpias.
+  - Inclusión de badges de versión visible `v1.0.1 STABLE` en el footer institucional y en la barra lateral de navegación.
+  - Documentación completa de botones interactivos, selectores por mes, modos de visualización (por rubro, proveedor, cronológico), acordeones y exportaciones CSV.
 - **Rediseño Editorial y Minimalismo Estilo Suizo**:
-  - Implementación de retícula geométrica con bordes finos de 1px y eliminación de sombras difusas (*no drop shadows*).
+  - Retícula geométrica con bordes finos de 1px y eliminación de sombras difusas (*no drop shadows*).
   - Tipografía con números tabulares de gran escala (`tabular-nums`) y micro-etiquetas en mayúsculas sobrias para máxima legibilidad contable.
-  - Paleta de color viva, moderna y equilibrada: Azul Eléctrico (`#2563EB`) para Nómina/Sueldos, Verde Esmeralda Vibrante (`#10B981`) para Honorarios/Ingresos, Ámbar Cálido (`#F59E0B`) para totales/deducciones y Rosa Coral para saldos a cargo.
-  - Tooltips limpios con efecto *backdrop-blur* y gráficos de barras / pastel estilizados con Recharts.
-- **Configuración y Entorno**:
-  - Alineación de `.env.example` con el dataset demo oficial (`Sheila Shellaquiles Ortega` / `SHLL250825XYZ`) y rutas canónicas relativas (`./backend/tributacos.db`, `./cfdi_emitidos`, `./cfdi_recibidos`).
-  - Actualización de versión del paquete frontend a `1.0.1`.
+  - Paleta de color viva y equilibrada: Azul Eléctrico (`#2563EB`) para Nómina, Verde Esmeralda (`#10B981`) para Honorarios, Ámbar Cálido (`#F59E0B`) para totales/deducciones y Rosa Coral para saldos a cargo.
+- **Sincronización de Versión en Backend y Frontend**:
+  - FastAPI `version="1.0.1"` en `backend/app/main.py` y `VERSION = "1.0.1"` en `backend/app/config.py`.
+  - Frontend `package.json` en versión `1.0.1`.
+
 
 ## [1.0.0] - 2026-08-26
 
