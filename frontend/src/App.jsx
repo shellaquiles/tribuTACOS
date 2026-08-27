@@ -326,12 +326,21 @@ const App = () => {
 
         {/* Footer institucional */}
         <div className="p-3 border-t border-zinc-200 text-[10px] font-mono text-zinc-500 flex items-center justify-between bg-zinc-50">
-          <span className="font-bold text-zinc-700">v1.0.1 • STABLE</span>
+          <a
+            href="https://github.com/shellaquiles/tribuTACOS"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-zinc-700 hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+            title="Ver repositorio en GitHub"
+          >
+            v1.0.1 • STABLE
+          </a>
           <span className="text-zinc-800 font-bold">
             {(sections?.reporte_gastos?.length || 0) + (sections?.honorarios?.detalle?.length || 0)} CFDIs
           </span>
         </div>
       </aside>
+
 
 
       {/* ── CONTENIDO PRINCIPAL ── */}
@@ -403,11 +412,27 @@ const App = () => {
             <span>SIMULACIÓN FISCAL ESTIMATIVA (LISR/LIVA). NO SUSTITUYE PRESENTACIONES ANTE EL SAT.</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="bg-zinc-100 text-zinc-700 px-2 py-0.5 border border-zinc-300 font-bold">v1.0.1 STABLE</span>
-            <span className="text-zinc-500 font-semibold">tribuTACOS • shellaquiles.org</span>
+            <a
+              href="https://github.com/shellaquiles/tribuTACOS"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-blue-600 px-2 py-0.5 border border-zinc-300 font-bold transition-colors cursor-pointer"
+              title="Repositorio Oficial de tribuTACOS en GitHub"
+            >
+              v1.0.1 STABLE
+            </a>
+            <a
+              href="https://github.com/shellaquiles/tribuTACOS"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-500 hover:text-zinc-900 font-semibold transition-colors cursor-pointer"
+            >
+              tribuTACOS • shellaquiles.org
+            </a>
           </div>
         </footer>
       </main>
+
 
 
       {/* Modal de Subida de Archivos */}
