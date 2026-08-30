@@ -60,6 +60,10 @@ class ErrorBoundary extends Component {
 }
 
 const API_BASE = '/api';
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '0.0.0';
+const APP_CHANNEL = APP_VERSION.includes('-')
+  ? APP_VERSION.split('-')[1].split('.')[0].toUpperCase()
+  : 'STABLE';
 
 const App = () => {
   const [data, setData] = useState(null);
@@ -181,7 +185,7 @@ const App = () => {
   if (error && !data) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-zinc-900 font-mono text-center">
       <div className="text-xs font-bold uppercase tracking-widest text-rose-800 mb-2">ERROR DE CONEXIÓN FISCAL</div>
-      <h3 className="text-base font-bold text-zinc-950 mb-1">Servidor API no disponible (:8010)</h3>
+      <h3 className="text-base font-bold text-zinc-950 mb-1">Servidor API no disponible</h3>
       <div className="text-[11px] text-zinc-400 mb-6 uppercase tracking-wider">shellaquiles.org • tribuTACOS</div>
       <p className="text-zinc-600 text-xs max-w-md mb-6 font-mono bg-zinc-50 p-4 border border-zinc-300 text-left overflow-x-auto">
         <code>{error}</code>
@@ -333,7 +337,7 @@ const App = () => {
             className="font-bold text-zinc-700 hover:text-blue-600 hover:underline transition-colors cursor-pointer"
             title="Ver repositorio en GitHub"
           >
-            v1.0.1 • STABLE
+            v{APP_VERSION} • {APP_CHANNEL}
           </a>
           <span className="text-zinc-800 font-bold">
             {(sections?.reporte_gastos?.length || 0) + (sections?.honorarios?.detalle?.length || 0)} CFDIs
@@ -419,7 +423,7 @@ const App = () => {
               className="bg-zinc-100 hover:bg-zinc-200 text-zinc-700 hover:text-blue-600 px-2 py-0.5 border border-zinc-300 font-bold transition-colors cursor-pointer"
               title="Repositorio Oficial de tribuTACOS en GitHub"
             >
-              v1.0.1 STABLE
+              v{APP_VERSION} {APP_CHANNEL}
             </a>
             <a
               href="https://github.com/shellaquiles/tribuTACOS"

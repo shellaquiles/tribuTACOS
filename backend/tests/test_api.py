@@ -19,6 +19,12 @@ def test_root_endpoint():
     assert data.get("status") == "ready"
 
 
+def test_health_endpoint():
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    assert response.json().get("status") == "ready"
+
+
 def test_list_clients():
     """Valida el endpoint de listado de clientes."""
     response = client.get("/api/clients")

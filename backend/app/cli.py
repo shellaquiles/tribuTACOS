@@ -5,12 +5,17 @@ Permite inicializar la base de datos, sincronizar carpetas de CFDIs, sembrar cat
 
 import sys
 import argparse
+from pathlib import Path
 from app.database import SessionLocal, init_db
 from app.cfdis.storage import ensure_default_client, scan_local_paths
 from app.catalogos.seed import asegurar_catalogo_sat
 from app.catalogos.seed_fiscal import asegurar_parametros_fiscales
 from app.sat_docs.importer import sync_all_sat_documents_to_db
-from app.seeds.seed_demo import cargar_data_prueba_completa, export_demo_fixture
+from app.seeds.seed_demo import (
+    cargar_data_prueba_completa,
+    export_demo_fixture,
+    import_demo_fixture,
+)
 from app.models import Client
 
 
@@ -96,8 +101,33 @@ def cmd_export_demo(args):
     db = SessionLocal()
     try:
         print("📦 Exportando fixture de prueba comprimido...")
-        path = export_demo_fixture(db)
+        output = getattr(args, "output", None)
+        path = export_demo_fixture(db, Path(output) if output else None)
         print(f"✅ Fixture exportado exitosamente: {path} ({path.stat().st_size / 1024:.1f} KB)")
+    finally:
+        db.close()
+
+
+def cmd_import_demo(args):
+    """Restaura un respaldo .json.gz sobre la base actual (tras init)."""
+    source = Path(getattr(args, "input", None) or "")
+    if not source.is_file():
+        print(f"No se encontro el respaldo: {source}")
+        raise SystemExit(1)
+    print(f"📥 Importando respaldo: {source}")
+    init_db()
+    db = SessionLocal()
+    try:
+        stats = import_demo_fixture(db, source)
+        client = ensure_default_client(db)
+        from app.cfdis.engine import build_fiscal_summary
+        from app.cfdis.storage import invalidate_client_cache
+
+        for year in ("2021", "2022", "2023", "2024", "2025", "2026"):
+            invalidate_client_cache(client.id, db, year)
+            build_fiscal_summary(client, year, db, use_cache=False)
+        print(f"✅ Respaldo restaurado: {stats}")
+        print(f"   • Cliente: {client.rfc}")
     finally:
         db.close()
 
@@ -129,7 +159,12 @@ def main():
     demo_p.add_argument("--fixture", action="store_true", help="Forzar carga desde fixture empaquetado")
 
     # export-demo
-    subparsers.add_parser("export-demo", help="Exporta la base de datos a un fixture comprimido")
+    export_p = subparsers.add_parser("export-demo", help="Exporta la base de datos a un fixture comprimido")
+    export_p.add_argument("--output", default=None, help="Ruta del archivo .json.gz de salida")
+
+    # import-demo
+    import_p = subparsers.add_parser("import-demo", help="Restaura un respaldo .json.gz en la base de datos")
+    import_p.add_argument("--input", required=True, help="Ruta del archivo .json.gz de respaldo")
 
     args = parser.parse_args()
 
@@ -140,6 +175,7 @@ def main():
         "sync-sat-docs": cmd_sync_sat_docs,
         "seed-demo": cmd_seed_demo,
         "export-demo": cmd_export_demo,
+        "import-demo": cmd_import_demo,
     }
 
     if args.command in commands:

@@ -2,6 +2,7 @@ import os
 import re
 import json
 import glob
+import shutil
 import subprocess
 from typing import Dict, List, Any, Optional
 
@@ -17,9 +18,26 @@ MES_NAMES_BY_NUM = {
 }
 
 def extract_text_from_pdf(pdf_path: str) -> str:
+    pdftotext = shutil.which("pdftotext")
+    if pdftotext:
+        try:
+            res = subprocess.run(
+                [pdftotext, "-layout", pdf_path, "-"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if res.stdout.strip():
+                return res.stdout
+        except Exception as e:
+            print(f"pdftotext falló para {pdf_path}: {e}")
+
     try:
-        res = subprocess.run(['pdftotext', '-layout', pdf_path, '-'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        return res.stdout
+        import pdfplumber
+
+        with pdfplumber.open(pdf_path) as pdf:
+            return "\n".join(page.extract_text() or "" for page in pdf.pages)
     except Exception as e:
         print(f"Error extrayendo texto de {pdf_path}: {e}")
         return ""
