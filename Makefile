@@ -3,34 +3,39 @@
 # ==============================================================================
 
 .DEFAULT_GOAL := help
-.PHONY: help setup dev dev-backend dev-frontend stop \
-        db-seed db-reset db-import-xml db-import-sat db-export \
+.PHONY: help doctor setup install dev dev-backend dev-frontend stop gui standalone \
+        version-sync docker-up docker-down \
+        db-seed db-reset db-import-xml db-import-sat db-export db-import-backup \
+        clear-cache open-xml-recibidos open-xml-emitidos open-pdf-sat open-backups \
         test lint build \
-        screenshots docs-sync pdf-all pdf-manual pdf-tecnica docs-all \
-        clean clean-deep
+        screenshots docs-sync pdf-all pdf-manual pdf-tecnica pdf-instalacion docs-all \
+        pdf-check-submodule clean clean-deep \
+        db-fresh db-empty db-import-pdf seed-demo init-db sync sync-docs \
+        pdf pdf-docs pdf-user pdf-install clean-all
 
-# --- Variables de Entorno y Rutas ---
-PYTHON         := python3
-NPM            := npm
-BACKEND_DIR    := backend
-FRONTEND_DIR   := frontend
-VENV_DIR       := $(BACKEND_DIR)/venv
-VENV_PYTHON    := $(VENV_DIR)/bin/python
-VENV_PIP       := $(VENV_DIR)/bin/pip
-UVICORN        := $(VENV_DIR)/bin/uvicorn
-PYTEST         := $(VENV_DIR)/bin/pytest
-DB_FILE        := $(BACKEND_DIR)/tributacos.db
+# Fuente unica de comandos operativos (Windows / macOS / Linux / Panel GUI).
+# GNU Make es una fachada: make X == python scripts/tributacos.py X
+# Excepcion: PDFs y docs-sync viven aqui porque el runner los invoca de vuelta.
+ifeq ($(OS),Windows_NT)
+    PYTHON := python
+else
+    PYTHON := python3
+endif
 
+RUNNER         := $(PYTHON) scripts/tributacos.py
 PORT           ?= 8010
 HOST           ?= 0.0.0.0
 
 # --- Rutas de Documentación y PDFs (Pandocquiles by shellaquiles.org) ---
 BUILD_DOCS     := cd utils/pandocquiles && ./bin/build.sh
 DIST_DOCS      := utils/pandocquiles/documentacion
-PDF_DOCS_SRC   := $(DIST_DOCS)/pandocquiles.pdf
-PDF_USER_SRC   := $(DIST_DOCS)/manual_usuario.pdf
-PDF_DOCS_OUT   := docs/tribuTACOS_documentacion_tecnica.pdf
-PDF_USER_OUT   := manual_usuario/tribuTACOS_manual_usuario.pdf
+PDF_DOCS_SRC     := $(DIST_DOCS)/pandocquiles.pdf
+PDF_USER_SRC     := $(DIST_DOCS)/manual_usuario.pdf
+PDF_INSTALL_SRC  := $(DIST_DOCS)/instalacion_usuario.pdf
+PDF_DOCS_OUT     := docs/tribuTACOS_documentacion_tecnica.pdf
+PDF_USER_OUT     := manual_usuario/tribuTACOS_manual_usuario.pdf
+PDF_INSTALL_OUT  := docs/tribuTACOS_instalacion_usuario.pdf
+PDF_INSTALL_STAGING := .tmp/instalacion_usuario
 
 # --- Estilos ANSI para Menú ---
 BOLD           := \033[1m
@@ -51,28 +56,41 @@ help:
 	@echo "$(DIM)  ======================================================================$(RESET)"
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)1. INICIO RÁPIDO & DESARROLLO$(RESET)"
+	@printf "     $(GREEN)make doctor$(RESET)         Verifica Python, Node.js y Docker\n"
 	@printf "     $(GREEN)make setup$(RESET)          Instala dependencias y prepara la BD con datos demo\n"
 	@printf "     $(GREEN)make dev$(RESET)            Inicia Backend (:$(PORT)) y Frontend (:3000) en paralelo\n"
-	@printf "     $(GREEN)make stop$(RESET)           Detiene servidores activos en los puertos 8010 y 3000\n"
+	@printf "     $(GREEN)make stop$(RESET)           Detiene servidores en los puertos 8010, 3000 y 8080\n"
+	@printf "     $(GREEN)make gui$(RESET)            Abre el Panel de Operaciones (usuario final)\n"
+	@printf "     $(GREEN)make standalone$(RESET)     Servidor unico (:8080) con frontend estatico\n"
+	@printf "     $(GREEN)make docker-up$(RESET)      Inicia tribuTACOS con Docker Compose\n"
+	@printf "     $(GREEN)make docker-down$(RESET)    Detiene contenedores Docker\n"
+	@printf "     $(GREEN)make version-sync$(RESET)   Propaga VERSION a package.json, badges e instalador\n"
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)2. DATOS & CFDIS (INGESTA LOCAL)$(RESET)"
 	@printf "     $(GREEN)make db-seed$(RESET)        Restaura la BD con el dataset demo completo (139 CFDIs)\n"
 	@printf "     $(GREEN)make db-reset$(RESET)       Limpia la base de datos dejando solo catálogos del SAT\n"
 	@printf "     $(GREEN)make db-import-xml$(RESET)  Procesa y clasifica XMLs locales en la base de datos\n"
 	@printf "     $(GREEN)make db-import-sat$(RESET)  Procesa declaraciones y acuses oficiales en PDF del SAT\n"
-	@printf "     $(GREEN)make db-export$(RESET)      Exporta un respaldo fixture de la base de datos actual\n"
+	@printf "     $(GREEN)make db-export$(RESET)      Copia fechada en respaldos/ (mismo archivo que la GUI)\n"
+	@printf "     $(GREEN)make db-import-backup$(RESET) Restaura un respaldo .json.gz (INPUT=ruta/archivo.json.gz)\n"
+	@printf "     $(GREEN)make clear-cache$(RESET)    Limpia la cache de calculos fiscales\n"
+	@printf "     $(GREEN)make open-xml-recibidos$(RESET) Abre la carpeta de XML recibidos\n"
+	@printf "     $(GREEN)make open-xml-emitidos$(RESET)  Abre la carpeta de XML emitidos\n"
+	@printf "     $(GREEN)make open-pdf-sat$(RESET)   Abre la carpeta de PDFs del SAT\n"
+	@printf "     $(GREEN)make open-backups$(RESET)   Abre la carpeta de respaldos\n"
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)3. CONTROL DE CALIDAD$(RESET)"
-	@printf "     $(GREEN)make test$(RESET)           Ejecuta las 11 pruebas unitarias del motor fiscal\n"
+	@printf "     $(GREEN)make test$(RESET)           Ejecuta las pruebas del backend (Pytest)\n"
 	@printf "     $(GREEN)make lint$(RESET)           Verifica estándares de código y sintaxis en Frontend\n"
 	@printf "     $(GREEN)make build$(RESET)          Compila el bundle de producción en Next.js\n"
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)4. DOCUMENTACIÓN & RELEASES (PANDOCQUILES BY SHELLAQUILES.ORG)$(RESET)"
 	@printf "     $(GREEN)make screenshots$(RESET)    Captura pantallas completas con scroll (Playwright)\n"
 	@printf "     $(GREEN)make docs-sync$(RESET)      Pipeline de pre-release: capturas + manual + PDFs\n"
-	@printf "     $(GREEN)make pdf-all$(RESET)        Compila ambos PDFs oficiales (técnico y manual)\n"
+	@printf "     $(GREEN)make pdf-all$(RESET)        Compila los PDFs oficiales (técnico, manual e instalación)\n"
 	@printf "     $(GREEN)make pdf-manual$(RESET)     Compila únicamente el Manual de Usuario en PDF\n"
 	@printf "     $(GREEN)make pdf-tecnica$(RESET)    Compila únicamente la Documentación Técnica en PDF\n"
+	@printf "     $(GREEN)make pdf-instalacion$(RESET) Compila la Guía de instalación para usuario final\n"
 	@printf "     $(GREEN)make docs-all$(RESET)       Compila documentación completa en PDF, Word y HTML\n"
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)5. MANTENIMIENTO$(RESET)"
@@ -85,57 +103,78 @@ help:
 # 🚀 1. INICIO RÁPIDO & DESARROLLO
 # ==============================================================================
 
-setup: install db-seed
-	@echo "\n$(BOLD)$(GREEN)✅ Entorno listo para usar. Ejecuta 'make dev' para iniciar los servidores.$(RESET)\n"
+doctor:
+	@$(RUNNER) doctor
 
-$(VENV_DIR):
-	@echo "$(BOLD)$(YELLOW)Creando entorno virtual Python en $(VENV_DIR)...$(RESET)"
-	@$(PYTHON) -m venv $(VENV_DIR)
-	@$(VENV_PIP) install --upgrade pip
-	@$(VENV_PIP) install -r $(BACKEND_DIR)/requirements.txt
+setup:
+	@$(RUNNER) setup
 
-install: $(VENV_DIR)
-	@echo "$(BOLD)$(YELLOW)Instalando dependencias de Frontend...$(RESET)"
-	@cd $(FRONTEND_DIR) && $(NPM) install
+install:
+	@$(RUNNER) install
 
 stop:
-	@fuser -k $(PORT)/tcp 3000/tcp 2>/dev/null || true
+	@$(RUNNER) stop
 
-dev: $(VENV_DIR) stop
-	@echo "$(BOLD)$(CYAN)Iniciando tribuTACOS (Backend :$(PORT) + Frontend :3000)...$(RESET)"
-	@make -j 2 dev-backend dev-frontend
+dev:
+	@$(RUNNER) --port $(PORT) --host $(HOST) dev
 
-dev-backend: $(VENV_DIR)
-	@PYTHONPATH=$(BACKEND_DIR) $(UVICORN) app.main:app --reload --host $(HOST) --port $(PORT)
+dev-backend:
+	@$(RUNNER) --port $(PORT) --host $(HOST) dev-backend
 
 dev-frontend:
-	@cd $(FRONTEND_DIR) && $(NPM) run dev
+	@$(RUNNER) dev-frontend
+
+gui:
+	@$(RUNNER) gui
+
+standalone:
+	@$(RUNNER) standalone
+
+docker-up:
+	@$(RUNNER) docker-up
+
+docker-down:
+	@$(RUNNER) docker-down
+
+version-sync:
+	@$(RUNNER) version-sync
 
 # ==============================================================================
 # 💾 2. DATOS & INGESTA FISCAL
 # ==============================================================================
 
-db-reset: $(VENV_DIR)
-	@rm -f $(DB_FILE)
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli init-db
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-sat
-	@echo "$(BOLD)$(GREEN)✅ Base de datos limpia con catálogos SAT lista.$(RESET)"
+db-reset:
+	@$(RUNNER) db-reset
 
-db-seed: db-reset
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli seed-demo --fixture
-	@echo "$(BOLD)$(GREEN)✅ Base de datos poblada con dataset demo completo (139 CFDIs).$(RESET)"
+db-seed:
+	@$(RUNNER) db-seed
 
-db-import-xml: $(VENV_DIR)
-	@echo "$(BOLD)$(CYAN)Sincronizando comprobantes XML locales...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync
+db-import-xml:
+	@$(RUNNER) db-import-xml
 
-db-import-sat: $(VENV_DIR)
-	@echo "$(BOLD)$(CYAN)Sincronizando declaraciones oficiales SAT en PDF...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli sync-sat-docs
+db-import-sat:
+	@$(RUNNER) db-import-sat
 
-db-export: $(VENV_DIR)
-	@echo "$(BOLD)$(CYAN)Exportando fixture de base de datos actual...$(RESET)"
-	@PYTHONPATH=$(BACKEND_DIR) $(VENV_PYTHON) -m app.cli export-demo
+db-export:
+	@$(RUNNER) db-export
+
+db-import-backup:
+	@$(RUNNER) db-import-backup --input "$(INPUT)"
+
+clear-cache:
+	@$(RUNNER) clear-cache
+
+open-xml-recibidos:
+	@$(RUNNER) open-xml-recibidos
+
+open-xml-emitidos:
+	@$(RUNNER) open-xml-emitidos
+
+open-pdf-sat:
+	@$(RUNNER) open-pdf-sat
+
+open-backups:
+	@$(RUNNER) open-backups
 
 # Alias amigables de base de datos
 db-fresh: db-seed
@@ -150,22 +189,21 @@ sync-docs: db-import-sat
 # 🧪 3. PRUEBAS Y CALIDAD
 # ==============================================================================
 
-test: $(VENV_DIR)
-	@PYTHONPATH=$(BACKEND_DIR) $(PYTEST) -v
+test:
+	@$(RUNNER) test
 
 lint:
-	@cd $(FRONTEND_DIR) && $(NPM) run lint
+	@$(RUNNER) lint
 
 build:
-	@cd $(FRONTEND_DIR) && $(NPM) run build
+	@$(RUNNER) build
 
 # ==============================================================================
 # 📚 4. DOCUMENTACIÓN & RELEASES (PANDOCQUILES BY SHELLAQUILES.ORG)
 # ==============================================================================
 
 screenshots:
-	@echo "$(BOLD)$(CYAN)📸 Generando capturas automatizadas de pantalla con Playwright...$(RESET)"
-	@node frontend/scripts/capture_screenshots.js
+	@$(RUNNER) screenshots
 
 docs-sync: screenshots
 	@echo "$(BOLD)$(CYAN)🔄 Sincronizando manual completo y recompilando PDFs con Pandocquiles...$(RESET)"
@@ -184,7 +222,10 @@ docs-sync: screenshots
 		  "08_modulo_auditoria_sat_conciliacion.md",\
 		  "09_roadmap_y_evolucion_modulos.md"\
 		];\
-		let fullDoc = `# tribuTACOS — Manual de Usuario Completo\n\n[![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)\n\n> **Plataforma de Inteligencia Fiscal, Conciliación de Comprobantes Digitales (CFDI 3.3/4.0) y Simulación Analítica de Pre-Declaración Mensual y Anual para Personas Físicas en México.**\n\n> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.0.1 STABLE**.\n\n> *Documento y manuales generados con **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**.*\n\n---\n\n## Tabla de Contenidos\n\n`;\
+		const ver = fs.readFileSync("VERSION", "utf8").trim();\
+		const channel = ver.includes("-") ? ver.split("-")[1].split(".")[0].toUpperCase() : "STABLE";\
+		const badgeVer = ver.replace(/-/g, "--");\
+		let fullDoc = `# tribuTACOS — Manual de Usuario Completo\n\n[![Versión](https://img.shields.io/badge/Versión-v$${badgeVer}%20$${channel}-blue.svg?style=flat-square)](#)\n\n> **Plataforma de Inteligencia Fiscal, Conciliación de Comprobantes Digitales (CFDI 3.3/4.0) y Simulación Analítica de Pre-Declaración Mensual y Anual para Personas Físicas en México.**\n\n> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v$${ver} $${channel}**.\n\n> *Documento y manuales generados con **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**.*\n\n---\n\n## Tabla de Contenidos\n\n`;\
 		files.forEach((f, idx) => {\
 		  const content = fs.readFileSync(path.join(dir, f), "utf8");\
 		  const titleMatch = content.match(/# Capítulo \\d+: ([^\\n\\r]+)/);\
@@ -212,10 +253,11 @@ pdf-check-submodule:
 		cp utils/pandocquiles.env utils/pandocquiles/.env; \
 	fi
 
-pdf-all: pdf-check-submodule pdf-tecnica pdf-manual
+pdf-all: pdf-check-submodule pdf-tecnica pdf-manual pdf-instalacion
 	@echo "\n$(BOLD)$(GREEN)🎉 Documentación oficial generada exitosamente con Pandocquiles by shellaquiles.org:$(RESET)"
 	@echo "  📄 $(BOLD)$(PDF_DOCS_OUT)$(RESET)"
-	@echo "  📘 $(BOLD)$(PDF_USER_OUT)$(RESET)\n"
+	@echo "  📘 $(BOLD)$(PDF_USER_OUT)$(RESET)"
+	@echo "  📗 $(BOLD)$(PDF_INSTALL_OUT)$(RESET)\n"
 
 pdf-tecnica: pdf-check-submodule
 	@echo "$(BOLD)$(CYAN)Compilando documentación técnica en PDF con Pandocquiles by shellaquiles.org...$(RESET)"
@@ -229,34 +271,37 @@ pdf-manual: pdf-check-submodule
 	@cp $(PDF_USER_SRC) $(PDF_USER_OUT)
 	@echo "$(BOLD)$(GREEN)✅ Generado con Pandocquiles by shellaquiles.org: $(PDF_USER_OUT)$(RESET)"
 
+pdf-instalacion: pdf-check-submodule
+	@echo "$(BOLD)$(CYAN)Compilando guía de instalación en PDF con Pandocquiles by shellaquiles.org...$(RESET)"
+	@mkdir -p $(PDF_INSTALL_STAGING)
+	@cp docs/INSTALACION_USUARIO.md $(PDF_INSTALL_STAGING)/README.md
+	@$(BUILD_DOCS) --pdf-only ../../$(PDF_INSTALL_STAGING)
+	@cp $(PDF_INSTALL_SRC) $(PDF_INSTALL_OUT)
+	@rm -rf $(PDF_INSTALL_STAGING)
+	@echo "$(BOLD)$(GREEN)✅ Generado con Pandocquiles by shellaquiles.org: $(PDF_INSTALL_OUT)$(RESET)"
+
 docs-all: pdf-check-submodule
 	@echo "$(BOLD)$(CYAN)Compilando documentación en todos los formatos (PDF, Word, HTML) con Pandocquiles by shellaquiles.org...$(RESET)"
 	@$(BUILD_DOCS) ../../docs ../../manual_usuario
 	@cp $(PDF_DOCS_SRC) $(PDF_DOCS_OUT) 2>/dev/null || true
 	@cp $(PDF_USER_SRC) $(PDF_USER_OUT) 2>/dev/null || true
+	@$(MAKE) pdf-instalacion
 
 # Alias retrocompatibles de PDF
 pdf: pdf-all
 pdf-docs: pdf-tecnica
 pdf-user: pdf-manual
+pdf-install: pdf-instalacion
 
 # ==============================================================================
 # 🧹 5. MANTENIMIENTO Y LIMPIEZA
 # ==============================================================================
 
 clean:
-	@echo "$(BOLD)$(YELLOW)Limpiando cachés, temporales y PDFs compilados...$(RESET)"
-	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf $(FRONTEND_DIR)/dist $(FRONTEND_DIR)/.next $(DIST_DOCS)
-	@rm -f $(PDF_DOCS_OUT) $(PDF_USER_OUT)
-	@echo "$(BOLD)$(GREEN)Limpieza completada.$(RESET)"
+	@$(RUNNER) clean
 
-clean-deep: clean
-	@echo "$(BOLD)$(YELLOW)Eliminando entorno $(VENV_DIR) y dependencias frontend...$(RESET)"
-	@rm -rf $(VENV_DIR) $(FRONTEND_DIR)/node_modules
-	@echo "$(BOLD)$(GREEN)Limpieza profunda completada.$(RESET)"
+clean-deep:
+	@$(RUNNER) clean-deep
 
 # Alias retrocompatible
 clean-all: clean-deep
