@@ -3,7 +3,7 @@
 # Capítulo 09: Arquitectura y Componentes Modulares
 
 [![Arquitectura](https://img.shields.io/badge/Arquitectura-Modular%20Desacoplada-blue.svg?style=flat-square)](#)
-[![Versión](https://img.shields.io/badge/Versión-v1.0%20%28Producción%29-emerald.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.1%20RC-emerald.svg?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-indigo.svg?style=flat-square)](#)
 
 Estructura modular del sistema, arquitectura por capas, catálogo de componentes y flujo de datos fiscal.

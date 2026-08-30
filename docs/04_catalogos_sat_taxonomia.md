@@ -24,7 +24,7 @@ El catálogo oficial de productos y servicios del SAT (`c_ClaveProdServ`) contie
 
 ## 2. Algoritmo de Resolución Jerárquica en 4 Niveles
 
-El módulo de clasificación [`backend/app/catalogos/sat_catalogo.py`](file:///home/kubrick/www/declara/backend/app/catalogos/sat_catalogo.py) evalúa cada concepto de factura mediante una cascada determinista de cuatro niveles de precisión:
+El módulo de clasificación [`backend/app/catalogos/sat_catalogo.py`](../backend/app/catalogos/sat_catalogo.py) evalúa cada concepto de factura mediante una cascada determinista de cuatro niveles de precisión:
 
 ```mermaid
 graph TD

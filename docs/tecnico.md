@@ -5,7 +5,7 @@
 El sistema opera bajo una arquitectura cliente-servidor moderna y desacoplada:
 * **Backend:** Python 3.11+, FastAPI (asíncrono en puerto `8010`), SQLAlchemy 2.0 (SQLite / PostgreSQL), `lxml` (parser de alta velocidad para XMLs de CFDI 3.3 y 4.0), `pdfplumber` (parser de PDFs oficiales del SAT).
 * **Frontend:** Next.js 15 (App Router, React 19 en puerto `3000`), Tailwind CSS con sistema de diseño semántico autodescriptivo y componentes modulares.
-* **Automatización:** GNU Makefile con comandos de ciclo de vida completo (`make setup`, `make dev`, `make test`, `make db-fresh`, `make build`).
+* **Automatización:** `scripts/tributacos.py` (fuente unica) y GNU Makefile como fachada (`make X` == `python scripts/tributacos.py X`).
 
 ---
 
@@ -46,14 +46,18 @@ La lógica de negocio fiscal está desacoplada de la base de datos en funciones 
 
 ```bash
 # Desarrollo
-make dev          # Inicia Backend (:8010) y Frontend (:3000) en paralelo
-make test         # Ejecuta la suite de 11 tests en Pytest
+make doctor       # Verifica Python, Node.js y Docker
+make dev          # Inicia Backend (:8010) y Frontend (:3000)
+make test         # Ejecuta la suite de Pytest
 make build        # Compila el bundle de producción de Next.js
+make docker-up    # Equivalente a Iniciar-Tributacos.bat
 
 # Base de Datos y Datos de Prueba
 make db-fresh     # Recrea la BD limpia y carga el fixture demo oficial
 make db-empty     # Crea la BD limpia con catálogos SAT pero sin comprobantes
-make db-export    # Exporta el estado actual de la BD a fixture comprimido
+make db-export    # Copia fechada en respaldos/ (mismo archivo que la GUI)
+make db-import-backup INPUT=respaldos/archivo.json.gz  # Restaura un respaldo
+make clear-cache  # Limpia la cache de calculos fiscales
 make clean        # Limpia cachés temporales de compilación
 ```
 

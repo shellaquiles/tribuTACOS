@@ -24,7 +24,7 @@ Esta guía define el tono, vocabulario, convenciones de marcado y estructura vis
   - `<kbd>📁 Por Rubro / Categoría</kbd>`
   - `<kbd>📄 Borrador</kbd>`
   - `<kbd>📥 Exportar (CSV)</kbd>`
-  - `<kbd>JSON</kbd>` / `<kbd>XML</kbd>`
+- **Botones del Panel de Operaciones:** documentarlos con el mismo nombre que en la GUI (`<kbd>Exportar respaldo</kbd>`, `<kbd>Importar respaldo</kbd>`). No describir el panel como un clon del Makefile: comparte el runner, no la interfaz web.
 
 ### 2.2 Montos Monetarios y Claves Fiscales
 - **Moneda:** Formato `$123,456.78 MXN` o en tablas `$123,456.78`.
@@ -46,11 +46,11 @@ Utilizar bloques de alerta para destacar aspectos críticos:
 
 - **Badge de Versión Obligatorio:** En el capítulo 1 y en el documento unificado / docs técnicos, incluir el badge de versión exacto:
   ```markdown
-  [![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
+  [![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.1%20RC-blue.svg?style=flat-square)](#)
   ```
 - **Declaración Explícita de Versión de Referencia:** Justo debajo de los badges principales, declarar en blockquote:
   ```markdown
-  > **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS vX.Y.Z STABLE**.
+  > **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS vX.Y.Z STABLE** (o `vX.Y.Z-rc.N RC` en un pre-release).
   ```
 - **Badges Normativos de Capítulo:** Incluir al inicio de cada capítulo badges de estilo `flat-square` referenciando las leyes o módulos aplicables:
   ```markdown

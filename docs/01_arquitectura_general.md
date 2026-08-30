@@ -1,9 +1,9 @@
 # tribuTACOS — 01. Arquitectura General y Ecosistema Técnico
 
-[![Versión](https://img.shields.io/badge/Versión-v1.0.1%20STABLE-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.1%20RC-blue.svg?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-emerald.svg?style=flat-square)](#)
 
-> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.0.1 STABLE**.
+> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.1.0-rc.1 RC**.
 
 Especificación formal de la arquitectura del sistema, componentes de software, pipeline de procesamiento de datos y estructura de directorios.
 
@@ -109,7 +109,7 @@ Al consultar el resumen fiscal anual (`/api/summary?year=YYYY`), el motor proces
 ## 4. Estructura del Repositorio
 
 ```text
-declara/
+tributacos/
 ├── backend/                  # Servicios de Backend y Lógica de Negocio
 │   ├── app/
 │   │   ├── catalogos/        # Catálogos SAT y Clasificación Taxonómica
@@ -166,9 +166,12 @@ declara/
 │   ├── package.json          # Dependencias de Node.js
 │   └── next.config.mjs       # Configuración de Next.js
 ├── docs/                     # Documentación Técnica del Sistema
-├── documentacion/            # Manuales de Usuario y Guías de Operación
-├── Makefile                  # Automatización de tareas del proyecto
-└── levantar_proyecto.sh      # Script de inicialización rápida
+├── manual_usuario/           # Manual de usuario y capturas
+├── scripts/                  # Runner, Panel de Operaciones y launchers
+├── packaging/                # PyInstaller, Inno Setup y bundle Docker
+├── VERSION                   # SemVer fuente unica
+├── Makefile                  # Fachada de scripts/tributacos.py (make X == python scripts/tributacos.py X)
+└── levantar_proyecto.sh      # Alias de python3 scripts/tributacos.py dev
 ```
 
 ---

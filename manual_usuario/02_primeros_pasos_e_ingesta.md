@@ -12,6 +12,8 @@ Guía paso a paso para la inicialización del entorno, selección de contribuyen
 
 ## 1. Puesta en Marcha Inicial
 
+Si eres usuario final (instalador Windows, Docker o Panel de Operaciones), sigue la [Guía de instalación](../docs/INSTALACION_USUARIO.md). Esta sección es para desarrollo local.
+
 Para arrancar el sistema completo con servidores de backend y frontend sincronizados:
 
 ```bash

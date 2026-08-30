@@ -73,7 +73,7 @@ Este componente presenta la tabla analítica de los 12 meses del ejercicio con e
 
 ## 4. Motor de Exportación de Datos (`csvExport.js`)
 
-El módulo [`frontend/src/csvExport.js`](file:///home/kubrick/www/declara/frontend/src/csvExport.js) genera archivos CSV estructurados con el **Byte Order Mark (BOM) UTF-8 (`\uFEFF`)**, garantizando compatibilidad inmediata con **Microsoft Excel**, **Apple Numbers** y **Google Sheets** sin problemas de codificación de caracteres en español.
+El módulo [`frontend/src/csvExport.js`](../frontend/src/csvExport.js) genera archivos CSV estructurados con el **Byte Order Mark (BOM) UTF-8 (`\uFEFF`)**, garantizando compatibilidad inmediata con **Microsoft Excel**, **Apple Numbers** y **Google Sheets** sin problemas de codificación de caracteres en español.
 
 ### Tipos de Reportes Disponibles:
 1. **Reporte Maestro de Egresos:** UUID, Fecha, RFC Emisor, Razón Social, Clave SAT, Descripción de Concepto, Rubro Operativo, Subtotal, IVA, Total y Estado de Deducibilidad.

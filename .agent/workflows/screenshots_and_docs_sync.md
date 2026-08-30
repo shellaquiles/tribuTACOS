@@ -11,7 +11,7 @@ Este workflow documenta cómo capturar las vistas completas de la aplicación we
 ## 1. Pipeline de Capturas y Sincronización de Documentación
 
 > [!IMPORTANT]
-> **Regla de Desarrollo Ágil (Cero Sobrecarga):** Las capturas de pantalla y la compilación de documentación en PDF **NO** deben ejecutarse durante el ciclo normal de desarrollo del frontend o backend. Se ejecutan exclusivamente bajo demanda antes de un commit, PR o release mediante los comandos `make`.
+> **Regla de Desarrollo Ágil (Cero Sobrecarga):** Las capturas de pantalla y la compilación de documentación en PDF **NO** deben ejecutarse durante el ciclo normal de desarrollo del frontend o backend. Se ejecutan exclusivamente bajo demanda antes de un commit, PR o release mediante `make` (fachada de `scripts/tributacos.py`).
 
 ### Comandos del Pipeline
 
@@ -20,11 +20,13 @@ Para no ralentizar el desarrollo local:
 1. **Solo capturas de pantalla:**
    ```bash
    make screenshots
+   # equivalente: python scripts/tributacos.py screenshots
    ```
 2. **Pipeline completo de pre-release (Capturas + Sincronización de manual + PDFs):**
    ```bash
    make docs-sync
    ```
+   Incluye los tres PDFs oficiales: técnico, manual de usuario y guía de instalación (`make pdf-instalacion`).
 
 ---
 
@@ -47,7 +49,7 @@ El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un cont
 
 ---
 
-## 2. Nomenclatura Estándar de Imágenes (`manual_usuario/img/`)
+## 3. Nomenclatura Estándar de Imágenes (`manual_usuario/img/`)
 
 | Vista / Pantalla | Captura Superior (Hero/KPIs) | Captura Inferior (Scroll) |
 | :--- | :--- | :--- |
@@ -66,50 +68,24 @@ El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un cont
 
 ---
 
-## 3. Ejecución del Script de Captura
+## 4. Ejecución del Script de Captura
 
 Con el entorno levantado (`make dev` o frontend en `http://localhost:3000`):
 
 ```bash
-node frontend/scripts/capture_screenshots.js
+make screenshots
 ```
+
+El script directo `node frontend/scripts/capture_screenshots.js` hace lo mismo; preferir `make` / el runner para no divergir.
 
 ---
 
-## 4. Recompilación del Manual Completo
+## 5. Recompilación del Manual Completo
 
-Tras editar o añadir contenido a los capítulos individuales (`01_*.md` a `09_*.md`), se debe regenerar el documento integral:
+Tras editar o añadir contenido a los capítulos individuales (`01_*.md` a `09_*.md`), regenerar el documento integral **con el Makefile** (lee `VERSION` y recompila PDFs):
 
 ```bash
-node -e '
-const fs = require("fs");
-const path = require("path");
-const dir = "manual_usuario";
-const files = [
-  "01_introduccion_y_propuesta_de_valor.md",
-  "02_primeros_pasos_e_ingesta.md",
-  "03_modulo_dashboard_global.md",
-  "04_modulo_predeclaracion_mensual.md",
-  "05_modulo_predeclaracion_anual.md",
-  "06_modulo_egresos_y_deducciones.md",
-  "07_modulo_ingresos_y_nomina.md",
-  "08_modulo_auditoria_sat_conciliacion.md",
-  "09_roadmap_y_evolucion_modulos.md"
-];
-let fullDoc = `# tribuTACOS — Manual de Usuario Completo\n\n> **Plataforma de Inteligencia Fiscal, Conciliación de Comprobantes Digitales (CFDI 3.3/4.0) y Simulación Analítica de Pre-Declaración Mensual y Anual para Personas Físicas en México.**\n\n---\n\n## Tabla de Contenidos\n\n`;
-files.forEach((f, idx) => {
-  const content = fs.readFileSync(path.join(dir, f), "utf8");
-  const titleMatch = content.match(/# Capítulo \d+: ([^\n\r]+)/);
-  const title = titleMatch ? titleMatch[1] : f;
-  fullDoc += `${idx + 1}. [Capítulo 0${idx + 1}: ${title}](#capítulo-0${idx + 1}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")})\n`;
-});
-fullDoc += "\n---\n\n";
-files.forEach(f => {
-  let content = fs.readFileSync(path.join(dir, f), "utf8");
-  content = content.replace(/^# tribuTACOS — Manual de Usuario\s*\n+/g, "");
-  fullDoc += content + "\n\n---\n\n";
-});
-fs.writeFileSync(path.join(dir, "MANUAL_DE_USUARIO_COMPLETO.md"), fullDoc.trim() + "\n");
-console.log("MANUAL_DE_USUARIO_COMPLETO.md consolidado exitosamente.");
-'
+make docs-sync
 ```
+
+No copiar a mano el script `node -e` del Makefile: esa es la fuente unica y incluye badges de canal (`STABLE` / `RC`).

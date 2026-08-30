@@ -1,6 +1,6 @@
 # tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg?style=flat-square)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0--rc.1-blue.svg?style=flat-square)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_15_App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![TailwindCSS](https://img.shields.io/badge/Styles-Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite_%2F_PostgreSQL-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://sqlite.org)
-[![Tests](https://img.shields.io/badge/Tests-11_Passed_Pytest-449C44?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
+[![Tests](https://img.shields.io/badge/Tests-12_Passed_Pytest-449C44?style=flat-square&logo=pytest&logoColor=white)](https://pytest.org)
 
 **tribuTACOS** es una plataforma de análisis, proyección y simulación fiscal que procesa Comprobantes Fiscales Digitales por Internet (**CFDI 3.3 y 4.0 en XML**) y declaraciones oficiales del **SAT en PDF**, calculando de forma anticipada, transparente y determinista los **Pagos Provisionales Mensuales (ISR e IVA)** y la **Declaración Anual** para personas físicas en México (Sueldos y Salarios y Actividad Empresarial / Servicios Profesionales).
 
@@ -82,7 +82,7 @@
 | **Frontend** | Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons |
 | **Base de Datos** | SQLite (`tributacos.db`) / PostgreSQL |
 | **Pruebas y Calidad** | Pytest, HTTPX, ESLint |
-| **Automatización** | GNU Makefile, Bash Scripts |
+| **Automatización** | GNU Makefile, Bash Scripts, `scripts/tributacos.py` (Windows/macOS/Linux) |
 
 ---
 
@@ -91,50 +91,108 @@
 ### Prerrequisitos
 * Python 3.11 o superior
 * Node.js 18 o superior con npm
-* GNU Make
+* GNU Make (Linux/macOS) o PowerShell/CMD (Windows)
 
-### Puesta en Marcha con Makefile
+### Puesta en Marcha (Linux / macOS / Windows)
+
+`make <comando>` y `python scripts/tributacos.py <comando>` ejecutan **el mismo codigo**. En Windows, si no tienes GNU Make, usa el runner:
 
 ```bash
 # 1. Configuración inicial (creación de venv, instalación de dependencias y base de datos demo)
 make setup
+# equivalente: python scripts/tributacos.py setup
 
-# 2. Iniciar servidores de desarrollo en paralelo (Backend :8010 + Frontend :3000)
+# 2. Iniciar servidores de desarrollo (Backend :8010 + Frontend :3000)
 make dev
 
-# 3. Ejecutar la suite de pruebas unitarias y de integración
+# 3. Ejecutar la suite de pruebas
 make test
 ```
 
+**PowerShell (sin Make):**
+```powershell
+.\tributacos.ps1 setup
+.\tributacos.ps1 dev
+.\tributacos.ps1 test
+```
+
+**CMD o Python directo:**
+```cmd
+tributacos.cmd setup
+tributacos.cmd dev
+python scripts\tributacos.py test
+```
+
+> **Nota:** Si PowerShell bloquea la ejecución de scripts, usa `tributacos.cmd` o ejecuta una vez:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+### Instalación para usuario final (sin Python ni Node)
+
+Si el usuario **no es técnico**, la forma más simple es usar Docker Desktop:
+
+1. Instalar [Docker Desktop](https://www.docker.com/products/docker-desktop/) (una sola vez)
+2. Abrir Docker Desktop y esperar a que esté en ejecución
+3. **Doble clic** en `Iniciar-Tributacos.bat` (Windows)
+4. Abrir **http://localhost:3000** en el navegador
+
+Para detener: `Detener-Tributacos.bat` (equivalente: `make docker-down`)
+
+Guía completa: [docs/INSTALACION_USUARIO.md](docs/INSTALACION_USUARIO.md) / [PDF](docs/tribuTACOS_instalacion_usuario.pdf)
+
+Para verificar requisitos del modo desarrollador: `make doctor` o `python scripts/tributacos.py doctor`
+
+### Panel de Operaciones (interfaz gráfica)
+
+No replica la interfaz web: solo acciones de sistema (iniciar/detener, PDFs SAT, respaldos, carpetas). El panel, `make` y `python scripts/tributacos.py` llaman el **mismo runner**.
+
+```powershell
+Centro-de-Control-Tributacos.pyw
+python scripts/tributacos_gui.py
+make gui
+```
+
+Servidor unico (sin Node en runtime): `python scripts/tributacos.py standalone` → http://127.0.0.1:8080
+
+> Los scripts Windows viven en `scripts/windows/`. Los archivos en la raíz son accesos directos.
+
 ### URLs de Acceso Local
-* **Aplicación Web:** `http://localhost:3000`
-* **Servicios API REST:** `http://localhost:8010`
+* **Aplicación Web (dev):** `http://localhost:3000`
+* **Aplicación Web (standalone):** `http://127.0.0.1:8080`
+* **Servicios API REST:** `http://localhost:8010` (en standalone, la API comparte el puerto 8080)
 * **Documentación Interactiva Swagger / OpenAPI:** `http://localhost:8010/docs`
 
 ---
 
 ## Guía de Comandos de Operación (`Makefile`)
 
-El proyecto implementa un `Makefile` estructurado en **5 fases operativas intuitivas**. Para ver la ayuda interactiva en consola ejecute `make` o `make help`:
+El proyecto implementa un `Makefile` estructurado en **5 fases**. Cada comando operativo es una fachada de `scripts/tributacos.py` (el Panel de Operaciones usa el mismo codigo). Ejecute `make` o `make help`:
 
 | Fase | Comando | Propósito y Acción |
 | :--- | :--- | :--- |
-| **1. Inicio & Dev** | `make setup` | Instala dependencias y prepara la base de datos con datos demo. |
-| | `make dev` | Inicia Backend (`:8010`) y Frontend (`:3000`) de forma paralela. |
-| | `make stop` | Detiene cualquier proceso ocupando los puertos `8010` o `3000`. |
+| **1. Inicio & Dev** | `make doctor` | Verifica Python, Node.js y Docker. |
+| | `make setup` | Instala dependencias y prepara la base de datos con datos demo. |
+| | `make dev` | Inicia Backend (`:8010`) y Frontend (`:3000`). |
+| | `make gui` | Abre el Panel de Operaciones (usuario final). |
+| | `make standalone` | Un solo servidor en `:8080` (API + frontend estatico). |
+| | `make docker-up` / `make docker-down` | Inicia o detiene Docker Compose. |
+| | `make stop` | Detiene cualquier proceso ocupando los puertos `8010`, `3000` o `8080`. |
 | **2. Datos & CFDIS** | `make db-seed` | Restaura la BD con el dataset demo completo (139 CFDIs). |
 | | `make db-reset` | Limpia la base de datos dejando solo catálogos oficiales del SAT. |
 | | `make db-import-xml` | Procesa y clasifica facturas/recibos XML en `cfdi_recibidos/` y `cfdi_emitidos/`. |
 | | `make db-import-sat` | Ingesta y procesa declaraciones y acuses oficiales del SAT en PDF. |
-| | `make db-export` | Exporta un respaldo fixture de la base de datos actual. |
-| **3. Calidad** | `make test` | Ejecuta la suite de 11 pruebas unitarias del motor fiscal con Pytest. |
+| | `make db-export` | Copia fechada en `respaldos/` (mismo archivo que la GUI). |
+| | `make db-import-backup INPUT=...` | Restaura un respaldo `.json.gz` (reemplaza la BD). |
+| | `make clear-cache` | Limpia la cache de calculos fiscales. |
+| | `make open-xml-recibidos` / `open-xml-emitidos` / `open-pdf-sat` / `open-backups` | Abre las carpetas de ingesta y respaldos. |
+| **3. Calidad** | `make test` | Ejecuta las pruebas del backend (Pytest). |
 | | `make lint` | Valida tipado, linting y estándares de código en el Frontend. |
 | | `make build` | Compila el bundle optimizado para producción en Next.js. |
 | **4. Documentación** | `make screenshots` | Ejecuta capturas completas automatizadas con Playwright asistido por scroll. |
 | | `make docs-sync` | Pipeline de pre-release: capturas + sincronización del manual + PDFs. |
-| | `make pdf-all` | Compila ambos PDFs oficiales con Pandocquiles by shellaquiles.org. |
+| | `make pdf-all` | Compila los PDFs oficiales (técnico, manual e instalación) con Pandocquiles by shellaquiles.org. |
 | | `make pdf-manual` | Compila únicamente el Manual de Usuario en PDF (`manual_usuario/`). |
 | | `make pdf-tecnica` | Compila únicamente la Documentación Técnica en PDF (`docs/`). |
+| | `make pdf-instalacion` | Compila la Guía de instalación para usuario final (`docs/INSTALACION_USUARIO.md`). |
 | **5. Limpieza** | `make clean` | Elimina temporales, cachés (`__pycache__`) y PDFs generados. |
 | | `make clean-deep` | Elimina entornos locales (`backend/venv` y `frontend/node_modules`). |
 
@@ -143,7 +201,7 @@ El proyecto implementa un `Makefile` estructurado en **5 fases operativas intuit
 ## Estructura del Proyecto
 
 ```text
-declara/
+tributacos/
 ├── backend/                  # Capa de Backend y Lógica Contable
 │   ├── app/
 │   │   ├── catalogos/        # Catálogo maestro UNSPSC (52,547 claves) y taxonomía
@@ -177,6 +235,8 @@ declara/
 │   ├── 06_frontend_ux_componentes.md
 │   ├── funcional.md
 │   ├── tecnico.md
+│   ├── INSTALACION_USUARIO.md
+│   ├── tribuTACOS_instalacion_usuario.pdf
 │   └── tribuTACOS_documentacion_tecnica.pdf
 ├── manual_usuario/           # Manual de Usuario Completo con Guías Visuales
 │   ├── 01_introduccion_y_propuesta_de_valor.md
@@ -186,15 +246,30 @@ declara/
 ├── utils/                    # Utilerías y Generador de Documentación
 │   ├── pandocquiles.env      # Configuración oficial persistente (temas, títulos, metadatos)
 │   └── pandocquiles/         # Submódulo del motor de generación PDF (Pandocquiles)
-├── Makefile                  # Automatización integral del ciclo de vida
-├── levantar_proyecto.sh      # Script de inicialización rápida
+├── VERSION                   # Fuente unica de SemVer (X.Y.Z o X.Y.Z-rc.N)
+├── Makefile                  # Fachada de scripts/tributacos.py (`make X`)
+├── docker-compose.yml        # Empaquetado Docker (usuario final)
+├── docker/                   # Dockerfiles backend y frontend
+├── scripts/
+│   ├── tributacos.py         # Runner multiplataforma (fuente unica de comandos)
+│   ├── tributacos_gui.py     # Panel de Operaciones (Tkinter)
+│   ├── runtime.py            # Rutas de datos, respaldos e ingesta
+│   ├── windows/              # Launchers Windows (.bat, .ps1, .cmd, .pyw)
+│   ├── macos/                # Launchers Docker macOS
+│   └── linux/                # Launchers Docker Linux
+├── packaging/
+│   └── windows/              # PyInstaller + Inno Setup (`TributacosSetup-X.Y.Z.exe`)
+├── Iniciar-Tributacos.bat    # Acceso directo → scripts/windows/iniciar-docker.bat
+├── Detener-Tributacos.bat    # Acceso directo → scripts/windows/detener-docker.bat
+├── Centro-de-Control-Tributacos.pyw  # Acceso directo al Panel de Operaciones
+├── tributacos.ps1 / .cmd     # Acceso directo CLI → scripts/windows/
+├── levantar_proyecto.sh      # Alias de `python3 scripts/tributacos.py dev`
 ├── CHANGELOG.md              # Historial de versiones y cambios
 ├── CONTRIBUTING.md           # Guía de contribución y estándares
 ├── CODE_OF_CONDUCT.md        # Código de conducta para la comunidad
 ├── SECURITY.md               # Política de seguridad y privacidad local
 ├── LICENSE                   # Licencia MIT
 └── README.md                 # Guía principal del proyecto
-
 ```
 
 ---
@@ -203,6 +278,7 @@ declara/
 
 Los documentos en PDF del proyecto son generados y maquetados mediante **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**:
 
+* 📗 **[Guía de instalación para usuario final (Markdown)](docs/INSTALACION_USUARIO.md)** / **[Versión PDF (Pandocquiles by shellaquiles.org)](docs/tribuTACOS_instalacion_usuario.pdf)**: Windows (.exe), Docker Desktop y Panel de Operaciones, sin terminal.
 * 📘 **[Manual de Usuario Completo (Markdown)](manual_usuario/MANUAL_DE_USUARIO_COMPLETO.md)** / **[Versión PDF (Pandocquiles by shellaquiles.org)](manual_usuario/tribuTACOS_manual_usuario.pdf)**: Guía detallada paso a paso con diagramas y capturas de pantalla de la interfaz.
 * 📄 **[Documentación Técnica de Arquitectura (Markdown)](docs/01_arquitectura_general.md)** / **[Versión PDF (Pandocquiles by shellaquiles.org)](docs/tribuTACOS_documentacion_tecnica.pdf)**: Diseño de software, flujo de datos y dependencias.
 * 🧮 **[Motor Fiscal y Algoritmos LISR/LIVA](docs/03_motor_fiscal_algoritmos.md)**: Fórmulas y disposiciones legales de la legislación tributaria mexicana.

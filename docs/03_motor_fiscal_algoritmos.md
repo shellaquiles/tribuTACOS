@@ -6,15 +6,15 @@ Modelación matemática, fundamentos legales y algoritmos deterministas para pag
 
 ## 1. Fundamentos Legales y Módulos de Cálculo
 
-El motor fiscal implementado en [`backend/app/cfdis/calculators/`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/) y coordinado por [`backend/app/cfdis/engine.py`](file:///home/kubrick/www/declara/backend/app/cfdis/engine.py) opera como un conjunto de funciones matemáticas deterministas desacopladas de la persistencia:
+El motor fiscal implementado en [`backend/app/cfdis/calculators/`](../backend/app/cfdis/calculators/) y coordinado por [`backend/app/cfdis/engine.py`](../backend/app/cfdis/engine.py) opera como un conjunto de funciones matemáticas deterministas desacopladas de la persistencia:
 
-* [`tarifas.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/tarifas.py): Cálculo de la tarifa del Art. 152 LISR con desglose de límite inferior, cuota fija, porcentaje excedente e impuesto marginal.
-* [`nomina.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/nomina.py): Cálculo de sueldos, desglose de percepciones gravadas y exentas (Art. 93 LISR), deducciones y serie temporal de recibos.
-* [`honorarios.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/honorarios.py): Facturación PFAE emitida, serie de 12 meses, concentración por cliente y mezcla de conceptos por clave SAT.
-* [`gastos.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/gastos.py): Deducibilidad operativa, matriz mensual de egresos y asignación de rubros SAT.
-* [`deducciones.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/deducciones.py): Deducciones personales (Art. 151 LISR), integración de planes de retiro (PPR), gastos médicos y cálculo del doble tope legal.
-* [`intereses.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/intereses.py): Intereses nominales, cálculo de interés real y retenciones financieras.
-* [`simulador_sat.py`](file:///home/kubrick/www/declara/backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con desglose paso a paso.
+* [`tarifas.py`](../backend/app/cfdis/calculators/tarifas.py): Cálculo de la tarifa del Art. 152 LISR con desglose de límite inferior, cuota fija, porcentaje excedente e impuesto marginal.
+* [`nomina.py`](../backend/app/cfdis/calculators/nomina.py): Cálculo de sueldos, desglose de percepciones gravadas y exentas (Art. 93 LISR), deducciones y serie temporal de recibos.
+* [`honorarios.py`](../backend/app/cfdis/calculators/honorarios.py): Facturación PFAE emitida, serie de 12 meses, concentración por cliente y mezcla de conceptos por clave SAT.
+* [`gastos.py`](../backend/app/cfdis/calculators/gastos.py): Deducibilidad operativa, matriz mensual de egresos y asignación de rubros SAT.
+* [`deducciones.py`](../backend/app/cfdis/calculators/deducciones.py): Deducciones personales (Art. 151 LISR), integración de planes de retiro (PPR), gastos médicos y cálculo del doble tope legal.
+* [`intereses.py`](../backend/app/cfdis/calculators/intereses.py): Intereses nominales, cálculo de interés real y retenciones financieras.
+* [`simulador_sat.py`](../backend/app/cfdis/calculators/simulador_sat.py): Pre-declaración mensual provisional y determinación anual con desglose paso a paso.
 
 ```mermaid
 flowchart TD

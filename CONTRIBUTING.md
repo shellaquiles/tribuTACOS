@@ -10,6 +10,7 @@ Asegúrate de contar con las siguientes herramientas en tu entorno:
 * **Python 3.11+**
 * **Node.js 18+** y **npm**
 * **SQLite 3**
+* **GNU Make** (Linux/macOS) o **PowerShell/CMD** (Windows)
 * **Pandoc** y **Exiftool** (opcional, para compilar la documentación oficial en PDF)
 
 ---
@@ -26,10 +27,12 @@ Asegúrate de contar con las siguientes herramientas en tu entorno:
 3. **Prepara el entorno local**:
    ```bash
    make setup
+   # equivalente: python scripts/tributacos.py setup
    ```
 4. **Inicia los servidores de desarrollo**:
    ```bash
    make dev
+   # equivalente: python scripts/tributacos.py dev
    ```
    * Backend: [http://localhost:8010](http://localhost:8010) (Documentación interactiva Swagger en `/docs`)
    * Frontend: [http://localhost:3000](http://localhost:3000)

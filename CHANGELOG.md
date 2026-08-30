@@ -4,6 +4,23 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.1.0-rc.1] - 2026-08-30
+
+### Añadido
+- Empaquetado multiplataforma: modo standalone (`:8080`), Panel de Operaciones GUI, Docker Compose publicado, workflows de CI/Release y spec de PyInstaller/Inno Setup para Windows.
+- Launchers Docker para Windows, macOS y Linux; datos de usuario en `%APPDATA%/tributacos` en modo instalado.
+- PDF oficial de la guía de instalación (`docs/tribuTACOS_instalacion_usuario.pdf`) y comando `make pdf-instalacion`.
+- Pre-releases SemVer (`vX.Y.Z-rc.N`): GitHub Release marcado como pre-release y Docker sin pisar `latest`.
+- **Acerca de** en el Panel de Operaciones: contacto, aviso legal y ficha tecnica para tickets (incluye atajos de captura).
+
+### Cambiado
+- El `Makefile` es una fachada de `scripts/tributacos.py`: `make X` y el Panel de Operaciones ejecutan el mismo codigo (respaldos fechados, Docker, cache, carpetas de ingesta).
+- Panel de Operaciones: cabecera con estado en vivo, botones primario/peligro, URL clicable y registro con hora.
+- Ficha tecnica de **Acerca de**: health/puertos, ruta real de SQLite, conteos de CFDI/SAT (sin RFC ni montos), git y Node.
+- Un segundo clic en `tributacos.exe` reabre el navegador en la instancia que ya corre (el puerto 8080 no se duplica).
+
 ## [1.0.1] - 2026-08-26
 
 ### Añadido
