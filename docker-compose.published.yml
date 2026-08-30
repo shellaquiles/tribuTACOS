@@ -1,0 +1,39 @@
+# Compose para el ZIP de release (imagenes preconstruidas en GHCR).
+# Uso: docker compose -f docker-compose.published.yml up -d
+# Requiere: Docker Desktop y acceso a ghcr.io/shellaquiles
+
+name: tributacos
+
+services:
+  backend:
+    image: ghcr.io/shellaquiles/tributacos-backend:${TRIBUTACOS_VERSION:-latest}
+    volumes:
+      - tributacos-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/api/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  frontend:
+    image: ghcr.io/shellaquiles/tributacos-frontend:${TRIBUTACOS_VERSION:-latest}
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_URL: http://backend:8010
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  tributacos-data:
+    name: tributacos-data

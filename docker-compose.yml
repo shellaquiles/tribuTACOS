@@ -1,0 +1,47 @@
+# tribuTACOS — Empaquetado para usuario final (sin Python/Node en el host)
+#
+# Uso:
+#   docker compose up --build
+#   Abrir http://localhost:3000
+#
+# En Windows: doble clic en Iniciar-Tributacos.bat
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    volumes:
+      - tributacos-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8010/api/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        BACKEND_URL: http://backend:8010
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_URL: http://backend:8010
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  tributacos-data:
+    name: tributacos-data

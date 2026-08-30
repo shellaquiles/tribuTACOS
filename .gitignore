@@ -6,6 +6,7 @@
 *~
 utils/dist_docs/
 dist_docs/
+respaldos/
 
 .fuse_hidden*
 .directory
@@ -184,11 +185,16 @@ $RECYCLE.BIN/
 # Project-specific rules
 backend/venv/
 backend/.env
+backend/static/
 frontend/.env
 frontend/node_modules/
 backend/__pycache__/
 *.log
 .agents/
+.tmp/
+
+*.spec
+!packaging/**/*.spec
 
 # Additional rules based on project files
 cfdi_recibidos/

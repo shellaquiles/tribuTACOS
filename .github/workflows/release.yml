@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  docker-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar VERSION vs etiqueta
+        run: |
+          FILE_VER="$(tr -d '[:space:]' < VERSION)"
+          TAG_VER="${GITHUB_REF_NAME#v}"
+          if [ "$FILE_VER" != "$TAG_VER" ]; then
+            echo "VERSION ($FILE_VER) no coincide con el tag ($TAG_VER)"
+            exit 1
+          fi
+      - name: Verificar PDFs oficiales
+        run: |
+          test -f docs/tribuTACOS_documentacion_tecnica.pdf
+          test -f docs/tribuTACOS_instalacion_usuario.pdf
+          test -f manual_usuario/tribuTACOS_manual_usuario.pdf
+      - name: Empaquetar ZIP Docker
+        run: |
+          chmod +x packaging/release/bundle-docker.sh scripts/macos/*.command scripts/linux/*.sh
+          packaging/release/bundle-docker.sh "${GITHUB_REF_NAME#v}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-zip
+          path: dist/tributacos-docker-*.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar VERSION vs etiqueta
+        shell: bash
+        run: |
+          FILE_VER="$(tr -d '[:space:]' < VERSION)"
+          TAG_VER="${GITHUB_REF_NAME#v}"
+          if [ "$FILE_VER" != "$TAG_VER" ]; then
+            echo "VERSION ($FILE_VER) no coincide con el tag ($TAG_VER)"
+            exit 1
+          fi
+      - name: Verificar PDFs oficiales
+        shell: bash
+        run: |
+          test -f docs/tribuTACOS_documentacion_tecnica.pdf
+          test -f docs/tribuTACOS_instalacion_usuario.pdf
+          test -f manual_usuario/tribuTACOS_manual_usuario.pdf
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Compilar frontend standalone
+        working-directory: frontend
+        env:
+          BUILD_MODE: standalone
+        run: |
+          npm ci
+          npm run build
+      - name: Copiar static
+        shell: bash
+        run: |
+          rm -rf backend/static
+          cp -a frontend/out backend/static
+      - name: PyInstaller
+        run: |
+          python -m pip install --upgrade pip pyinstaller
+          python -m pip install -r backend/requirements.txt
+          pyinstaller packaging/windows/tributacos.spec
+      - name: Version del instalador
+        id: ver
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Inno Setup
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+        with:
+          path: packaging/windows/tributacos.iss
+          options: /DMyAppVersion=${{ steps.ver.outputs.version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-setup
+          path: dist/TributacosSetup*.exe
+
+  publish-release:
+    needs: [docker-bundle, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Checksums
+        run: |
+          mkdir -p dist
+          find artifacts -type f \( -name '*.zip' -o -name '*.exe' \) -exec cp {} dist/ \;
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
+          files: |
+            dist/*

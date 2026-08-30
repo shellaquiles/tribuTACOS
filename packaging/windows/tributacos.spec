@@ -1,0 +1,100 @@
+# -*- mode: python ; coding: utf-8 -*-
+from pathlib import Path
+
+SPECDIR = Path(SPECPATH).resolve()
+ROOT = SPECDIR.parent.parent
+
+hidden = [
+    "lxml",
+    "lxml._elementpath",
+    "lxml.etree",
+    "pdfplumber",
+    "pypdfium2",
+    "uvicorn",
+    "uvicorn.logging",
+    "uvicorn.protocols",
+    "uvicorn.protocols.http",
+    "uvicorn.protocols.http.auto",
+    "uvicorn.protocols.websockets",
+    "uvicorn.protocols.websockets.auto",
+    "uvicorn.lifespan",
+    "uvicorn.lifespan.on",
+    "uvicorn.loops",
+    "uvicorn.loops.auto",
+    "sqlalchemy",
+    "sqlalchemy.sql.default_comparator",
+    "pydantic",
+    "multipart",
+    "dotenv",
+    "app",
+    "app.main",
+    "app.cli",
+    "app.config",
+    "tkinter",
+    "tkinter.ttk",
+    "runtime",
+    "tributacos",
+    "tributacos_gui",
+]
+
+datas = [
+    (str(ROOT / "VERSION"), "."),
+    (str(ROOT / "backend" / "app"), "app"),
+    (str(ROOT / "scripts" / "runtime.py"), "."),
+    (str(ROOT / "scripts" / "tributacos.py"), "."),
+    (str(ROOT / "scripts" / "tributacos_gui.py"), "."),
+]
+
+static_dir = ROOT / "backend" / "static"
+if static_dir.exists():
+    datas.append((str(static_dir), "static"))
+out_dir = ROOT / "frontend" / "out"
+if out_dir.exists() and not static_dir.exists():
+    datas.append((str(out_dir), "static"))
+user_pdf = ROOT / "manual_usuario" / "tribuTACOS_manual_usuario.pdf"
+tech_pdf = ROOT / "docs" / "tribuTACOS_documentacion_tecnica.pdf"
+install_pdf = ROOT / "docs" / "tribuTACOS_instalacion_usuario.pdf"
+if user_pdf.is_file():
+    datas.append((str(user_pdf), "manuals"))
+if tech_pdf.is_file():
+    datas.append((str(tech_pdf), "manuals"))
+if install_pdf.is_file():
+    datas.append((str(install_pdf), "manuals"))
+
+a = Analysis(
+    [str(ROOT / "packaging" / "launcher.py")],
+    pathex=[str(ROOT / "backend"), str(ROOT / "scripts"), str(ROOT / "packaging")],
+    binaries=[],
+    datas=datas,
+    hiddenimports=hidden,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name="tributacos",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name="tributacos",
+)
