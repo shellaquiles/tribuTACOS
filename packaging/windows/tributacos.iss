@@ -1,6 +1,6 @@
 #define MyAppName "tribuTACOS"
 #ifndef MyAppVersion
-#define MyAppVersion "1.1.0-rc.1"
+#define MyAppVersion "1.1.0-rc.2"
 #endif
 #define MyAppPublisher "shellaquiles.org"
 #define MyAppURL "https://github.com/shellaquiles/tributacos"

@@ -6,6 +6,11 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## [Unreleased]
 
+## [1.1.0-rc.2] - 2026-08-31
+
+### Corregido
+- **Windows (.exe)**: PyInstaller incluye `passlib.handlers.bcrypt`, `bcrypt` y dependencias de auth (`jose`, `cryptography`) para que el launcher arranque sin `ModuleNotFoundError`.
+
 ## [1.1.0-rc.1] - 2026-08-30
 
 ### Añadido
