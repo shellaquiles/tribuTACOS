@@ -84,6 +84,11 @@ jobs:
           python -m pip install --upgrade pip pyinstaller
           python -m pip install -r backend/requirements.txt
           pyinstaller packaging/windows/tributacos.spec
+      - name: Smoke test (import congelado)
+        run: python packaging/test_frozen_boot.py
+      - name: Smoke test (.exe en Windows)
+        shell: pwsh
+        run: packaging/windows/smoke-frozen.ps1
       - name: ZIP portable (onedir)
         shell: bash
         run: |

@@ -1,9 +1,9 @@
 # tribuTACOS — 01. Arquitectura General y Ecosistema Técnico
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.2%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-emerald.svg?style=flat-square)](#)
 
-> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.1.0-rc.2 RC**.
+> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.1.0-rc.3 RC**.
 
 Especificación formal de la arquitectura del sistema, componentes de software, pipeline de procesamiento de datos y estructura de directorios.
 

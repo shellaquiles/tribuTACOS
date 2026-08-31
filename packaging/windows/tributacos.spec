@@ -1,6 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 from pathlib import Path
 
+from PyInstaller.utils.hooks import collect_submodules
+
 SPECDIR = Path(SPECPATH).resolve()
 ROOT = SPECDIR.parent.parent
 
@@ -55,7 +57,11 @@ hidden = [
     "runtime",
     "tributacos",
     "tributacos_gui",
+    "frozen_bootstrap",
 ]
+hidden += collect_submodules("app")
+hidden += collect_submodules("passlib")
+hidden += collect_submodules("uvicorn")
 
 datas = [
     (str(ROOT / "VERSION"), "."),

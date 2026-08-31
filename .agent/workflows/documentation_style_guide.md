@@ -46,7 +46,7 @@ Utilizar bloques de alerta para destacar aspectos críticos:
 
 - **Badge de Versión Obligatorio:** En el capítulo 1 y en el documento unificado / docs técnicos, incluir el badge de versión exacto:
   ```markdown
-  [![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.2%20RC-blue.svg?style=flat-square)](#)
+  [![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
   ```
 - **Declaración Explícita de Versión de Referencia:** Justo debajo de los badges principales, declarar en blockquote:
   ```markdown

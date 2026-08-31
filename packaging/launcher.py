@@ -11,6 +11,8 @@ import urllib.error
 import urllib.request
 import webbrowser
 
+from frozen_bootstrap import is_frozen, prepare_frozen_runtime, uvicorn_log_config
+
 STANDALONE_HOST = os.getenv("HOST", "127.0.0.1")
 STANDALONE_PORT = int(os.getenv("PORT", "8080"))
 
@@ -19,7 +21,8 @@ def _prepare_environment() -> None:
     # Servir la UI estatica en un solo puerto. La carpeta de datos de usuario
     # (APPDATA / Application Support) solo aplica al .exe congelado; en un
     # checkout se usa backend/tributacos.db como make dev.
-    if getattr(sys, "frozen", False):
+    if is_frozen():
+        prepare_frozen_runtime()
         os.environ.setdefault("ENVIRONMENT", "production")
     else:
         os.environ.setdefault("ENVIRONMENT", "development")
@@ -30,7 +33,7 @@ def _prepare_environment() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.dirname(here)
     backend = os.path.join(repo_root, "backend")
-    if getattr(sys, "frozen", False):
+    if is_frozen():
         meipass = getattr(sys, "_MEIPASS", "")
         if meipass and meipass not in sys.path:
             sys.path.insert(0, meipass)
@@ -95,7 +98,7 @@ def main() -> None:
         _prepare_environment()
         scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts")
         scripts_dir = os.path.normpath(scripts_dir)
-        if getattr(sys, "frozen", False):
+        if is_frozen():
             meipass = getattr(sys, "_MEIPASS", "")
             if meipass:
                 sys.path.insert(0, meipass)
@@ -119,7 +122,13 @@ def main() -> None:
     print(f"Base de datos: {DATABASE_URL}")
     threading.Thread(target=wait_and_open_browser, daemon=True).start()
     try:
-        uvicorn.run(app, host=STANDALONE_HOST, port=STANDALONE_PORT, log_level="info")
+        uvicorn.run(
+            app,
+            host=STANDALONE_HOST,
+            port=STANDALONE_PORT,
+            log_level="info",
+            log_config=uvicorn_log_config() if is_frozen() else None,
+        )
     except OSError:
         if _app_is_up():
             _open_existing()

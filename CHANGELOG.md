@@ -6,6 +6,15 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## [Unreleased]
 
+## [1.1.0-rc.3] - 2026-08-31
+
+### Corregido
+- **Windows (.exe)**: arranque sin consola (`console=False`) — stdio y logging de uvicorn redirigidos a `%APPDATA%\\tributacos\\logs\\tributacos.log` (evita `isatty` sobre `stdout=None`).
+
+### Añadido
+- Smoke tests del build congelado: `packaging/test_frozen_boot.py` (CI Linux) y `packaging/windows/smoke-frozen.ps1` (Release Windows, `/api/health`).
+- PyInstaller: `collect_submodules` para `app`, `passlib` y `uvicorn`.
+
 ## [1.1.0-rc.2] - 2026-08-31
 
 ### Corregido

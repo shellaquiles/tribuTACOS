@@ -6,7 +6,7 @@ description: Contexto del proyecto tribuTACOS – guía de arquitectura, convenc
 
 Plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3/4.0 en XML) y pre-declaración automática (ISR e IVA) para personas físicas con actividad empresarial, profesional y asalariados en México.
 
-* **Versión Actual**: `1.1.0-rc.2 RC`
+* **Versión Actual**: `1.1.0-rc.3 RC`
 * **Stack**: FastAPI (Python 3.11) + Next.js 15 App Router / React 19 / Tailwind CSS (Frontend) + SQLite / PostgreSQL (SQLAlchemy 2.0).
 * **Fuente de comandos**: `scripts/tributacos.py`. `make X` es una fachada del mismo codigo (también el Panel de Operaciones).
 * **Arranque Rápido (dev)**: `make setup` y `make dev` — Backend `:8010` (Swagger `/docs`) + Frontend `:3000`.
