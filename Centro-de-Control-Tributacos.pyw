@@ -1,5 +1,7 @@
 import runpy
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-runpy.run_path(str(ROOT / "scripts" / "tributacos_gui.py"), run_name="__main__")
+sys.path.insert(0, str(ROOT))
+runpy.run_module("control_panel", run_name="__main__")

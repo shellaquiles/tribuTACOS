@@ -1,8 +1,8 @@
 # tribuTACOS — Guía de instalación para usuario final
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
 
-> **Versión de Referencia:** Esta guía corresponde a **tribuTACOS v1.1.0-rc.3 RC**.
+> **Versión de Referencia:** Esta guía corresponde a **tribuTACOS v1.1.0-rc.4 RC**.
 
 Esta guía es para contadores, personas físicas y usuarios que **no quieren usar la terminal**.
 
@@ -32,11 +32,46 @@ La **interfaz fiscal** (dashboard, subir XML, CSV) es siempre el navegador. El p
 ## 2. Panel de Operaciones (con Python)
 
 1. Doble clic en **`Centro-de-Control-Tributacos.pyw`** (el Panel de Operaciones; `make gui` hace lo mismo)
-2. **Verificar requisitos** (si el modo lo muestra)
-3. **Instalar y preparar** (solo la primera vez, modo desarrollo)
-4. **Iniciar tribuTACOS** — se abre el navegador
+2. <kbd>Verificar requisitos</kbd> (solo en modo desarrollo, pestaña Sistema)
+3. <kbd>Instalar dependencias (primera vez)</kbd> (solo la primera vez, modo desarrollo)
+4. <kbd>Iniciar tribuTACOS</kbd> — se abre el navegador
 
-Otras acciones del panel: escanear carpetas XML, importar PDFs del SAT, exportar o importar un respaldo, limpiar BD o cache, abrir los **manuales PDF** y **Acerca de** (contacto, aviso legal y ficha para reportar errores).
+La **interfaz fiscal** (dashboard, subir XML, CSV) es siempre el navegador. El panel cubre arranque, carpetas locales, PDFs del SAT, respaldos y utilidades.
+
+### Pestaña Inicio
+
+![Panel de Operaciones — pestaña Inicio](img/panel_01_inicio.png)
+
+- <kbd>Iniciar tribuTACOS</kbd> / <kbd>Detener tribuTACOS</kbd>
+- <kbd>Abrir declaracion en el navegador</kbd>
+- Estado en vivo del servidor y registro con hora
+
+### Pestaña Tus archivos
+
+![Panel de Operaciones — Tus archivos](img/panel_02_archivos.png)
+
+1. Abre la carpeta que corresponda (<kbd>Facturas que te emitieron</kbd>, <kbd>Facturas que tu emitiste</kbd>, <kbd>PDFs generados por el SAT</kbd>) y pega tus archivos.
+2. <kbd>Procesar facturas XML</kbd> — incorpora los `.xml` de tus carpetas locales.
+3. <kbd>Procesar PDFs descargados</kbd> — extrae cifras de PDFs que ya pegaste (sin conexion al portal del SAT).
+
+> [!NOTE]
+> tribuTACOS **no se conecta al SAT** ni descarga comprobantes en linea. Solo procesa archivos que tu ya descargaste en tu computadora.
+
+### Pestaña Respaldo
+
+![Panel de Operaciones — Respaldo](img/panel_03_respaldo.png)
+
+- <kbd>Exportar respaldo</kbd> — copia fechada en `respaldos/` (recomendado antes de limpiar)
+- <kbd>Restaurar respaldo</kbd> — elige un `.json.gz` y reemplaza la base actual
+- <kbd>Limpiar cache de calculos</kbd> / <kbd>Limpiar base de datos</kbd> (zona de riesgo)
+- <kbd>Cargar datos demo</kbd> (modo desarrollo)
+
+### Pestaña Ayuda
+
+![Panel de Operaciones — Ayuda](img/panel_04_ayuda.png)
+
+- <kbd>Guia de instalacion</kbd>, <kbd>Manual de usuario</kbd>, <kbd>Documentacion tecnica</kbd> (PDF)
+- <kbd>Acerca de y soporte</kbd> — contacto, aviso legal y ficha tecnica para reportar errores
 
 ---
 
@@ -101,5 +136,5 @@ Hoy: Docker o `python scripts/tributacos.py`. Instaladores nativos (.dmg / AppIm
 **¿Si abro el .exe dos veces?**  
 No se duplica. El segundo clic reabre el navegador en `http://127.0.0.1:8080`.
 
-**¿Diferencia entre Sincronizar en la web y Escanear XML en el panel?**  
-La web sincroniza con la aplicacion ya abierta. El panel escanea las carpetas locales aunque no tengas el navegador abierto.
+**¿Diferencia entre Sincronizar en la web y Procesar facturas XML en el panel?**  
+La web sincroniza con la aplicacion ya abierta. El panel procesa las carpetas locales aunque no tengas el navegador abierto.

@@ -6,6 +6,26 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## [Unreleased]
 
+## [1.1.0-rc.4] - 2026-08-31
+
+### Añadido
+- Paquete [`control_panel/`](../control_panel/) modular (`domain/`, `config/`, `ui/views/`, `infra/`).
+- Paquete [`tributacos_core/`](../tributacos_core/) con `runtime.py` compartido (CLI, panel, PyInstaller).
+- Tests del panel: `control_panel/tests/test_config.py` y `test_gui_smoke.py` (`@pytest.mark.gui`; CI con `python3-tk` y `xvfb-run`).
+- Script `control_panel/scripts/capture_screenshots.py`, comando `make screenshots-gui` y capturas en `docs/img/` y `manual_usuario/img/` (`panel_*.png`).
+- Manual de usuario: capítulos 01, 02 y 08 documentan el Panel de Operaciones; PDF regenerado.
+
+### Cambiado
+- Panel de Operaciones movido fuera de `scripts/`; entry point `python -m control_panel` / `make gui`.
+- `scripts/runtime.py` pasa a ser shim hacia `tributacos_core.runtime`.
+- `make test` y `pytest.ini` incluyen `control_panel/tests`.
+- Documentación técnica, guía de instalación y workflows `.agent/` sincronizados con la arquitectura del panel.
+
+### Corregido
+- `ServerManager.schedule`: wrapper `after(ms, fn)` en Tkinter (`panel.py`).
+- `PROJECT_ROOT` en `control_panel/infra/bootstrap.py` apunta a la raíz del repo.
+- Pandocquiles: compilación del manual en PDF sin timeout de Puppeteer (`render-pdf.js`; omite badges `shields.io` en PDF).
+
 ## [1.1.0-rc.3] - 2026-08-31
 
 ### Corregido

@@ -65,11 +65,16 @@ make setup
 # Ejecución de servidores de desarrollo (Backend :8010 y Frontend :3000)
 make dev
 
-# Ejecución de suite de pruebas automatizadas
+# Ejecución de suite de pruebas automatizadas (backend + control_panel)
 make test
 ```
 
 ### Servicios Standalone
+
+```bash
+# Capturas del Panel de Operaciones (Tkinter)
+make screenshots-gui
+```
 
 ```bash
 # Backend FastAPI (Puerto 8010)

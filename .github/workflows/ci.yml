@@ -18,10 +18,13 @@ jobs:
           python-version: "3.11"
       - name: Instalar dependencias
         run: pip install -r requirements.txt
+      - name: Instalar Tk para smoke GUI
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
       - name: Pytest
+        working-directory: ..
         env:
-          PYTHONPATH: .
-        run: pytest -v
+          PYTHONPATH: backend:.
+        run: xvfb-run pytest -v backend/tests control_panel/tests
 
   frontend-lint-build:
     runs-on: ubuntu-latest

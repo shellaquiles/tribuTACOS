@@ -29,8 +29,9 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 | **Acuses Bancarios (PDF)** | *Banca Electrónica ➔ Pagos de Impuestos Federales SAT* | Folio de control bancario, línea de captura, fecha efectiva de pago e importe transferido. |
 
 ### Procesamiento y Carga en tribuTACOS:
-* **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o al panel de Conciliación SAT.
-* **Desde la Terminal:** Ejecute `make db-import-pdf` para procesar por lotes todos los PDFs colocados en el directorio local.
+* **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o a la vista de Conciliación SAT.
+* **Desde el Panel de Operaciones:** Pestaña **Tus archivos** → abra <kbd>PDFs generados por el SAT</kbd>, pegue los PDF descargados de sat.gob.mx y pulse <kbd>Procesar PDFs descargados</kbd> (sin conexión al portal del SAT).
+* **Desde la Terminal:** Ejecute `make db-import-sat` para procesar por lotes todos los PDFs colocados en el directorio local.
 * **Motor de Extracción:** El parser interno de tribuTACOS extrae mediante expresiones regulares y análisis de tablas los folios de 14 dígitos, sellos digitales y matrices financieras sin requerir captura manual.
 
 ---

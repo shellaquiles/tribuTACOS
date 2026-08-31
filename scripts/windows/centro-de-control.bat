@@ -12,4 +12,4 @@ if errorlevel 1 (
     exit /b 1
 )
 
-python scripts\tributacos_gui.py
+python -m control_panel

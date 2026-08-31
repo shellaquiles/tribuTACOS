@@ -24,7 +24,10 @@ Esta guía define el tono, vocabulario, convenciones de marcado y estructura vis
   - `<kbd>📁 Por Rubro / Categoría</kbd>`
   - `<kbd>📄 Borrador</kbd>`
   - `<kbd>📥 Exportar (CSV)</kbd>`
-- **Botones del Panel de Operaciones:** documentarlos con el mismo nombre que en la GUI (`<kbd>Exportar respaldo</kbd>`, `<kbd>Importar respaldo</kbd>`). No describir el panel como un clon del Makefile: comparte el runner, no la interfaz web.
+- **Botones del Panel de Operaciones:** documentarlos con el mismo nombre que en la GUI. Fuente de verdad: [`control_panel/config/copy.py`](file:///home/kubrick/www/tributacos/control_panel/config/copy.py) (`TASKS`, `InicioCopy`, `TAB_LABELS`). Ejemplos:
+  - `<kbd>Exportar respaldo</kbd>`, `<kbd>Restaurar respaldo</kbd>`
+  - `<kbd>Procesar facturas XML</kbd>`, `<kbd>Procesar PDFs descargados</kbd>`
+  No describir el panel como un clon del Makefile: comparte el runner, no la interfaz web.
 
 ### 2.2 Montos Monetarios y Claves Fiscales
 - **Moneda:** Formato `$123,456.78 MXN` o en tablas `$123,456.78`.
@@ -46,7 +49,7 @@ Utilizar bloques de alerta para destacar aspectos críticos:
 
 - **Badge de Versión Obligatorio:** En el capítulo 1 y en el documento unificado / docs técnicos, incluir el badge de versión exacto:
   ```markdown
-  [![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+  [![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
   ```
 - **Declaración Explícita de Versión de Referencia:** Justo debajo de los badges principales, declarar en blockquote:
   ```markdown
@@ -57,7 +60,9 @@ Utilizar bloques de alerta para destacar aspectos críticos:
   [![Marco Legal](https://img.shields.io/badge/LISR-Art.%20106%20%28PFAE%29-blue.svg?style=flat-square)](#)
   [![IVA](https://img.shields.io/badge/LIVA-Art.%205%20%7C%206-emerald.svg?style=flat-square)](#)
   ```
-- **Imágenes:** Referencias relativas estandarizadas a `img/nombre_de_captura.png` con texto alternativo descriptivo.
+- **Imágenes:** Referencias relativas estandarizadas con texto alternativo descriptivo:
+  - `manual_usuario/img/` — capturas de la interfaz web (Playwright).
+  - `docs/img/` — capturas del Panel de Operaciones (Tkinter).
 
 ---
 

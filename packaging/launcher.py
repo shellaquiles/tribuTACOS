@@ -96,16 +96,18 @@ def wait_and_open_browser() -> None:
 def main() -> None:
     if "--gui" in sys.argv:
         _prepare_environment()
-        scripts_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scripts")
-        scripts_dir = os.path.normpath(scripts_dir)
+        here = os.path.dirname(os.path.abspath(__file__))
+        repo_root = os.path.normpath(os.path.join(here, ".."))
+        scripts_dir = os.path.join(repo_root, "scripts")
         if is_frozen():
             meipass = getattr(sys, "_MEIPASS", "")
             if meipass:
                 sys.path.insert(0, meipass)
-                sys.path.insert(0, os.path.join(meipass, "scripts"))
-        elif scripts_dir not in sys.path:
-            sys.path.insert(0, scripts_dir)
-        from tributacos_gui import main as gui_main
+        else:
+            for path in (repo_root, scripts_dir):
+                if path not in sys.path:
+                    sys.path.insert(0, path)
+        from control_panel.gui import main as gui_main
 
         gui_main()
         return

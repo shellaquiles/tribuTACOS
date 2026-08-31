@@ -9,7 +9,7 @@
 | Capítulo | Archivo | Descripción Principal |
 | :--- | :--- | :--- |
 | **01** | [01_introduccion_y_propuesta_de_valor.md](01_introduccion_y_propuesta_de_valor.md) | Visión de producto, propuesta de valor, privacidad local y comparativa vs SAT. |
-| **02** | [02_primeros_pasos_e_ingesta.md](02_primeros_pasos_e_ingesta.md) | Arranque, selector multi-contribuyente, ingesta masiva (XML/ZIP) y deduplicación. |
+| **02** | [02_primeros_pasos_e_ingesta.md](02_primeros_pasos_e_ingesta.md) | Arranque, Panel de Operaciones, selector multi-contribuyente, ingesta (web, carpetas, CLI) y deduplicación. |
 | **03** | [03_modulo_dashboard_global.md](03_modulo_dashboard_global.md) | Tablero Principal: KPIs consolidados, saldo proyectado y mix de ingresos. |
 | **04** | [04_modulo_predeclaracion_mensual.md](04_modulo_predeclaracion_mensual.md) | Pagos provisionales de ISR (Art. 106) e IVA (Art. 5/6), matriz de 12 meses y borrador SAT. |
 | **05** | [05_modulo_predeclaracion_anual.md](05_modulo_predeclaracion_anual.md) | Determinación anual conforme al Art. 152 LISR, cascada en 5 pasos y devolución SAT. |
@@ -25,11 +25,13 @@
 
 ```mermaid
 flowchart TD
-    App[tribuTACOS :3000] --> M1[Dashboard Principal]
+    Panel[Panel de Operaciones] -->|Iniciar| App[tribuTACOS navegador]
+    App --> M1[Dashboard Principal]
     App --> M2[Pre-Declaraciones SAT]
     App --> M3[Egresos y Deducciones]
     App --> M4[Ingresos y Nómina]
     App --> M5[Auditoría Oficial SAT]
+    Panel -->|XML / PDF locales| DB[(Base de datos local)]
 
     M2 --> M2_1[Pagos Provisionales 12 Meses]
     M2 --> M2_2[Declaración Anual Art. 152]
@@ -42,8 +44,10 @@ flowchart TD
     classDef mainNode fill:#1e293b,stroke:#0f172a,stroke-width:2px,color:#ffffff;
     classDef moduleNode fill:#eff6ff,stroke:#3b82f6,stroke-width:1.5px,color:#1e3a8a;
     classDef subNode fill:#ecfdf5,stroke:#10b981,stroke-width:1px,color:#064e3b;
+    classDef opsNode fill:#fffbeb,stroke:#f59e0b,stroke-width:1.5px,color:#78350f;
 
     class App mainNode;
+    class Panel opsNode;
     class M1,M2,M3,M4,M5 moduleNode;
     class M2_1,M2_2,M3_1,M3_2,M4_1,M4_2,M5_1 subNode;
 ```

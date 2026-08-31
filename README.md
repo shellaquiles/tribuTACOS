@@ -1,6 +1,6 @@
 # tribuTACOS — Plataforma de Inteligencia Fiscal y Pre-Declarador SAT
 
-[![Version](https://img.shields.io/badge/version-1.1.0--rc.3-blue.svg?style=flat-square)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0--rc.4-blue.svg?style=flat-square)](./CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](./LICENSE)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.141-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js_15_App_Router-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org)
@@ -147,7 +147,7 @@ No replica la interfaz web: solo acciones de sistema (iniciar/detener, PDFs SAT,
 
 ```powershell
 Centro-de-Control-Tributacos.pyw
-python scripts/tributacos_gui.py
+python -m control_panel
 make gui
 ```
 
@@ -246,14 +246,21 @@ tributacos/
 ├── utils/                    # Utilerías y Generador de Documentación
 │   ├── pandocquiles.env      # Configuración oficial persistente (temas, títulos, metadatos)
 │   └── pandocquiles/         # Submódulo del motor de generación PDF (Pandocquiles)
+├── tributacos_core/          # Utilidades compartidas (rutas, ingesta, diagnóstico)
+│   └── runtime.py
+├── control_panel/            # Panel de Operaciones (Tkinter)
+│   ├── app.py                # Entry point
+│   ├── domain/               # Lógica (panel, server, models)
+│   ├── config/               # copy, constants, catalog, theme
+│   ├── ui/                   # about, widgets, views/
+│   └── infra/                # bootstrap
 ├── VERSION                   # Fuente unica de SemVer (X.Y.Z o X.Y.Z-rc.N)
 ├── Makefile                  # Fachada de scripts/tributacos.py (`make X`)
 ├── docker-compose.yml        # Empaquetado Docker (usuario final)
 ├── docker/                   # Dockerfiles backend y frontend
 ├── scripts/
 │   ├── tributacos.py         # Runner multiplataforma (fuente unica de comandos)
-│   ├── tributacos_gui.py     # Panel de Operaciones (Tkinter)
-│   ├── runtime.py            # Rutas de datos, respaldos e ingesta
+│   ├── runtime.py            # Shim → tributacos_core.runtime
 │   ├── windows/              # Launchers Windows (.bat, .ps1, .cmd, .pyw)
 │   ├── macos/                # Launchers Docker macOS
 │   └── linux/                # Launchers Docker Linux

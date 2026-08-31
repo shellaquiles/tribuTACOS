@@ -28,6 +28,14 @@ La plataforma estará disponible de inmediato en:
 * **Interfaz de Usuario:** `http://localhost:3000`
 * **API REST y Swagger:** `http://localhost:8010/docs`
 
+### Panel de Operaciones (alternativa sin terminal)
+
+Si usas el instalador Windows, Docker o Python con el panel gráfico, abre **`Centro-de-Control-Tributacos.pyw`** o ejecuta `make gui`. Detalle en la [Guía de instalación](../docs/INSTALACION_USUARIO.md).
+
+![Panel de Operaciones — pestaña Inicio](img/panel_01_inicio.png)
+
+Desde el panel puedes <kbd>Iniciar tribuTACOS</kbd>, abrir la declaración en el navegador y, en **Tus archivos**, procesar XML y PDFs locales sin usar la terminal.
+
 ---
 
 ## 2. Selector de Contribuyente y Ejercicio Fiscal
@@ -63,9 +71,23 @@ Al hacer clic en el botón principal <kbd>📂 Cargar Comprobantes XML</kbd>, se
 * **Arrastrar y Soltar (Drag & Drop):** Arrastre de múltiples archivos `.xml` o carpetas completas directamente sobre el área punteada del modal.
 * **Archivos Comprimidos (.ZIP):** Carga directa de paquetes `.zip` descargados del SAT; el motor desempaca y clasifica cada archivo en memoria.
 * **Explorador de Archivos:** Clic sobre el área de carga para seleccionar archivos locales desde el explorador del sistema operativo.
+* **Panel de Operaciones:** En la pestaña **Tus archivos**, pegue `.xml` en las carpetas indicadas y pulse <kbd>Procesar facturas XML</kbd> (procesamiento local, sin conexión al SAT).
 * **Línea de Comandos (CLI):** Ejecución de `make db-import-xml` para ingestar lotes de archivos ubicados en el almacenamiento local.
 
-### 4.2 Pipeline Automático de Procesamiento:
+### 4.2 Ingesta por carpetas (Panel de Operaciones)
+
+![Panel de Operaciones — Tus archivos](img/panel_02_archivos.png)
+
+Flujo recomendado cuando no usa el modal web:
+
+1. Abra <kbd>Facturas que te emitieron</kbd>, <kbd>Facturas que tu emitiste</kbd> o la carpeta que corresponda y pegue sus `.xml`.
+2. Pulse <kbd>Procesar facturas XML</kbd>.
+3. Abra la interfaz web (<kbd>Abrir declaracion en el navegador</kbd>) y pulse <kbd>🔄</kbd> para refrescar los totales.
+
+> [!NOTE]
+> tribuTACOS **no descarga** comprobantes del portal del SAT. Solo procesa archivos que usted ya guardó en su computadora.
+
+### 4.3 Pipeline Automático de Procesamiento:
 
 ```mermaid
 flowchart TD

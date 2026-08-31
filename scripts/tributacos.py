@@ -15,8 +15,10 @@ import sys
 from pathlib import Path
 
 _SCRIPTS = Path(__file__).resolve().parent
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
+_ROOT = _SCRIPTS.parent
+for _path in (_ROOT, _SCRIPTS):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 from runtime import (  # noqa: E402
     STANDALONE_PORT,
@@ -564,7 +566,13 @@ def cmd_standalone(args: argparse.Namespace) -> None:
 
 def cmd_test(_: argparse.Namespace) -> None:
     ensure_venv()
-    run([str(venv_executable("pytest")), "-v"], cwd=BACKEND, env=backend_env())
+    env = backend_env()
+    env["PYTHONPATH"] = os.pathsep.join([str(BACKEND), str(ROOT)])
+    run(
+        [str(venv_executable("pytest")), "-v", "backend/tests", "control_panel/tests"],
+        cwd=ROOT,
+        env=env,
+    )
 
 
 def cmd_lint(_: argparse.Namespace) -> None:
@@ -629,6 +637,17 @@ def cmd_screenshots(_: argparse.Namespace) -> None:
     run([node, str(FRONTEND / "scripts" / "capture_screenshots.js")])
 
 
+def cmd_screenshots_gui(_: argparse.Namespace) -> None:
+    py = venv_python()
+    script = ROOT / "control_panel" / "scripts" / "capture_screenshots.py"
+    print("Generando capturas del Panel de Operaciones (Tkinter)...")
+    xvfb = shutil.which("xvfb-run")
+    if xvfb and not os.environ.get("DISPLAY"):
+        run([xvfb, "-a", str(py), str(script)], cwd=ROOT)
+    else:
+        run([str(py), str(script)], cwd=ROOT)
+
+
 def cmd_docs_sync(_: argparse.Namespace) -> None:
     run_make("docs-sync")
 
@@ -687,9 +706,8 @@ def cmd_docker_down(_: argparse.Namespace) -> None:
 
 
 def cmd_gui(_: argparse.Namespace) -> None:
-    gui_script = ROOT / "scripts" / "tributacos_gui.py"
     py = venv_python() if venv_python().exists() else Path(sys.executable)
-    run([str(py), str(gui_script)], check=False)
+    run([str(py), "-m", "control_panel"], cwd=ROOT, check=False)
 
 
 def cmd_version_sync(_: argparse.Namespace) -> None:
@@ -729,6 +747,7 @@ def cmd_help(_: argparse.Namespace) -> None:
 
   Documentacion:
     screenshots      Capturas de pantalla con Playwright
+    screenshots-gui  Capturas del Panel de Operaciones (Tkinter)
     docs-sync        Pipeline pre-release: capturas + manual + PDFs
     pdf-all          Compila los PDFs oficiales (tecnico, manual e instalacion)
     pdf-manual       Compila Manual de Usuario en PDF
@@ -777,6 +796,7 @@ COMMAND_HANDLERS: dict[str, object] = {
     "lint": cmd_lint,
     "build": cmd_build,
     "screenshots": cmd_screenshots,
+    "screenshots-gui": cmd_screenshots_gui,
     "docs-sync": cmd_docs_sync,
     "pdf-all": cmd_pdf_all,
     "pdf-manual": cmd_pdf_manual,

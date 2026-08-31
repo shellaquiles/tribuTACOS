@@ -75,8 +75,11 @@ make lint
 # 2. Validar compilación de Frontend (dev o standalone)
 cd frontend && npm run build
 
-# 3. Capturas si hubo cambios en la UI fiscal
+# 3. Capturas si hubo cambios en la UI
+# Interfaz web fiscal (Playwright; requiere make dev)
 make screenshots
+# Panel de Operaciones (Tkinter → docs/img/)
+make screenshots-gui
 
 # 4. Manual unificado y PDFs oficiales (técnico, usuario, instalación)
 make pdf-all
@@ -86,8 +89,9 @@ make pdf-all
 
 ## 4. Checklist para el Pull Request
 
-- [ ] Todos los tests de backend pasan (`make test`).
+- [ ] Todos los tests pasan (`make test`: backend + control_panel).
 - [ ] El frontend compila sin errores de lint o TypeScript/JSX (`make lint` y `npm run build`).
+- [ ] Si cambió el panel: `docs/img/panel_*.png` actualizados (`make screenshots-gui`) y `make pdf-instalacion` regenerado.
 - [ ] `CHANGELOG.md` documenta los cambios con la versión exacta.
 - [ ] `README.md`, `manual_usuario/` y `docs/` declaran la versión exacta (`vX.Y.Z STABLE` o `vX.Y.Z-rc.N RC`).
 - [ ] Los PDFs oficiales (`docs/` y `manual_usuario/`, incluida la guía de instalación) fueron regenerados con `make pdf-all`.

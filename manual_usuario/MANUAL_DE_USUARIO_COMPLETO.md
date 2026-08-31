@@ -1,10 +1,10 @@
 # tribuTACOS — Manual de Usuario Completo
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
 
 > **Plataforma de Inteligencia Fiscal, Conciliación de Comprobantes Digitales (CFDI 3.3/4.0) y Simulación Analítica de Pre-Declaración Mensual y Anual para Personas Físicas en México.**
 
-> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.3 RC**.
+> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.4 RC**.
 
 > *Documento y manuales generados con **[Pandocquiles](https://github.com/shellaquiles/pandocquiles) by shellaquiles.org**.*
 
@@ -15,7 +15,7 @@
 1. [Capítulo 01: Introducción y Propuesta de Valor](#capítulo-01-introducci-n-y-propuesta-de-valor)
 2. [Capítulo 02: Primeros Pasos e Ingesta de Comprobantes](#capítulo-02-primeros-pasos-e-ingesta-de-comprobantes)
 3. [Capítulo 03: Módulo Dashboard Principal](#capítulo-03-m-dulo-dashboard-principal)
-4. [Capítulo 04: Módulo de Pre-Declaración Mensual (ISR e IVA)](#capítulo-04-m-dulo-de-pre-declaraci-n-mensual-isr-e-iva-)
+4. [Capítulo 04: Módulo de Pre-Declaración Mensual (ISR e IVA)](#capítulo-04-m-dulo-de-pre-declaraci-n-mensual-isr-e-iva)
 5. [Capítulo 05: Módulo de Declaración Anual](#capítulo-05-m-dulo-de-declaraci-n-anual)
 6. [Capítulo 06: Módulo de Egresos y Deducciones](#capítulo-06-m-dulo-de-egresos-y-deducciones)
 7. [Capítulo 07: Módulo de Ingresos y Nómina](#capítulo-07-m-dulo-de-ingresos-y-n-mina)
@@ -26,12 +26,12 @@
 
 # Capítulo 01: Introducción y Propuesta de Valor
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
 [![CFDI](https://img.shields.io/badge/CFDI-3.3%20%7C%204.0-emerald.svg?style=flat-square)](#)
 [![Régimen](https://img.shields.io/badge/Régimen-PFAE%20%7C%20Sueldos%20y%20Salarios-indigo.svg?style=flat-square)](#)
 [![Legislación](https://img.shields.io/badge/Legislación-LISR%20%7C%20LIVA%20%7C%20CFF-purple.svg?style=flat-square)](#)
 
-> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.3 RC** (Frontend Next.js 15 / Backend FastAPI).
+> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.4 RC** (Frontend Next.js 15 / Backend FastAPI).
 
 Plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3 y 4.0 en XML) y pre-declaración automática para personas físicas en México.
 
@@ -77,6 +77,17 @@ flowchart TD
 * **Control y Arrastre de IVA:** Determinación de pagos definitivos de IVA con acreditamiento y arrastre cronológico automático de saldos a favor.
 * **Conciliación Bidireccional:** Cruce 1 a 1 entre comprobantes timbrados (XML) y documentos oficiales presentados ante el SAT (PDF).
 
+### Interfaz web y Panel de Operaciones
+
+tribuTACOS tiene **dos superficies** complementarias:
+
+| Superficie | Uso |
+| :--- | :--- |
+| **Interfaz web** (navegador) | Dashboard, pre-declaraciones, conciliación SAT, exportación CSV, carga de XML en modal. |
+| **Panel de Operaciones** (Tkinter) | Arranque/detención del servidor, carpetas de ingesta, procesamiento local de XML/PDF, respaldos y manuales PDF. |
+
+La interfaz fiscal vive siempre en el navegador. El panel **no la replica**; orquesta tareas de sistema que no están en la web. Guía de instalación: [`docs/INSTALACION_USUARIO.md`](../docs/INSTALACION_USUARIO.md).
+
 > [!NOTE]
 > **Soberanía y Privacidad Local:** tribuTACOS opera bajo una estricta política de privacidad local. La información contable, UUIDs fiscales, cadenas originales y montos financieros residen exclusivamente en la base de datos relacional local (`backend/tributacos.db`), sin transmisión a servidores externos ni intermediarios terceros.
 >
@@ -106,6 +117,8 @@ Guía paso a paso para la inicialización del entorno, selección de contribuyen
 
 ## 1. Puesta en Marcha Inicial
 
+Si eres usuario final (instalador Windows, Docker o Panel de Operaciones), sigue la [Guía de instalación](../docs/INSTALACION_USUARIO.md). Esta sección es para desarrollo local.
+
 Para arrancar el sistema completo con servidores de backend y frontend sincronizados:
 
 ```bash
@@ -119,6 +132,14 @@ make dev
 La plataforma estará disponible de inmediato en:
 * **Interfaz de Usuario:** `http://localhost:3000`
 * **API REST y Swagger:** `http://localhost:8010/docs`
+
+### Panel de Operaciones (alternativa sin terminal)
+
+Si usas el instalador Windows, Docker o Python con el panel gráfico, abre **`Centro-de-Control-Tributacos.pyw`** o ejecuta `make gui`. Detalle en la [Guía de instalación](../docs/INSTALACION_USUARIO.md).
+
+![Panel de Operaciones — pestaña Inicio](img/panel_01_inicio.png)
+
+Desde el panel puedes <kbd>Iniciar tribuTACOS</kbd>, abrir la declaración en el navegador y, en **Tus archivos**, procesar XML y PDFs locales sin usar la terminal.
 
 ---
 
@@ -155,9 +176,23 @@ Al hacer clic en el botón principal <kbd>📂 Cargar Comprobantes XML</kbd>, se
 * **Arrastrar y Soltar (Drag & Drop):** Arrastre de múltiples archivos `.xml` o carpetas completas directamente sobre el área punteada del modal.
 * **Archivos Comprimidos (.ZIP):** Carga directa de paquetes `.zip` descargados del SAT; el motor desempaca y clasifica cada archivo en memoria.
 * **Explorador de Archivos:** Clic sobre el área de carga para seleccionar archivos locales desde el explorador del sistema operativo.
+* **Panel de Operaciones:** En la pestaña **Tus archivos**, pegue `.xml` en las carpetas indicadas y pulse <kbd>Procesar facturas XML</kbd> (procesamiento local, sin conexión al SAT).
 * **Línea de Comandos (CLI):** Ejecución de `make db-import-xml` para ingestar lotes de archivos ubicados en el almacenamiento local.
 
-### 4.2 Pipeline Automático de Procesamiento:
+### 4.2 Ingesta por carpetas (Panel de Operaciones)
+
+![Panel de Operaciones — Tus archivos](img/panel_02_archivos.png)
+
+Flujo recomendado cuando no usa el modal web:
+
+1. Abra <kbd>Facturas que te emitieron</kbd>, <kbd>Facturas que tu emitiste</kbd> o la carpeta que corresponda y pegue sus `.xml`.
+2. Pulse <kbd>Procesar facturas XML</kbd>.
+3. Abra la interfaz web (<kbd>Abrir declaracion en el navegador</kbd>) y pulse <kbd>🔄</kbd> para refrescar los totales.
+
+> [!NOTE]
+> tribuTACOS **no descarga** comprobantes del portal del SAT. Solo procesa archivos que usted ya guardó en su computadora.
+
+### 4.3 Pipeline Automático de Procesamiento:
 
 ```mermaid
 flowchart TD
@@ -609,8 +644,9 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 | **Acuses Bancarios (PDF)** | *Banca Electrónica ➔ Pagos de Impuestos Federales SAT* | Folio de control bancario, línea de captura, fecha efectiva de pago e importe transferido. |
 
 ### Procesamiento y Carga en tribuTACOS:
-* **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o al panel de Conciliación SAT.
-* **Desde la Terminal:** Ejecute `make db-import-pdf` para procesar por lotes todos los PDFs colocados en el directorio local.
+* **Desde la Interfaz Web:** Arrastre los archivos PDF al modal de carga o a la vista de Conciliación SAT.
+* **Desde el Panel de Operaciones:** Pestaña **Tus archivos** → abra <kbd>PDFs generados por el SAT</kbd>, pegue los PDF descargados de sat.gob.mx y pulse <kbd>Procesar PDFs descargados</kbd> (sin conexión al portal del SAT).
+* **Desde la Terminal:** Ejecute `make db-import-sat` para procesar por lotes todos los PDFs colocados en el directorio local.
 * **Motor de Extracción:** El parser interno de tribuTACOS extrae mediante expresiones regulares y análisis de tablas los folios de 14 dígitos, sellos digitales y matrices financieras sin requerir captura manual.
 
 ---
@@ -645,7 +681,7 @@ Para habilitar la conciliación automática, el contribuyente o contador debe de
 # Capítulo 09: Arquitectura y Componentes Modulares
 
 [![Arquitectura](https://img.shields.io/badge/Arquitectura-Modular%20Desacoplada-blue.svg?style=flat-square)](#)
-[![Versión](https://img.shields.io/badge/Versión-v1.0%20%28Producción%29-emerald.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.1%20RC-emerald.svg?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-indigo.svg?style=flat-square)](#)
 
 Estructura modular del sistema, arquitectura por capas, catálogo de componentes y flujo de datos fiscal.

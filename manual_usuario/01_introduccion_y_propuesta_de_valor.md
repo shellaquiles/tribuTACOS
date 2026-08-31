@@ -2,12 +2,12 @@
 
 # Capítulo 01: Introducción y Propuesta de Valor
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
 [![CFDI](https://img.shields.io/badge/CFDI-3.3%20%7C%204.0-emerald.svg?style=flat-square)](#)
 [![Régimen](https://img.shields.io/badge/Régimen-PFAE%20%7C%20Sueldos%20y%20Salarios-indigo.svg?style=flat-square)](#)
 [![Legislación](https://img.shields.io/badge/Legislación-LISR%20%7C%20LIVA%20%7C%20CFF-purple.svg?style=flat-square)](#)
 
-> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.3 RC** (Frontend Next.js 15 / Backend FastAPI).
+> **Versión de Referencia:** Este documento y sus guías visuales corresponden a **tribuTACOS v1.1.0-rc.4 RC** (Frontend Next.js 15 / Backend FastAPI).
 
 Plataforma de inteligencia fiscal, conciliación de comprobantes digitales (CFDI 3.3 y 4.0 en XML) y pre-declaración automática para personas físicas en México.
 
@@ -52,6 +52,17 @@ flowchart TD
 * **Auditoría de Deducciones Personales:** Verificación en tiempo real de los topes legales del Art. 151 LISR (15% de ingresos acumulables vs 5 UMAs anuales y subtope de PPR).
 * **Control y Arrastre de IVA:** Determinación de pagos definitivos de IVA con acreditamiento y arrastre cronológico automático de saldos a favor.
 * **Conciliación Bidireccional:** Cruce 1 a 1 entre comprobantes timbrados (XML) y documentos oficiales presentados ante el SAT (PDF).
+
+### Interfaz web y Panel de Operaciones
+
+tribuTACOS tiene **dos superficies** complementarias:
+
+| Superficie | Uso |
+| :--- | :--- |
+| **Interfaz web** (navegador) | Dashboard, pre-declaraciones, conciliación SAT, exportación CSV, carga de XML en modal. |
+| **Panel de Operaciones** (Tkinter) | Arranque/detención del servidor, carpetas de ingesta, procesamiento local de XML/PDF, respaldos y manuales PDF. |
+
+La interfaz fiscal vive siempre en el navegador. El panel **no la replica**; orquesta tareas de sistema que no están en la web. Guía de instalación: [`docs/INSTALACION_USUARIO.md`](../docs/INSTALACION_USUARIO.md).
 
 > [!NOTE]
 > **Soberanía y Privacidad Local:** tribuTACOS opera bajo una estricta política de privacidad local. La información contable, UUIDs fiscales, cadenas originales y montos financieros residen exclusivamente en la base de datos relacional local (`backend/tributacos.db`), sin transmisión a servidores externos ni intermediarios terceros.

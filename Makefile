@@ -8,7 +8,7 @@
         db-seed db-reset db-import-xml db-import-sat db-export db-import-backup \
         clear-cache open-xml-recibidos open-xml-emitidos open-pdf-sat open-backups \
         test lint build \
-        screenshots docs-sync pdf-all pdf-manual pdf-tecnica pdf-instalacion docs-all \
+        screenshots screenshots-gui docs-sync pdf-all pdf-manual pdf-tecnica pdf-instalacion docs-all \
         pdf-check-submodule clean clean-deep \
         db-fresh db-empty db-import-pdf seed-demo init-db sync sync-docs \
         pdf pdf-docs pdf-user pdf-install clean-all
@@ -86,6 +86,7 @@ help:
 	@echo ""
 	@echo "  $(BOLD)$(YELLOW)4. DOCUMENTACIÓN & RELEASES (PANDOCQUILES BY SHELLAQUILES.ORG)$(RESET)"
 	@printf "     $(GREEN)make screenshots$(RESET)    Captura pantallas completas con scroll (Playwright)\n"
+	@printf "     $(GREEN)make screenshots-gui$(RESET) Captura del Panel de Operaciones (Tkinter)\n"
 	@printf "     $(GREEN)make docs-sync$(RESET)      Pipeline de pre-release: capturas + manual + PDFs\n"
 	@printf "     $(GREEN)make pdf-all$(RESET)        Compila los PDFs oficiales (técnico, manual e instalación)\n"
 	@printf "     $(GREEN)make pdf-manual$(RESET)     Compila únicamente el Manual de Usuario en PDF\n"
@@ -205,6 +206,9 @@ build:
 screenshots:
 	@$(RUNNER) screenshots
 
+screenshots-gui:
+	@$(RUNNER) screenshots-gui
+
 docs-sync: screenshots
 	@echo "$(BOLD)$(CYAN)🔄 Sincronizando manual completo y recompilando PDFs con Pandocquiles...$(RESET)"
 	@node -e '\
@@ -275,6 +279,7 @@ pdf-instalacion: pdf-check-submodule
 	@echo "$(BOLD)$(CYAN)Compilando guía de instalación en PDF con Pandocquiles by shellaquiles.org...$(RESET)"
 	@mkdir -p $(PDF_INSTALL_STAGING)
 	@cp docs/INSTALACION_USUARIO.md $(PDF_INSTALL_STAGING)/README.md
+	@if [ -d docs/img ]; then cp -r docs/img $(PDF_INSTALL_STAGING)/img; fi
 	@$(BUILD_DOCS) --pdf-only ../../$(PDF_INSTALL_STAGING)
 	@cp $(PDF_INSTALL_SRC) $(PDF_INSTALL_OUT)
 	@rm -rf $(PDF_INSTALL_STAGING)

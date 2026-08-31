@@ -1,36 +1,51 @@
 ---
-description: Pipeline de captura automatizada de pantallas con Playwright, scroll de contenedores y actualización de manuales de usuario.
+description: Pipeline de captura automatizada — interfaz web (Playwright) y Panel de Operaciones (Tkinter) — y actualización de manuales.
 ---
 
 # Workflow: Captura de Pantallas y Actualización de Manuales
 
-Este workflow documenta cómo capturar las vistas completas de la aplicación web y mantener sincronizado el manual de usuario con sus imágenes y explicaciones.
+Este workflow documenta cómo capturar las vistas de la aplicación web y del Panel de Operaciones, y mantener sincronizada la documentación con sus imágenes.
 
 ---
 
 ## 1. Pipeline de Capturas y Sincronización de Documentación
 
 > [!IMPORTANT]
-> **Regla de Desarrollo Ágil (Cero Sobrecarga):** Las capturas de pantalla y la compilación de documentación en PDF **NO** deben ejecutarse durante el ciclo normal de desarrollo del frontend o backend. Se ejecutan exclusivamente bajo demanda antes de un commit, PR o release mediante `make` (fachada de `scripts/tributacos.py`).
+> **Regla de Desarrollo Ágil (Cero Sobrecarga):** Las capturas y la compilación de PDF **NO** deben ejecutarse durante el ciclo normal de desarrollo. Se ejecutan bajo demanda antes de un PR o release mediante `make` (fachada de `scripts/tributacos.py`).
 
 ### Comandos del Pipeline
 
-Para no ralentizar el desarrollo local:
-
-1. **Solo capturas de pantalla:**
+1. **Solo capturas web (interfaz fiscal):**
    ```bash
    make screenshots
    # equivalente: python scripts/tributacos.py screenshots
    ```
-2. **Pipeline completo de pre-release (Capturas + Sincronización de manual + PDFs):**
+   Requiere frontend en `http://localhost:3000` (`make dev` o similar).
+
+2. **Solo capturas del Panel de Operaciones (Tkinter):**
+   ```bash
+   make screenshots-gui
+   # Linux headless: xvfb-run -a python control_panel/scripts/capture_screenshots.py
+   ```
+   Genera `docs/img/panel_*.png` (modo `installed`, 4 pestañas).
+
+3. **Pipeline completo de pre-release (capturas web + manual + PDFs):**
    ```bash
    make docs-sync
    ```
    Incluye los tres PDFs oficiales: técnico, manual de usuario y guía de instalación (`make pdf-instalacion`).
 
+### Cuándo ejecutar cada uno
+
+| Cambio en… | Comandos |
+| :--- | :--- |
+| `frontend/` (UI web) | `make screenshots` → `make docs-sync` o `make pdf-manual` |
+| `control_panel/ui/` o `control_panel/config/copy.py` | `make screenshots-gui` → `make pdf-instalacion` |
+| `docs/INSTALACION_USUARIO.md` (solo texto) | `make pdf-instalacion` |
+
 ---
 
-## 2. Reglas Técnicas de Captura (Playwright)
+## 2. Reglas Técnicas de Captura Web (Playwright)
 
 El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un contenedor interno con scroll vertical:
 
@@ -49,7 +64,7 @@ El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un cont
 
 ---
 
-## 3. Nomenclatura Estándar de Imágenes (`manual_usuario/img/`)
+## 3. Nomenclatura Estándar de Imágenes Web (`manual_usuario/img/`)
 
 | Vista / Pantalla | Captura Superior (Hero/KPIs) | Captura Inferior (Scroll) |
 | :--- | :--- | :--- |
@@ -68,7 +83,27 @@ El shell de tribuTACOS utiliza una arquitectura de pantalla completa con un cont
 
 ---
 
-## 4. Ejecución del Script de Captura
+## 3b. Nomenclatura Panel de Operaciones (`docs/img/`)
+
+Script: [`control_panel/scripts/capture_screenshots.py`](file:///home/kubrick/www/tributacos/control_panel/scripts/capture_screenshots.py).
+
+| Pestaña | Archivo |
+| :--- | :--- |
+| **Inicio** | `panel_01_inicio.png` |
+| **Tus archivos** | `panel_02_archivos.png` |
+| **Respaldo** | `panel_03_respaldo.png` |
+| **Ayuda** | `panel_04_ayuda.png` |
+
+Las mismas capturas se copian a `manual_usuario/img/` para el manual de usuario en PDF.
+
+**Reglas técnicas GUI:**
+- Variable de entorno `TRIBUTACOS_MODE=installed` (4 pestañas, sin Sistema).
+- Espera ~300 ms por pestaña tras `notebook.select()`.
+- Fuente de verdad de labels: `control_panel/config/copy.py`.
+
+---
+
+## 4. Ejecución del Script de Captura Web
 
 Con el entorno levantado (`make dev` o frontend en `http://localhost:3000`):
 
@@ -89,3 +124,11 @@ make docs-sync
 ```
 
 No copiar a mano el script `node -e` del Makefile: esa es la fuente unica y incluye badges de canal (`STABLE` / `RC`).
+
+Tras cambios solo en la guía de instalación o capturas del panel:
+
+```bash
+make pdf-instalacion
+```
+
+El target copia `docs/img/` al staging de Pandoc para incrustar las capturas en el PDF.

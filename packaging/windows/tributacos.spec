@@ -54,9 +54,34 @@ hidden = [
     "app.catalogos.router",
     "tkinter",
     "tkinter.ttk",
+    "tributacos_core",
+    "tributacos_core.runtime",
     "runtime",
     "tributacos",
-    "tributacos_gui",
+    "control_panel",
+    "control_panel.app",
+    "control_panel.gui",
+    "control_panel.domain",
+    "control_panel.domain.panel",
+    "control_panel.domain.server",
+    "control_panel.domain.models",
+    "control_panel.config",
+    "control_panel.config.catalog",
+    "control_panel.config.theme",
+    "control_panel.config.copy",
+    "control_panel.config.constants",
+    "control_panel.ui",
+    "control_panel.ui.about",
+    "control_panel.ui.widgets",
+    "control_panel.ui.views",
+    "control_panel.ui.views.builder",
+    "control_panel.ui.views.components",
+    "control_panel.ui.views.shell",
+    "control_panel.ui.views.tabs",
+    "control_panel.ui.views.inicio",
+    "control_panel.ui.views.archivos",
+    "control_panel.infra",
+    "control_panel.infra.bootstrap",
     "frozen_bootstrap",
 ]
 hidden += collect_submodules("app")
@@ -66,9 +91,10 @@ hidden += collect_submodules("uvicorn")
 datas = [
     (str(ROOT / "VERSION"), "."),
     (str(ROOT / "backend" / "app"), "app"),
+    (str(ROOT / "tributacos_core"), "tributacos_core"),
     (str(ROOT / "scripts" / "runtime.py"), "."),
     (str(ROOT / "scripts" / "tributacos.py"), "."),
-    (str(ROOT / "scripts" / "tributacos_gui.py"), "."),
+    (str(ROOT / "control_panel"), "control_panel"),
 ]
 
 static_dir = ROOT / "backend" / "static"
@@ -89,7 +115,7 @@ if install_pdf.is_file():
 
 a = Analysis(
     [str(ROOT / "packaging" / "launcher.py")],
-    pathex=[str(ROOT / "backend"), str(ROOT / "scripts"), str(ROOT / "packaging")],
+    pathex=[str(ROOT / "backend"), str(ROOT), str(ROOT / "scripts"), str(ROOT / "control_panel"), str(ROOT / "packaging")],
     binaries=[],
     datas=datas,
     hiddenimports=hidden,

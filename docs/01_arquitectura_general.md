@@ -1,9 +1,9 @@
 # tribuTACOS — 01. Arquitectura General y Ecosistema Técnico
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.3%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
 [![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20Next.js%2015-emerald.svg?style=flat-square)](#)
 
-> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.1.0-rc.3 RC**.
+> **Versión de Referencia del Sistema:** Esta documentación técnica describe la arquitectura y especificación de **tribuTACOS v1.1.0-rc.4 RC**.
 
 Especificación formal de la arquitectura del sistema, componentes de software, pipeline de procesamiento de datos y estructura de directorios.
 
@@ -74,8 +74,33 @@ flowchart TD
 | **Diseño y Estilos** | Tailwind CSS | Sistema de utilidades CSS con tipografía formal, alto contraste y paletas semánticas estructuradas. |
 | **Exportación de Datos** | Vanilla JavaScript (`csvExport.js`) | Generación en cliente de archivos CSV con codificación UTF-8 BOM para compatibilidad total con hojas de cálculo. |
 | **Generador de PDFs** | Pandocquiles by shellaquiles.org | Pipeline de compilación Markdown a PDF con renderizado de diagramas Mermaid, incrustación de recursos Base64 y tematización CSS editorial. |
+| **Panel de Operaciones** | Tkinter (Python) | Orquestación de arranque standalone, carpetas de ingesta, PDFs SAT locales, respaldos y utilidades fuera de la interfaz web fiscal. |
+| **Runtime compartido** | `tributacos_core` + `scripts/tributacos.py` | Rutas, modo de distribución, diagnóstico y comandos compartidos entre CLI, panel GUI y empaquetado PyInstaller. |
 
+---
 
+## 2.1 Capa de operaciones y runner compartido
+
+La **interfaz fiscal** (dashboard, ingesta XML en modal, CSV, conciliación SAT) vive en el navegador (Next.js). El **Panel de Operaciones** (`control_panel/`, Tkinter) no replica esa UI: orquesta arranque del servidor standalone, apertura de carpetas de ingesta, procesamiento local de XML/PDF, respaldos y utilidades de sistema.
+
+```mermaid
+flowchart LR
+  subgraph ops [CapaOperaciones]
+    Panel[control_panel Tkinter]
+    Runner[scripts/tributacos.py]
+    Core[tributacos_core.runtime]
+  end
+  Panel --> Runner
+  Panel --> Core
+  Runner --> Backend[FastAPI backend]
+  Backend --> Web[Next.js navegador]
+```
+
+- **`scripts/tributacos.py`**: fuente única de comandos; `make X` y el panel invocan el mismo runner.
+- **`tributacos_core/runtime.py`**: rutas del proyecto, modo (`installed` / `docker` / `dev`), URL de la app y ficha técnica.
+- **`control_panel/`**: capas `domain/` (ventana y servidor local), `config/` (`copy`, `constants`, `catalog`, `theme`), `ui/views/` (builders por pestaña) e `infra/bootstrap` (paths de importación).
+
+Convenciones de desarrollo del panel: ver [`control_panel/README.md`](../control_panel/README.md).
 
 ---
 
@@ -166,8 +191,21 @@ tributacos/
 │   ├── package.json          # Dependencias de Node.js
 │   └── next.config.mjs       # Configuración de Next.js
 ├── docs/                     # Documentación Técnica del Sistema
-├── manual_usuario/           # Manual de usuario y capturas
-├── scripts/                  # Runner, Panel de Operaciones y launchers
+│   ├── img/                  # Capturas del Panel de Operaciones (guía de instalación)
+│   └── INSTALACION_USUARIO.md
+├── manual_usuario/           # Manual de usuario y capturas web
+├── tributacos_core/          # Runtime compartido (rutas, modo, diagnóstico)
+│   └── runtime.py
+├── control_panel/            # Panel de Operaciones Tkinter
+│   ├── domain/               # panel.py, server.py, models.py
+│   ├── config/               # copy.py, constants.py, catalog.py, theme.py
+│   ├── ui/views/             # builders por pestaña
+│   ├── infra/                # bootstrap (sys.path)
+│   ├── scripts/              # capture_screenshots.py
+│   └── tests/                # test_config.py, test_gui_smoke.py
+├── scripts/                  # Runner CLI y launchers (.bat, .sh, .pyw)
+│   ├── tributacos.py
+│   └── runtime.py            # shim → tributacos_core
 ├── packaging/                # PyInstaller, Inno Setup y bundle Docker
 ├── VERSION                   # SemVer fuente unica
 ├── Makefile                  # Fachada de scripts/tributacos.py (make X == python scripts/tributacos.py X)
