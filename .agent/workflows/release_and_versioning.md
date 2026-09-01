@@ -103,7 +103,9 @@ make pdf-all
 
 ## 5. Publicar artefactos (GitHub Release)
 
-Cuando el commit a probar ya está en el remoto (idealmente en `main`):
+**Solo después de que el PR de release esté mergeado en `main`.** No etiquetar ni pushear tags desde ramas feature sin merge previo.
+
+Cuando el commit a probar ya está en **`main`** (vía PR mergeado):
 
 ```bash
 # Pre-release de pruebas

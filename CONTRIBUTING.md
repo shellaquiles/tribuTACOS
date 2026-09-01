@@ -4,6 +4,35 @@
 
 ---
 
+## 🔒 Gobernanza del repositorio
+
+**Regla principal:** todo cambio entra a `main` mediante **Pull Request**. No se hace push directo a `main`, ni siquiera para releases.
+
+| Acción | Flujo correcto |
+| :--- | :--- |
+| Feature o fix | Rama `feat/...` o `fix/...` → PR → merge cuando CI esté verde |
+| Release estable / RC | Rama `release/vX.Y.Z` → PR con `VERSION`, `CHANGELOG`, PDFs → merge → **tag** `vX.Y.Z` en `main` |
+| Hotfix urgente | Rama `fix/...` → PR (excepción documentada en el PR) → merge → tag si aplica |
+
+**Protecciones en `main` (GitHub):**
+
+* Pull Request obligatorio antes de merge
+* CI obligatorio: `backend-test`, `frontend-lint-build`, `standalone-build`, `docker-build`
+* Sin force-push ni borrado de la rama
+* Resolver conversaciones del PR antes de merge
+* Borrar rama feature tras merge (`deleteBranchOnMerge`)
+
+**Convención de ramas:**
+
+* `feat/descripcion-corta` — funcionalidad
+* `fix/descripcion-corta` — corrección
+* `release/vX.Y.Z` — preparación de versión (RC o estable)
+* `docs/descripcion-corta` — solo documentación
+
+Detalle de releases: [.agent/workflows/release_and_versioning.md](.agent/workflows/release_and_versioning.md).
+
+---
+
 ## 🛠️ Entorno de Desarrollo y Requisitos
 
 Asegúrate de contar con las siguientes herramientas en tu entorno:
@@ -49,7 +78,9 @@ Asegúrate de contar con las siguientes herramientas en tu entorno:
    ```bash
    git commit -m "feat(calculators): add support for RESICO provisional payments"
    ```
-8. **Envía un Pull Request** explicando claramente los cambios realizados y los fundamentos fiscales o técnicos correspondientes.
+8. **Envía un Pull Request** explicando claramente los cambios realizados y los fundamentos fiscales o técnicos correspondientes. Usa la plantilla en [`.github/pull_request_template.md`](.github/pull_request_template.md).
+
+9. **Espera CI verde** y merge desde GitHub (squash o merge commit según prefieras; no push directo a `main`).
 
 ---
 

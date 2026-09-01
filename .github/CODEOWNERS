@@ -1,0 +1,6 @@
+# Default reviewers for pull requests.
+* @pixelead0
+
+/.github/ @pixelead0
+/packaging/ @pixelead0
+/.github/workflows/ @pixelead0
