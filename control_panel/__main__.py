@@ -1,4 +1,4 @@
-from control_panel.app import main
+from control_panel.gui import main
 
 if __name__ == "__main__":
     main()

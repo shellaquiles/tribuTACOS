@@ -43,6 +43,6 @@ def test_operations_panel_tabs_have_actions(require_tk: None) -> None:
 
 
 def test_main_entrypoint_importable() -> None:
-    from control_panel.app import main
+    from control_panel.gui import main
 
     assert callable(main)

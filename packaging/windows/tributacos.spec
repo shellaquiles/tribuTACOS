@@ -59,7 +59,6 @@ hidden = [
     "runtime",
     "tributacos",
     "control_panel",
-    "control_panel.app",
     "control_panel.gui",
     "control_panel.domain",
     "control_panel.domain.panel",
@@ -115,7 +114,7 @@ if install_pdf.is_file():
 
 a = Analysis(
     [str(ROOT / "packaging" / "launcher.py")],
-    pathex=[str(ROOT / "backend"), str(ROOT), str(ROOT / "scripts"), str(ROOT / "control_panel"), str(ROOT / "packaging")],
+    pathex=[str(ROOT / "backend"), str(ROOT / "scripts"), str(ROOT / "control_panel"), str(ROOT / "packaging")],
     binaries=[],
     datas=datas,
     hiddenimports=hidden,

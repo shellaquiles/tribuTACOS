@@ -1,5 +1,5 @@
 """Panel de Operaciones de tribuTACOS (Tkinter)."""
 
-from control_panel.app import main
+from control_panel.gui import main
 
 __all__ = ["main"]
