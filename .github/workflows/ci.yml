@@ -21,7 +21,7 @@ jobs:
       - name: Instalar Tk para smoke GUI
         run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
       - name: Pytest
-        working-directory: ..
+        working-directory: .
         env:
           PYTHONPATH: backend:.
         run: xvfb-run pytest -v backend/tests control_panel/tests
