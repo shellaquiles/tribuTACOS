@@ -31,6 +31,19 @@
 
 Detalle de releases: [.agent/workflows/release_and_versioning.md](.agent/workflows/release_and_versioning.md).
 
+### Gobernanza en toda la org `shellaquiles`
+
+| Plan GitHub | Opción |
+| :--- | :--- |
+| **Free** (actual) | Script [`scripts/github/apply-org-branch-protection.sh`](scripts/github/apply-org-branch-protection.sh): aplica PR obligatorio en todos los repos. `tribuTACOS` requiere `--with-ci`. |
+| **Team** | [Organization Rulesets](https://docs.github.com/en/organizations/managing-organization-settings/creating-rulesets-for-repositories-in-your-organization): una regla para N repos desde Settings → Rules. |
+
+```bash
+gh auth refresh -h github.com -s admin:org,repo
+./scripts/github/apply-org-branch-protection.sh           # PR obligatorio (todos menos tribuTACOS CI)
+./scripts/github/apply-org-branch-protection.sh --with-ci # incluye checks del manifest
+```
+
 ---
 
 ## 🛠️ Entorno de Desarrollo y Requisitos
