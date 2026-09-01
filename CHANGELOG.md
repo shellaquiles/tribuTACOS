@@ -6,6 +6,10 @@ El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-31
+
+Versión estable de la línea 1.1. Consolida los candidatos `1.1.0-rc.1` … `1.1.0-rc.4`: Panel de Operaciones modular (`control_panel/`), runtime compartido (`tributacos_core/`), empaquetado Windows (.exe) y Docker, launchers multiplataforma, tests GUI en CI y documentación PDF con capturas del panel.
+
 ## [1.1.0-rc.4] - 2026-08-31
 
 ### Añadido

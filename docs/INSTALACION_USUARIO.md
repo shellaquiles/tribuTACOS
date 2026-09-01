@@ -1,8 +1,8 @@
 # tribuTACOS — Guía de instalación para usuario final
 
-[![Versión](https://img.shields.io/badge/Versión-v1.1.0--rc.4%20RC-blue.svg?style=flat-square)](#)
+[![Versión](https://img.shields.io/badge/Versión-v1.1.0%20STABLE-blue.svg?style=flat-square)](#)
 
-> **Versión de Referencia:** Esta guía corresponde a **tribuTACOS v1.1.0-rc.4 RC**.
+> **Versión de Referencia:** Esta guía corresponde a **tribuTACOS v1.1.0 STABLE**.
 
 Esta guía es para contadores, personas físicas y usuarios que **no quieren usar la terminal**.
 
