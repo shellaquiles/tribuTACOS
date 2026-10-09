@@ -34,6 +34,8 @@ import { UploadModal } from './components/UploadModal';
 import ConciliacionSatSection from './components/ConciliacionSatSection';
 import PreDeclaracionMensualSection from './components/PreDeclaracionMensualSection';
 import PreDeclaracionAnualSection from './components/PreDeclaracionAnualSection';
+import LoginScreen from './components/LoginScreen';
+import { setUnauthorizedHandler } from './auth';
 import './index.css';
 
 class ErrorBoundary extends Component {
@@ -75,6 +77,14 @@ const App = () => {
   const [clients, setClients] = useState([]);
   const [currentClientId, setCurrentClientId] = useState('default');
   const [syncing, setSyncing] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  // Registra el manejador de "sesión requerida": si el backend responde 401
+  // (AUTH_ENABLED activo y sin token válido), mostramos la pantalla de acceso.
+  useEffect(() => {
+    setUnauthorizedHandler(() => setNeedsLogin(true));
+    return () => setUnauthorizedHandler(null);
+  }, []);
 
   // Fetch registered clients
   const fetchClients = useCallback(() => {
@@ -164,6 +174,15 @@ const App = () => {
 
   const allTabs = navGroups.flatMap(g => g.tabs);
   const activeTabObj = allTabs.find(t => t.id === activeTab);
+
+  const handleLoginSuccess = () => {
+    setNeedsLogin(false);
+    setError(null);
+    fetchClients();
+    loadData(true);
+  };
+
+  if (needsLogin) return <LoginScreen onSuccess={handleLoginSuccess} />;
 
   if (loading && !data) return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-zinc-900 font-mono">

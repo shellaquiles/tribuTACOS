@@ -16,7 +16,10 @@ class ClientBase(BaseModel):
 
 
 class ClientCreate(ClientBase):
-    pass
+    # Contraseña en texto plano recibida solo en el registro; se almacena
+    # siempre como hash bcrypt (nunca en claro). No forma parte de ClientBase
+    # para que jamás se devuelva en las respuestas de la API.
+    password: str = Field(..., min_length=8, description="Contraseña del contribuyente (mínimo 8 caracteres)")
 
 
 class ClientResponse(ClientBase):

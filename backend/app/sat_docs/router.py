@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Client, Cfdi, DeclaracionAnualSAT, PagoProvisionalSAT, AcusePagoSAT
 from app.cfdis.engine import build_fiscal_summary
+from app.auth.service import get_current_client
 
 router = APIRouter(prefix="/api/sat_docs", tags=["sat_docs"])
 
@@ -18,21 +19,17 @@ MES_NAMES_BY_NUM = {
 @router.get("/summary")
 def get_sat_docs_summary(
     year: str = Query(..., description="Año fiscal (ej. 2021, 2022, 2023, 2024, 2025)"),
-    client_id: Optional[str] = Query(None),
+    current_client: Client = Depends(get_current_client),
     db: Session = Depends(get_db)
 ):
     """
     Consulta SQL 100% Relacional e Indexada:
-    Devuelve la radiografía oficial del SAT y pagos provisionales desde la Base de Datos.
+    Devuelve la radiografía oficial del SAT y pagos provisionales desde la Base
+    de Datos, siempre del contribuyente autenticado (nunca de un ``client_id``
+    arbitrario recibido por query string).
     """
-    # 1. Obtener cliente activo
-    if client_id:
-        client = db.query(Client).filter(Client.id == client_id).first()
-    else:
-        client = db.query(Client).first()
-
-    if not client:
-        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    # 1. El contribuyente se deriva del token de autenticación.
+    client = current_client
 
     # 2. Consultar Declaración Anual Oficial en BD
     anual_rec = db.query(DeclaracionAnualSAT).filter(
@@ -177,9 +174,33 @@ def get_sat_docs_summary(
 @router.get("/pdf")
 def get_sat_doc_pdf(
     path: str = Query(..., description="Ruta del archivo PDF a descargar o visualizar"),
+    current_client: Client = Depends(get_current_client),
     db: Session = Depends(get_db)
 ):
-    """Permite ver/descargar directamente el archivo PDF oficial del SAT."""
+    """Permite ver/descargar directamente el archivo PDF oficial del SAT.
+
+    Solo se sirven rutas que correspondan a documentos registrados del
+    contribuyente autenticado. Antes, el endpoint entregaba cualquier ruta del
+    sistema de archivos sin autenticación (lectura arbitraria de archivos).
+    """
+    owned_paths = set()
+    for col in (DeclaracionAnualSAT.raw_pdf_path,):
+        owned_paths.update(
+            p for (p,) in db.query(col).filter(DeclaracionAnualSAT.client_id == current_client.id).all() if p
+        )
+    for p, a in db.query(PagoProvisionalSAT.raw_pdf_path, PagoProvisionalSAT.raw_acuse_path).filter(
+        PagoProvisionalSAT.client_id == current_client.id
+    ).all():
+        owned_paths.update(x for x in (p, a) if x)
+    owned_paths.update(
+        p for (p,) in db.query(AcusePagoSAT.raw_pdf_path).filter(
+            AcusePagoSAT.client_id == current_client.id
+        ).all() if p
+    )
+
+    if path not in owned_paths:
+        raise HTTPException(status_code=403, detail="No tienes permiso para acceder a este documento.")
+
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Archivo PDF no encontrado")
     return FileResponse(path, media_type="application/pdf", filename=os.path.basename(path))

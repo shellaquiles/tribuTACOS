@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Client
-from app.auth.service import create_access_token, get_current_client
+from app.auth.service import create_access_token, get_current_client, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -19,12 +19,20 @@ class TokenResponse(BaseModel):
 @router.post("/login", response_model=TokenResponse)
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.rfc == req.rfc.upper()).first()
+    # Mensaje genérico idéntico para RFC inexistente y contraseña incorrecta:
+    # evita revelar qué RFCs están registrados (user enumeration).
+    invalid_credentials = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="RFC o contraseña incorrectos",
+    )
     if not client:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="RFC no registrado en tributacos"
-        )
-    
+        raise invalid_credentials
+
+    # La contraseña DEBE verificarse antes de emitir el token. Sin esta
+    # comprobación, cualquiera que conozca un RFC obtenía una sesión válida.
+    if not client.password_hash or not verify_password(req.password, client.password_hash):
+        raise invalid_credentials
+
     token = create_access_token(data={"sub": client.id, "rfc": client.rfc})
     return {
         "access_token": token,

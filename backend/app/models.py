@@ -11,6 +11,12 @@ class Client(Base):
     name = Column(String(200), nullable=False)
     rfc = Column(String(13), nullable=False, index=True)
     email = Column(String(120), nullable=True)
+    # Hash bcrypt de la contraseña. Nullable para compatibilidad con bases de
+    # datos existentes: los clientes creados antes de esta columna no podrán
+    # iniciar sesión hasta que se les asigne una contraseña (requiere un
+    # ALTER TABLE manual en despliegues ya existentes, p.ej.:
+    #   ALTER TABLE clients ADD COLUMN password_hash VARCHAR(255);
+    password_hash = Column(String(255), nullable=True)
     plan = Column(String(50), default="basic")
     local_path_emitidos = Column(String(500), nullable=True)
     local_path_recibidos = Column(String(500), nullable=True)

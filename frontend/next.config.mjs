@@ -32,6 +32,13 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${backendUrl}/api/:path*`,
       },
+      {
+        // El login de autenticación vive bajo /auth en el backend; sin este
+        // rewrite el frontend no podría obtener un token y, con AUTH_ENABLED,
+        // todas las peticiones de datos fallarían con 401.
+        source: '/auth/:path*',
+        destination: `${backendUrl}/auth/:path*`,
+      },
     ];
   },
 };

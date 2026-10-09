@@ -93,8 +93,42 @@ else:
     _default_db_path = BACKEND_DIR / "tributacos.db"
     DATABASE_URL = f"sqlite:///{_default_db_path.as_posix()}"
 
-AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() in ("true", "1", "yes")
-SECRET_KEY = os.getenv("SECRET_KEY", "tributacos-super-secret-key-change-in-production")
+# La autenticación debe estar ACTIVA por defecto: tribuTACOS maneja datos
+# fiscales por contribuyente (CFDIs, declaraciones, pagos). Con el valor en
+# "false" las rutas de datos quedaban accesibles sin identidad y permitían
+# leer/escribir la información de cualquier RFC (BOLA). Déjalo en "false" solo
+# para demos locales de un único contribuyente, nunca en producción.
+AUTH_ENABLED = os.getenv("AUTH_ENABLED", "true").lower() in ("true", "1", "yes")
+
+# El SECRET_KEY firma los JWT de sesión. Un valor por defecto conocido permitiría
+# a cualquiera forjar tokens válidos, así que NO existe un default utilizable:
+# - Los valores de ejemplo históricos quedan en lista negra.
+# - En producción con AUTH_ENABLED se exige un SECRET_KEY propio y fuerte (fail-closed).
+# - En desarrollo/demo, si no se define, se genera uno aleatorio efímero en memoria
+#   (los tokens no persisten entre reinicios, pero el default público nunca firma nada).
+import secrets as _secrets
+
+_INSECURE_SECRET_KEYS = {
+    "",
+    "tributacos-super-secret-key-change-in-production",
+    "tributacos-secret-key-super-secure-change-in-prod",
+    "change-in-prod",
+    "changeme",
+}
+
+_secret_key_env = os.getenv("SECRET_KEY", "").strip()
+if _secret_key_env and _secret_key_env not in _INSECURE_SECRET_KEYS:
+    SECRET_KEY = _secret_key_env
+elif AUTH_ENABLED and ENVIRONMENT == "production":
+    raise RuntimeError(
+        "SECRET_KEY debe definirse con un valor propio, fuerte y único en producción "
+        "cuando AUTH_ENABLED=true. El valor incluido por defecto es público y permitiría "
+        "falsificar tokens de autenticación. Genera uno, por ejemplo:\n"
+        "  python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+    )
+else:
+    SECRET_KEY = _secrets.token_urlsafe(48)
+
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
